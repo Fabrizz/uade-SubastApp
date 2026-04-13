@@ -19,7 +19,7 @@ import fabriziob.com.subastapp.service.SectorService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/sectores")
+@RequestMapping("/api/v1/sectores")
 @RequiredArgsConstructor
 public class SectorController {
 

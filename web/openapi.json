@@ -26,12 +26,114 @@
     }
   ],
   "paths": {
-    "/personas/{id}": {
+    "/api/v1/ws/subastas/subscribe": {
+      "get": {
+        "tags": [
+          "WebSocket Broker"
+        ],
+        "summary": "Recibe actualizaciones de la subasta/puja activa/s.",
+        "responses": {
+          "200": {
+            "description": "Mensaje recibido del broker"
+          }
+        }
+      }
+    },
+    "/api/v1/seguros/{nroPoliza}": {
+      "get": {
+        "tags": [
+          "seguro-controller"
+        ],
+        "operationId": "getById",
+        "parameters": [
+          {
+            "name": "nroPoliza",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeguroResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "seguro-controller"
+        ],
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "nroPoliza",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeguroRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeguroResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "seguro-controller"
+        ],
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "nroPoliza",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/personas/{id}": {
       "get": {
         "tags": [
           "persona-controller"
         ],
-        "operationId": "getById",
+        "operationId": "getById_1",
         "parameters": [
           {
             "name": "id",
@@ -60,7 +162,7 @@
         "tags": [
           "persona-controller"
         ],
-        "operationId": "update",
+        "operationId": "update_1",
         "parameters": [
           {
             "name": "id",
@@ -118,7 +220,7 @@
         }
       }
     },
-    "/personas/{id}/contacto": {
+    "/api/v1/personas/{id}/contacto": {
       "put": {
         "tags": [
           "persona-controller"
@@ -159,12 +261,63 @@
         }
       }
     },
-    "/sectores": {
+    "/api/v1/seguros": {
+      "get": {
+        "tags": [
+          "seguro-controller"
+        ],
+        "operationId": "getAll",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SeguroResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "seguro-controller"
+        ],
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeguroRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeguroResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sectores": {
       "get": {
         "tags": [
           "sector-controller"
         ],
-        "operationId": "getAll",
+        "operationId": "getAll_1",
         "parameters": [
           {
             "name": "pageable",
@@ -192,7 +345,7 @@
         "tags": [
           "sector-controller"
         ],
-        "operationId": "create",
+        "operationId": "create_1",
         "requestBody": {
           "content": {
             "application/json": {
@@ -217,12 +370,12 @@
         }
       }
     },
-    "/paises": {
+    "/api/v1/paises": {
       "get": {
         "tags": [
           "pais-controller"
         ],
-        "operationId": "getAll_1",
+        "operationId": "getAll_2",
         "parameters": [
           {
             "name": "pageable",
@@ -250,7 +403,7 @@
         "tags": [
           "pais-controller"
         ],
-        "operationId": "create_1",
+        "operationId": "create_2",
         "requestBody": {
           "content": {
             "application/json": {
@@ -275,12 +428,12 @@
         }
       }
     },
-    "/empleados": {
+    "/api/v1/empleados": {
       "get": {
         "tags": [
           "empleado-controller"
         ],
-        "operationId": "getAll_2",
+        "operationId": "getAll_3",
         "parameters": [
           {
             "name": "pageable",
@@ -308,7 +461,7 @@
         "tags": [
           "empleado-controller"
         ],
-        "operationId": "create_2",
+        "operationId": "create_3",
         "requestBody": {
           "content": {
             "application/json": {
@@ -423,12 +576,12 @@
         }
       }
     },
-    "/sectores/{id}": {
+    "/api/v1/sectores/{id}": {
       "get": {
         "tags": [
           "sector-controller"
         ],
-        "operationId": "getById_1",
+        "operationId": "getById_2",
         "parameters": [
           {
             "name": "id",
@@ -457,7 +610,7 @@
         "tags": [
           "sector-controller"
         ],
-        "operationId": "delete",
+        "operationId": "delete_1",
         "parameters": [
           {
             "name": "id",
@@ -479,7 +632,7 @@
         "tags": [
           "sector-controller"
         ],
-        "operationId": "update_1",
+        "operationId": "update_2",
         "parameters": [
           {
             "name": "id",
@@ -515,12 +668,12 @@
         }
       }
     },
-    "/empleados/{id}": {
+    "/api/v1/empleados/{id}": {
       "get": {
         "tags": [
           "empleado-controller"
         ],
-        "operationId": "getById_2",
+        "operationId": "getById_3",
         "parameters": [
           {
             "name": "id",
@@ -571,7 +724,7 @@
         "tags": [
           "empleado-controller"
         ],
-        "operationId": "update_2",
+        "operationId": "update_3",
         "parameters": [
           {
             "name": "id",
@@ -607,7 +760,7 @@
         }
       }
     },
-    "/clientes/{id}/multa": {
+    "/api/v1/clientes/{id}/multa": {
       "patch": {
         "tags": [
           "cliente-controller"
@@ -646,7 +799,7 @@
         }
       }
     },
-    "/clientes/{id}/inhabilitar": {
+    "/api/v1/clientes/{id}/inhabilitar": {
       "patch": {
         "tags": [
           "cliente-controller"
@@ -677,7 +830,7 @@
         }
       }
     },
-    "/clientes/{id}/habilitar": {
+    "/api/v1/clientes/{id}/habilitar": {
       "patch": {
         "tags": [
           "cliente-controller"
@@ -708,7 +861,7 @@
         }
       }
     },
-    "/clientes/{id}/categoria": {
+    "/api/v1/clientes/{id}/categoria": {
       "patch": {
         "tags": [
           "cliente-controller"
@@ -747,7 +900,7 @@
         }
       }
     },
-    "/clientes/{id}/admitir": {
+    "/api/v1/clientes/{id}/admitir": {
       "patch": {
         "tags": [
           "cliente-controller"
@@ -778,12 +931,12 @@
         }
       }
     },
-    "/personas": {
+    "/api/v1/personas": {
       "get": {
         "tags": [
           "persona-controller"
         ],
-        "operationId": "getAll_3",
+        "operationId": "getAll_4",
         "parameters": [
           {
             "name": "pageable",
@@ -808,12 +961,12 @@
         }
       }
     },
-    "/paises/{id}": {
+    "/api/v1/paises/{id}": {
       "get": {
         "tags": [
           "pais-controller"
         ],
-        "operationId": "getById_3",
+        "operationId": "getById_4",
         "parameters": [
           {
             "name": "id",
@@ -842,7 +995,7 @@
         "tags": [
           "pais-controller"
         ],
-        "operationId": "delete_1",
+        "operationId": "delete_2",
         "parameters": [
           {
             "name": "id",
@@ -861,12 +1014,12 @@
         }
       }
     },
-    "/clientes": {
+    "/api/v1/clientes": {
       "get": {
         "tags": [
           "cliente-controller"
         ],
-        "operationId": "getAll_4",
+        "operationId": "getAll_5",
         "parameters": [
           {
             "name": "pageable",
@@ -891,12 +1044,12 @@
         }
       }
     },
-    "/clientes/{id}": {
+    "/api/v1/clientes/{id}": {
       "get": {
         "tags": [
           "cliente-controller"
         ],
-        "operationId": "getById_4",
+        "operationId": "getById_5",
         "parameters": [
           {
             "name": "id",
@@ -1005,6 +1158,40 @@
   },
   "components": {
     "schemas": {
+      "SeguroRequest": {
+        "type": "object",
+        "properties": {
+          "nroPoliza": {
+            "type": "string"
+          },
+          "compania": {
+            "type": "string"
+          },
+          "polizaCombinada": {
+            "type": "string"
+          },
+          "importe": {
+            "type": "number"
+          }
+        }
+      },
+      "SeguroResponse": {
+        "type": "object",
+        "properties": {
+          "nroPoliza": {
+            "type": "string"
+          },
+          "compania": {
+            "type": "string"
+          },
+          "polizaCombinada": {
+            "type": "string"
+          },
+          "importe": {
+            "type": "number"
+          }
+        }
+      },
       "PersonaUpdateRequest": {
         "type": "object",
         "properties": {
@@ -1362,11 +1549,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -1380,11 +1567,8 @@
             "type": "integer",
             "format": "int64"
           },
-          "paged": {
+          "unpaged": {
             "type": "boolean"
-          },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
           },
           "pageNumber": {
             "type": "integer",
@@ -1394,7 +1578,10 @@
             "type": "integer",
             "format": "int32"
           },
-          "unpaged": {
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "paged": {
             "type": "boolean"
           }
         }
@@ -1405,10 +1592,10 @@
           "empty": {
             "type": "boolean"
           },
-          "sorted": {
+          "unsorted": {
             "type": "boolean"
           },
-          "unsorted": {
+          "sorted": {
             "type": "boolean"
           }
         }
@@ -1448,11 +1635,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -1494,11 +1681,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -1540,11 +1727,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -1586,11 +1773,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"

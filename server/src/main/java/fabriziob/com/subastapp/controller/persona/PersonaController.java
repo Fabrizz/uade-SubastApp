@@ -19,7 +19,7 @@ import fabriziob.com.subastapp.service.PersonaService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/personas")
+@RequestMapping("/api/v1/personas")
 @RequiredArgsConstructor
 public class PersonaController {
 

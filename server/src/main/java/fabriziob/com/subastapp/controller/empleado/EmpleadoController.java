@@ -21,7 +21,7 @@ import fabriziob.com.subastapp.service.EmpleadoService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/empleados")
+@RequestMapping("/api/v1/empleados")
 @RequiredArgsConstructor
 public class EmpleadoController {
 

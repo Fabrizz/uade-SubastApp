@@ -18,7 +18,7 @@ import fabriziob.com.subastapp.service.PaisService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/paises")
+@RequestMapping("/api/v1/paises")
 @RequiredArgsConstructor
 public class PaisController {
 
