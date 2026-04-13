@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "application.security.jwt.secretKey",
+      "type": "java.lang.String",
+      "description": "Secret Key for JWT auth"
+    },
+    {
+      "name": "application.security.jwt.expiration",
+      "type": "java.lang.String",
+      "description": "Expiration time for JWT auth"
+    }
+  ]
+}
