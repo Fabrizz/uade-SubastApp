@@ -35,11 +35,4 @@ public class Pais {
     @Column(name = "idiomas", nullable = false, length = 150)
     private String idiomas;
 
-    // -------------------------------------------------------
-    // Relaciones inversas
-    // -------------------------------------------------------
-    // @OneToMany(mappedBy = "pais", fetch = FetchType.LAZY)
-    // private List<Cliente> clientes;
-    // @OneToMany(mappedBy = "pais", fetch = FetchType.LAZY)
-    // private List<Duenio> duenios;
 }

@@ -1,0 +1,183 @@
+// ProductoService.java
+@Service
+@RequiredArgsConstructor
+public class ProductoService {
+
+    private final ProductoRepository       productoRepo;
+    private final ProductoExtraRepository  productoExtraRepo;
+    private final FotoRepository           fotoRepo;
+
+    // ── GET /productos ──────────────────────────────────────────────────
+    public List<ProductoResponseDTO> listar() {
+        return productoRepo.findAll()
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
+    // ── GET /productos/{id} ─────────────────────────────────────────────
+    public ProductoResponseDTO obtener(Integer id) {
+        Producto p = productoRepo.findByIdWithSeguro(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return toDTO(p);
+    }
+
+    // ── POST /productos ─────────────────────────────────────────────────
+    @Transactional
+    public ProductoResponseDTO crear(ProductoDTO dto, List<MultipartFile> imagenes) throws IOException {
+        Producto producto = Producto.builder()
+                .fecha(dto.getFecha())
+                .disponible(dto.getDisponible())
+                .descripcionCatalogo(dto.getDescripcionCatalogo())
+                .descripcionCompleta(dto.getDescripcionCompleta())
+                .revisor(dto.getRevisor())
+                .duenio(dto.getDuenio())
+                .seguro(dto.getSeguro())
+                .build();
+        producto = productoRepo.save(producto);
+
+        ProductoExtra extra = ProductoExtra.builder()
+                .producto(producto)
+                .artista(dto.getArtista())
+                .fechaCreacionObra(dto.getFechaCreacionObra())
+                .historia(dto.getHistoria())
+                .deposito(dto.getDeposito())
+                .build();
+        productoExtraRepo.save(extra);
+
+        guardarFotos(producto.getIdentificador(), imagenes);
+
+        return toDTO(producto);
+    }
+
+    // ── PATCH /productos/{id} ────────────────────────────────────────────
+    @Transactional
+    public ProductoResponseDTO patch(Integer id, PatchProductoDTO dto) {
+        Producto p = productoRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        ProductoExtra ex = productoExtraRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        // solo pisa los campos que vienen en el body
+        if (dto.getFecha()               != null) p.setFecha(dto.getFecha());
+        if (dto.getDisponible()          != null) p.setDisponible(dto.getDisponible());
+        if (dto.getDescripcionCatalogo() != null) p.setDescripcionCatalogo(dto.getDescripcionCatalogo());
+        if (dto.getDescripcionCompleta() != null) p.setDescripcionCompleta(dto.getDescripcionCompleta());
+        if (dto.getRevisor()             != null) p.setRevisor(dto.getRevisor());
+        if (dto.getSeguro()              != null) p.setSeguro(dto.getSeguro());
+
+        if (dto.getMotivoRechazo()       != null) ex.setMotivoRechazo(dto.getMotivoRechazo());
+        if (dto.getDeclaracionPropiedad()!= null) ex.setDeclaracionPropiedad(dto.getDeclaracionPropiedad());
+        if (dto.getEsPiezaMultiple()     != null) ex.setEsPiezaMultiple(dto.getEsPiezaMultiple());
+        if (dto.getCantidadPiezas()      != null) ex.setCantidadPiezas(dto.getCantidadPiezas());
+        if (dto.getEsObraDeArte()        != null) ex.setEsObraDeArte(dto.getEsObraDeArte());
+        if (dto.getArtista()             != null) ex.setArtista(dto.getArtista());
+        if (dto.getFechaCreacionObra()   != null) ex.setFechaCreacionObra(dto.getFechaCreacionObra());
+        if (dto.getHistoria()            != null) ex.setHistoria(dto.getHistoria());
+        if (dto.getDeposito()            != null) ex.setDeposito(dto.getDeposito());
+
+        productoRepo.save(p);
+        productoExtraRepo.save(ex);
+        return toDTO(p);
+    }
+
+    // ── PATCH /productos/{id}/estado ─────────────────────────────────────
+    @Transactional
+    public ProductoResponseDTO patchEstado(Integer id, PatchEstadoDTO dto) {
+        ProductoExtra ex = productoExtraRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (dto.getEstadoBien() == EstadoBien.rechazado && dto.getMotivoRechazo() == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "motivoRechazo es requerido al rechazar");
+
+        ex.setEstadoBien(dto.getEstadoBien());
+        if (dto.getMotivoRechazo() != null) ex.setMotivoRechazo(dto.getMotivoRechazo());
+
+        productoExtraRepo.save(ex);
+        return toDTO(productoRepo.findById(id).orElseThrow());
+    }
+
+    // ── POST /productos/{id}/fotos ───────────────────────────────────────
+    @Transactional
+    public List<Integer> subirFotos(Integer id, List<MultipartFile> imagenes) throws IOException {
+        if (!productoRepo.existsById(id))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        return guardarFotos(id, imagenes);
+    }
+
+    // ── GET /productos/{id}/fotos/{imgId}/content ────────────────────────
+    public ResponseEntity<byte[]> obtenerFotoContent(Integer id, Integer imgId) {
+        Foto foto = fotoRepo.findById(imgId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (!foto.getProducto().equals(id))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+
+        // detectar formato por magic bytes
+        MediaType mediaType = detectarMediaType(foto.getFoto());
+
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .body(foto.getFoto());
+    }
+
+    // ── GET /productos/{id}/seguro ───────────────────────────────────────
+    public ResponseEntity<?> obtenerSeguro(Integer id) {
+        Producto p = productoRepo.findByIdWithSeguro(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (p.getSeguroObj() != null) return ResponseEntity.ok(p.getSeguroObj());
+        if (p.getSeguro()    != null) return ResponseEntity.ok(Map.of("nroPoliza", p.getSeguro(), "detalle", "no registrado"));
+        return ResponseEntity.ok(Map.of("seguro", "sin seguro"));
+    }
+
+    // ── helpers ──────────────────────────────────────────────────────────
+    private List<Integer> guardarFotos(Integer productoId, List<MultipartFile> imagenes) throws IOException {
+        List<Integer> ids = new ArrayList<>();
+        if (imagenes == null) return ids;
+        for (MultipartFile img : imagenes) {
+            Foto f = Foto.builder()
+                    .producto(productoId)
+                    .foto(img.getBytes())
+                    .build();
+            ids.add(fotoRepo.save(f).getIdentificador());
+        }
+        return ids;
+    }
+
+    private MediaType detectarMediaType(byte[] bytes) {
+        if (bytes.length >= 4 &&
+            bytes[0] == (byte)0x89 && bytes[1] == (byte)0x50) return MediaType.IMAGE_PNG;
+        if (bytes.length >= 2 &&
+            bytes[0] == (byte)0xFF && bytes[1] == (byte)0xD8) return MediaType.IMAGE_JPEG;
+        if (bytes.length >= 4 &&
+            bytes[0] == 'R' && bytes[1] == 'I' &&
+            bytes[2] == 'F' && bytes[3] == 'F')                return MediaType.parseMediaType("image/webp");
+        return MediaType.APPLICATION_OCTET_STREAM;
+    }
+
+    private ProductoResponseDTO toDTO(Producto p) {
+        ProductoExtra ex = p.getProductoExtra(); // ver nota abajo
+        return ProductoResponseDTO.builder()
+                .identificador(p.getIdentificador())
+                .fecha(p.getFecha())
+                .disponible(p.getDisponible())
+                .descripcionCatalogo(p.getDescripcionCatalogo())
+                .descripcionCompleta(p.getDescripcionCompleta())
+                .revisor(p.getRevisor())
+                .duenio(p.getDuenio())
+                .seguro(p.getSeguro())
+                .fotosIds(p.getFotosIds())
+                .estadoBien(ex != null ? ex.getEstadoBien()         : null)
+                .motivoRechazo(ex != null ? ex.getMotivoRechazo()   : null)
+                .declaracionPropiedad(ex != null ? ex.getDeclaracionPropiedad() : null)
+                .esPiezaMultiple(ex != null ? ex.getEsPiezaMultiple()           : null)
+                .cantidadPiezas(ex != null ? ex.getCantidadPiezas()             : null)
+                .esObraDeArte(ex != null ? ex.getEsObraDeArte()                 : null)
+                .artista(ex != null ? ex.getArtista()               : null)
+                .fechaCreacionObra(ex != null ? ex.getFechaCreacionObra()       : null)
+                .historia(ex != null ? ex.getHistoria()             : null)
+                .deposito(ex != null ? ex.getDeposito()             : null)
+                .build();
+    }
+}
