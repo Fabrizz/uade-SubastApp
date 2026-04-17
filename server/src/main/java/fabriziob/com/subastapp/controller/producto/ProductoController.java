@@ -3,6 +3,7 @@ package fabriziob.com.subastapp.controller.producto;
 import java.io.IOException;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import fabriziob.com.subastapp.controller.auth.AuthenticationResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -37,10 +37,10 @@ public class ProductoController {
 
     @Operation(summary = "Listar productos", description = "Devuelve todos los productos con sus datos y lista de IDs de fotos")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista de productos", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = ProductoResponse.class))))
+            @ApiResponse(responseCode = "200", description = "Lista de productos")
     })
     @GetMapping
-    public ResponseEntity<List<ProductoResponse>> listar() {
+    public ResponseEntity<Page<ProductoResponse>> listar() {
         return null;
     }
 

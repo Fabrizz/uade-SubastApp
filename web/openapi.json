@@ -4,8 +4,8 @@
     "title": "SubastApp API",
     "description": "API documentation for SubastApp",
     "license": {
-      "name": "SubastApp License",
-      "url": "https://subastapp.fabriziob.com/mock"
+      "name": "FabrizioB Website",
+      "url": "https://fabriziob.com/"
     },
     "version": "1.0.0"
   },
@@ -17,12 +17,24 @@
   ],
   "tags": [
     {
+      "name": "Clientes",
+      "description": "Gestión de clientes, estado operativo y medios de pago"
+    },
+    {
+      "name": "Productos",
+      "description": "Endpoints para productos, incluye imágenes y seguro"
+    },
+    {
       "name": "Actuator",
       "description": "Monitor and interact",
       "externalDocs": {
         "description": "Spring Boot Actuator Web API Documentation",
         "url": "https://docs.spring.io/spring-boot/docs/current/actuator-api/html/"
       }
+    },
+    {
+      "name": "Autenticación",
+      "description": "Endpoints para registro y login de usuarios"
     }
   ],
   "paths": {
@@ -39,12 +51,104 @@
         }
       }
     },
+    "/api/v1/subastadores/{id}": {
+      "get": {
+        "tags": [
+          "subastador-controller"
+        ],
+        "operationId": "getById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubastadorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "subastador-controller"
+        ],
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubastadorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubastadorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "subastador-controller"
+        ],
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1/seguros/{nroPoliza}": {
       "get": {
         "tags": [
           "seguro-controller"
         ],
-        "operationId": "getById",
+        "operationId": "getById_1",
         "parameters": [
           {
             "name": "nroPoliza",
@@ -72,7 +176,7 @@
         "tags": [
           "seguro-controller"
         ],
-        "operationId": "update",
+        "operationId": "update_1",
         "parameters": [
           {
             "name": "nroPoliza",
@@ -110,7 +214,7 @@
         "tags": [
           "seguro-controller"
         ],
-        "operationId": "delete",
+        "operationId": "delete_1",
         "parameters": [
           {
             "name": "nroPoliza",
@@ -133,7 +237,7 @@
         "tags": [
           "persona-controller"
         ],
-        "operationId": "getById_1",
+        "operationId": "getById_2",
         "parameters": [
           {
             "name": "id",
@@ -162,7 +266,7 @@
         "tags": [
           "persona-controller"
         ],
-        "operationId": "update_1",
+        "operationId": "update_2",
         "parameters": [
           {
             "name": "id",
@@ -261,12 +365,205 @@
         }
       }
     },
+    "/productos": {
+      "get": {
+        "tags": [
+          "Productos"
+        ],
+        "summary": "Listar productos",
+        "description": "Devuelve todos los productos con sus datos y lista de IDs de fotos",
+        "operationId": "listar",
+        "responses": {
+          "200": {
+            "description": "Lista de productos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageProductoResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Productos"
+        ],
+        "summary": "Crear producto",
+        "description": "Crea un producto con sus datos y opcionalmente una lista de imágenes",
+        "operationId": "crear",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "datos": {
+                    "$ref": "#/components/schemas/ProductoRequest"
+                  },
+                  "imagenes": {
+                    "type": "array",
+                    "description": "Lista de imágenes del producto (PNG, JPEG, WEBP)",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                },
+                "required": [
+                  "datos"
+                ]
+              },
+              "encoding": {
+                "datos": {
+                  "contentType": "application/json"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Producto creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          }
+        }
+      }
+    },
+    "/productos/{id}/fotos": {
+      "post": {
+        "tags": [
+          "Productos"
+        ],
+        "summary": "Subir fotos",
+        "description": "Agrega una o más imágenes a un producto existente. Devuelve la lista de IDs generados",
+        "operationId": "subirFotos",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del producto",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "imagenes": {
+                    "type": "array",
+                    "description": "Lista de imágenes (PNG, JPEG, WEBP)",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                },
+                "required": [
+                  "imagenes"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Fotos subidas, devuelve lista de IDs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "example": "42"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          },
+          "400": {
+            "description": "No se enviaron imágenes"
+          }
+        }
+      }
+    },
+    "/api/v1/subastadores": {
+      "get": {
+        "tags": [
+          "subastador-controller"
+        ],
+        "operationId": "getAll",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubastadorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "subastador-controller"
+        ],
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubastadorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubastadorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/seguros": {
       "get": {
         "tags": [
           "seguro-controller"
         ],
-        "operationId": "getAll",
+        "operationId": "getAll_1",
         "responses": {
           "200": {
             "description": "OK",
@@ -287,7 +584,7 @@
         "tags": [
           "seguro-controller"
         ],
-        "operationId": "create",
+        "operationId": "create_1",
         "requestBody": {
           "content": {
             "application/json": {
@@ -317,7 +614,7 @@
         "tags": [
           "sector-controller"
         ],
-        "operationId": "getAll_1",
+        "operationId": "getAll_2",
         "parameters": [
           {
             "name": "pageable",
@@ -345,7 +642,7 @@
         "tags": [
           "sector-controller"
         ],
-        "operationId": "create_1",
+        "operationId": "create_2",
         "requestBody": {
           "content": {
             "application/json": {
@@ -375,7 +672,7 @@
         "tags": [
           "pais-controller"
         ],
-        "operationId": "getAll_2",
+        "operationId": "getAll_3",
         "parameters": [
           {
             "name": "pageable",
@@ -403,7 +700,7 @@
         "tags": [
           "pais-controller"
         ],
-        "operationId": "create_2",
+        "operationId": "create_3",
         "requestBody": {
           "content": {
             "application/json": {
@@ -433,7 +730,7 @@
         "tags": [
           "empleado-controller"
         ],
-        "operationId": "getAll_3",
+        "operationId": "getAll_4",
         "parameters": [
           {
             "name": "pageable",
@@ -461,7 +758,7 @@
         "tags": [
           "empleado-controller"
         ],
-        "operationId": "create_3",
+        "operationId": "create_4",
         "requestBody": {
           "content": {
             "application/json": {
@@ -486,11 +783,192 @@
         }
       }
     },
+    "/api/v1/clientes/{id}/medios-pago/tarjeta": {
+      "post": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Agregar tarjeta de crédito",
+        "description": "Registra una tarjeta de crédito como medio de pago del cliente",
+        "operationId": "addTarjeta",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedioPagoTarjetaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Tarjeta registrada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedioPagoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente no encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedioPagoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clientes/{id}/medios-pago/cuenta": {
+      "post": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Agregar cuenta bancaria",
+        "description": "Registra una cuenta bancaria (local o exterior) como medio de pago del cliente",
+        "operationId": "addCuenta",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedioPagoCuentaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Cuenta registrada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedioPagoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente no encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedioPagoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clientes/{id}/medios-pago/cheque": {
+      "post": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Agregar cheque",
+        "description": "Registra un cheque certificado como medio de pago del cliente",
+        "operationId": "addCheque",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MedioPagoChequeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Cheque registrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedioPagoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente no encontrado"
+          }
+        }
+      }
+    },
     "/api/v1/auth/register": {
       "post": {
         "tags": [
-          "authentication-controller"
+          "Autenticación"
         ],
+        "summary": "Registrar usuario",
+        "description": "Crea un nuevo usuario en el sistema",
         "operationId": "register",
         "requestBody": {
           "content": {
@@ -504,7 +982,17 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Usuario registrado correctamente",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El usuario ya existe",
             "content": {
               "*/*": {
                 "schema": {
@@ -519,8 +1007,10 @@
     "/api/v1/auth/check": {
       "post": {
         "tags": [
-          "authentication-controller"
+          "Autenticación"
         ],
+        "summary": "Verificar disponibilidad de correo",
+        "description": "Verifica si un correo electrónico está disponible para registro",
         "operationId": "check",
         "requestBody": {
           "content": {
@@ -534,14 +1024,10 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthenticationResponse"
-                }
-              }
-            }
+            "description": "Correo disponible"
+          },
+          "409": {
+            "description": "El correo ya está en uso"
           }
         }
       }
@@ -549,8 +1035,10 @@
     "/api/v1/auth/authenticate": {
       "post": {
         "tags": [
-          "authentication-controller"
+          "Autenticación"
         ],
+        "summary": "Autenticar usuario",
+        "description": "Valida credenciales y devuelve el token / categoría del usuario",
         "operationId": "authenticate",
         "requestBody": {
           "content": {
@@ -564,7 +1052,17 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Autenticación exitosa",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales inválidas",
             "content": {
               "*/*": {
                 "schema": {
@@ -576,12 +1074,152 @@
         }
       }
     },
+    "/productos/{id}": {
+      "get": {
+        "tags": [
+          "Productos"
+        ],
+        "summary": "Obtener producto por ID",
+        "description": "Devuelve un producto con sus datos completos, extra y lista de IDs de fotos",
+        "operationId": "obtener",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del producto",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Producto encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductoResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Productos"
+        ],
+        "summary": "Actualizar producto",
+        "description": "Actualiza parcialmente los campos de un producto. Solo para uso interno de la empresa",
+        "operationId": "patch",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del producto",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "description": "Campos a actualizar, solo se pisan los que vienen en el body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductoUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Producto actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductoResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          }
+        }
+      }
+    },
+    "/productos/{id}/habilitacion": {
+      "patch": {
+        "tags": [
+          "Productos"
+        ],
+        "summary": "Actualizar habilitación del producto",
+        "description": "Cambia el estado del bien. Si el estado es 'rechazado', motivoRechazo es obligatorio. Solo para uso interno de la empresa",
+        "operationId": "patchEstado",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del producto",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "description": "Nuevo estado del bien",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductoHabilitacionUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Estado actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "motivoRechazo requerido al rechazar"
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          }
+        }
+      }
+    },
     "/api/v1/sectores/{id}": {
       "get": {
         "tags": [
           "sector-controller"
         ],
-        "operationId": "getById_2",
+        "operationId": "getById_3",
         "parameters": [
           {
             "name": "id",
@@ -610,7 +1248,7 @@
         "tags": [
           "sector-controller"
         ],
-        "operationId": "delete_1",
+        "operationId": "delete_2",
         "parameters": [
           {
             "name": "id",
@@ -632,7 +1270,7 @@
         "tags": [
           "sector-controller"
         ],
-        "operationId": "update_2",
+        "operationId": "update_3",
         "parameters": [
           {
             "name": "id",
@@ -673,7 +1311,7 @@
         "tags": [
           "empleado-controller"
         ],
-        "operationId": "getById_3",
+        "operationId": "getById_4",
         "parameters": [
           {
             "name": "id",
@@ -724,7 +1362,7 @@
         "tags": [
           "empleado-controller"
         ],
-        "operationId": "update_3",
+        "operationId": "update_4",
         "parameters": [
           {
             "name": "id",
@@ -763,8 +1401,10 @@
     "/api/v1/clientes/{id}/multa": {
       "patch": {
         "tags": [
-          "cliente-controller"
+          "Clientes"
         ],
+        "summary": "Asignar multa",
+        "description": "Asigna una multa pendiente al cliente. Inhabilita al cliente hasta que sea saldada",
         "operationId": "asignarMulta",
         "parameters": [
           {
@@ -787,7 +1427,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Multa asignada",
             "content": {
               "*/*": {
                 "schema": {
@@ -795,6 +1435,117 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente no encontrado"
+          }
+        }
+      }
+    },
+    "/api/v1/clientes/{id}/medios-pago/{mpId}/verificar": {
+      "patch": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Verificar medio de pago",
+        "description": "Marca un medio de pago como verificado por la empresa",
+        "operationId": "verificar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "mpId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Medio de pago verificado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedioPagoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente o medio de pago no encontrado"
+          }
+        }
+      }
+    },
+    "/api/v1/clientes/{id}/medios-pago/{mpId}/desactivar": {
+      "patch": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Desactivar medio de pago",
+        "description": "Desactiva un medio de pago, impidiendo su uso en futuras operaciones",
+        "operationId": "desactivar_2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "mpId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Medio de pago desactivado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedioPagoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente o medio de pago no encontrado"
           }
         }
       }
@@ -802,8 +1553,10 @@
     "/api/v1/clientes/{id}/inhabilitar": {
       "patch": {
         "tags": [
-          "cliente-controller"
+          "Clientes"
         ],
+        "summary": "Inhabilitar cliente",
+        "description": "Inhabilita operativamente al cliente para participar en subastas",
         "operationId": "inhabilitar",
         "parameters": [
           {
@@ -818,7 +1571,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Cliente inhabilitado",
             "content": {
               "*/*": {
                 "schema": {
@@ -826,6 +1579,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente no encontrado"
           }
         }
       }
@@ -833,8 +1595,10 @@
     "/api/v1/clientes/{id}/habilitar": {
       "patch": {
         "tags": [
-          "cliente-controller"
+          "Clientes"
         ],
+        "summary": "Habilitar cliente",
+        "description": "Habilita operativamente al cliente para participar en subastas",
         "operationId": "habilitar",
         "parameters": [
           {
@@ -849,7 +1613,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Cliente habilitado",
             "content": {
               "*/*": {
                 "schema": {
@@ -857,6 +1621,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente no encontrado"
           }
         }
       }
@@ -864,8 +1637,10 @@
     "/api/v1/clientes/{id}/categoria": {
       "patch": {
         "tags": [
-          "cliente-controller"
+          "Clientes"
         ],
+        "summary": "Actualizar categoría",
+        "description": "Cambia la categoría del cliente (comun, especial, plata, oro, platino)",
         "operationId": "actualizarCategoria",
         "parameters": [
           {
@@ -888,7 +1663,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Categoría actualizada",
             "content": {
               "*/*": {
                 "schema": {
@@ -896,6 +1671,15 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente no encontrado"
           }
         }
       }
@@ -903,8 +1687,10 @@
     "/api/v1/clientes/{id}/admitir": {
       "patch": {
         "tags": [
-          "cliente-controller"
+          "Clientes"
         ],
+        "summary": "Admitir cliente",
+        "description": "Marca al cliente como admitido para operar en la plataforma",
         "operationId": "admitir",
         "parameters": [
           {
@@ -919,7 +1705,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Cliente admitido",
             "content": {
               "*/*": {
                 "schema": {
@@ -927,6 +1713,100 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente no encontrado"
+          }
+        }
+      }
+    },
+    "/productos/{id}/seguro": {
+      "get": {
+        "tags": [
+          "Productos"
+        ],
+        "summary": "Obtener seguro del producto",
+        "description": "Devuelve el seguro completo si la póliza existe en la tabla de seguros, solo el número si está registrado pero no existe en la tabla, o indica que no tiene seguro",
+        "operationId": "seguro",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del producto",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Seguro encontrado o sin seguro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductoSeguroResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          }
+        }
+      }
+    },
+    "/productos/{id}/fotos/{imgId}/content": {
+      "get": {
+        "tags": [
+          "Productos"
+        ],
+        "summary": "Obtener imagen",
+        "description": "Devuelve el contenido binario de una foto. El Content-Type se detecta automáticamente (PNG, JPEG o WEBP)",
+        "operationId": "fotoContent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID del producto",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          },
+          {
+            "name": "imgId",
+            "in": "path",
+            "description": "ID de la imagen",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 12
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Imagen encontrada",
+            "content": {
+              "image/png": {},
+              "image/jpeg": {},
+              "image/webp": {}
+            }
+          },
+          "404": {
+            "description": "Foto o producto no encontrado"
           }
         }
       }
@@ -936,7 +1816,7 @@
         "tags": [
           "persona-controller"
         ],
-        "operationId": "getAll_4",
+        "operationId": "getAll_5",
         "parameters": [
           {
             "name": "pageable",
@@ -966,7 +1846,7 @@
         "tags": [
           "pais-controller"
         ],
-        "operationId": "getById_4",
+        "operationId": "getById_5",
         "parameters": [
           {
             "name": "id",
@@ -995,7 +1875,7 @@
         "tags": [
           "pais-controller"
         ],
-        "operationId": "delete_2",
+        "operationId": "delete_3",
         "parameters": [
           {
             "name": "id",
@@ -1017,9 +1897,11 @@
     "/api/v1/clientes": {
       "get": {
         "tags": [
-          "cliente-controller"
+          "Clientes"
         ],
-        "operationId": "getAll_5",
+        "summary": "Listar clientes",
+        "description": "Devuelve todos los clientes paginados",
+        "operationId": "getAll_6",
         "parameters": [
           {
             "name": "pageable",
@@ -1032,7 +1914,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Lista paginada de clientes",
             "content": {
               "*/*": {
                 "schema": {
@@ -1040,6 +1922,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
           }
         }
       }
@@ -1047,9 +1935,11 @@
     "/api/v1/clientes/{id}": {
       "get": {
         "tags": [
-          "cliente-controller"
+          "Clientes"
         ],
-        "operationId": "getById_5",
+        "summary": "Obtener cliente por ID",
+        "description": "Devuelve un cliente por su ID",
+        "operationId": "getById_6",
         "parameters": [
           {
             "name": "id",
@@ -1063,7 +1953,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Cliente encontrado",
             "content": {
               "*/*": {
                 "schema": {
@@ -1071,6 +1961,153 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente no encontrado"
+          }
+        }
+      }
+    },
+    "/api/v1/clientes/{id}/medios-pago": {
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Listar medios de pago",
+        "description": "Devuelve todos los medios de pago del cliente",
+        "operationId": "getMediosPago",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de medios de pago",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MedioPagoResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente o medio de pago no encontrado"
+          }
+        }
+      }
+    },
+    "/api/v1/clientes/{id}/medios-pago/{mpId}": {
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Obtener medio de pago",
+        "description": "Devuelve un medio de pago específico del cliente por su ID",
+        "operationId": "getMedioPago",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "mpId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Medio de pago encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedioPagoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente o medio de pago no encontrado"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Eliminar medio de pago",
+        "description": "Elimina definitivamente un medio de pago del cliente",
+        "operationId": "deleteMedioPago",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "mpId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Medio de pago eliminado"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Cliente o medio de pago no encontrado"
           }
         }
       }
@@ -1158,6 +2195,36 @@
   },
   "components": {
     "schemas": {
+      "SubastadorRequest": {
+        "type": "object",
+        "properties": {
+          "identificador": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matricula": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          }
+        }
+      },
+      "SubastadorResponse": {
+        "type": "object",
+        "properties": {
+          "identificador": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matricula": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          }
+        }
+      },
       "SeguroRequest": {
         "type": "object",
         "properties": {
@@ -1241,6 +2308,135 @@
             "type": "string"
           },
           "telefono": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductoRequest": {
+        "type": "object",
+        "description": "Datos del producto en JSON",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "disponible": {
+            "type": "string"
+          },
+          "descripcionCatalogo": {
+            "type": "string"
+          },
+          "descripcionCompleta": {
+            "type": "string"
+          },
+          "declaracionPropiedad": {
+            "type": "boolean"
+          },
+          "esPiezaMultiple": {
+            "type": "boolean"
+          },
+          "cantidadPiezas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "esObraDeArte": {
+            "type": "boolean"
+          },
+          "artista": {
+            "type": "string"
+          },
+          "fechaCreacionObra": {
+            "type": "string",
+            "format": "date"
+          },
+          "historia": {
+            "type": "string"
+          },
+          "deposito": {
+            "type": "string"
+          }
+        }
+      },
+      "EstadoBien": {
+        "type": "string",
+        "enum": [
+          "recibido",
+          "inspeccionado",
+          "aceptado",
+          "rechazado",
+          "en_subasta",
+          "vendido",
+          "devuelto"
+        ]
+      },
+      "ProductoResponse": {
+        "type": "object",
+        "properties": {
+          "identificador": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "disponible": {
+            "type": "string"
+          },
+          "descripcionCatalogo": {
+            "type": "string"
+          },
+          "descripcionCompleta": {
+            "type": "string"
+          },
+          "revisor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "duenio": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "seguro": {
+            "type": "string"
+          },
+          "fotosIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "estadoBien": {
+            "$ref": "#/components/schemas/EstadoBien"
+          },
+          "motivoRechazo": {
+            "type": "string"
+          },
+          "declaracionPropiedad": {
+            "type": "boolean"
+          },
+          "esPiezaMultiple": {
+            "type": "boolean"
+          },
+          "cantidadPiezas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "esObraDeArte": {
+            "type": "boolean"
+          },
+          "artista": {
+            "type": "string"
+          },
+          "fechaCreacionObra": {
+            "type": "string",
+            "format": "date"
+          },
+          "historia": {
+            "type": "string"
+          },
+          "deposito": {
             "type": "string"
           }
         }
@@ -1394,6 +2590,190 @@
           }
         }
       },
+      "MedioPagoTarjetaRequest": {
+        "type": "object",
+        "properties": {
+          "moneda": {
+            "$ref": "#/components/schemas/Moneda"
+          },
+          "titular": {
+            "type": "string"
+          },
+          "ultimos4": {
+            "type": "string"
+          },
+          "marca": {
+            "type": "string"
+          },
+          "vencimiento": {
+            "type": "string"
+          },
+          "esInternacional": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Moneda": {
+        "type": "string",
+        "enum": [
+          "ARS",
+          "USD"
+        ]
+      },
+      "MedioPagoChequeDetail": {
+        "type": "object",
+        "properties": {
+          "nroCheque": {
+            "type": "string"
+          },
+          "banco": {
+            "type": "string"
+          },
+          "montoCertificado": {
+            "type": "number"
+          },
+          "fechaVencimiento": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "MedioPagoCuentaDetail": {
+        "type": "object",
+        "properties": {
+          "titular": {
+            "type": "string"
+          },
+          "banco": {
+            "type": "string"
+          },
+          "cbu": {
+            "type": "string"
+          },
+          "alias": {
+            "type": "string"
+          },
+          "esExterior": {
+            "type": "boolean"
+          },
+          "iban": {
+            "type": "string"
+          },
+          "pais": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MedioPagoResponse": {
+        "type": "object",
+        "properties": {
+          "identificador": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoMedioPago"
+          },
+          "moneda": {
+            "$ref": "#/components/schemas/Moneda"
+          },
+          "verificado": {
+            "type": "boolean"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "cheque": {
+            "$ref": "#/components/schemas/MedioPagoChequeDetail"
+          },
+          "cuenta": {
+            "$ref": "#/components/schemas/MedioPagoCuentaDetail"
+          },
+          "tarjeta": {
+            "$ref": "#/components/schemas/MedioPagoTarjetaDetail"
+          }
+        }
+      },
+      "MedioPagoTarjetaDetail": {
+        "type": "object",
+        "properties": {
+          "titular": {
+            "type": "string"
+          },
+          "ultimos4": {
+            "type": "string"
+          },
+          "marca": {
+            "type": "string"
+          },
+          "vencimiento": {
+            "type": "string"
+          },
+          "esInternacional": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TipoMedioPago": {
+        "type": "string",
+        "enum": [
+          "cheque",
+          "cuenta_bancaria",
+          "tarjeta_credito"
+        ]
+      },
+      "MedioPagoCuentaRequest": {
+        "type": "object",
+        "properties": {
+          "moneda": {
+            "$ref": "#/components/schemas/Moneda"
+          },
+          "titular": {
+            "type": "string"
+          },
+          "banco": {
+            "type": "string"
+          },
+          "cbu": {
+            "type": "string"
+          },
+          "alias": {
+            "type": "string"
+          },
+          "esExterior": {
+            "type": "boolean"
+          },
+          "iban": {
+            "type": "string"
+          },
+          "pais": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MedioPagoChequeRequest": {
+        "type": "object",
+        "properties": {
+          "moneda": {
+            "$ref": "#/components/schemas/Moneda"
+          },
+          "nroCheque": {
+            "type": "string"
+          },
+          "banco": {
+            "type": "string"
+          },
+          "montoCertificado": {
+            "type": "number"
+          },
+          "fechaVencimiento": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
       "RegisterRequest": {
         "type": "object",
         "properties": {
@@ -1451,6 +2831,75 @@
           }
         }
       },
+      "ProductoUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "disponible": {
+            "type": "string"
+          },
+          "descripcionCatalogo": {
+            "type": "string"
+          },
+          "descripcionCompleta": {
+            "type": "string"
+          },
+          "revisor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "declaracionPropiedad": {
+            "type": "boolean"
+          },
+          "esPiezaMultiple": {
+            "type": "boolean"
+          },
+          "cantidadPiezas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "esObraDeArte": {
+            "type": "boolean"
+          },
+          "artista": {
+            "type": "string"
+          },
+          "fechaCreacionObra": {
+            "type": "string",
+            "format": "date"
+          },
+          "historia": {
+            "type": "string"
+          },
+          "deposito": {
+            "type": "string"
+          }
+        }
+      },
+      "ProductoHabilitacionUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "estadoBien": {
+            "$ref": "#/components/schemas/EstadoBien"
+          },
+          "motivoRechazo": {
+            "type": "string"
+          },
+          "revisor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "seguro": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "estadoBien"
+        ]
+      },
       "EmpleadoUpdateRequest": {
         "type": "object",
         "properties": {
@@ -1493,6 +2942,120 @@
           }
         }
       },
+      "PageProductoResponse": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductoResponse"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageableObject": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "paged": {
+            "type": "boolean"
+          },
+          "unpaged": {
+            "type": "boolean"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SortObject": {
+        "type": "object",
+        "properties": {
+          "empty": {
+            "type": "boolean"
+          },
+          "sorted": {
+            "type": "boolean"
+          },
+          "unsorted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ProductoSeguroResponse": {
+        "type": "object",
+        "properties": {
+          "seguroObj": {
+            "$ref": "#/components/schemas/Seguro"
+          },
+          "seguro": {
+            "type": "string"
+          }
+        }
+      },
+      "Seguro": {
+        "type": "object",
+        "properties": {
+          "nroPoliza": {
+            "type": "string"
+          },
+          "compania": {
+            "type": "string"
+          },
+          "polizaCombinada": {
+            "type": "string"
+          },
+          "importe": {
+            "type": "number"
+          }
+        }
+      },
       "Pageable": {
         "type": "object",
         "properties": {
@@ -1517,13 +3080,13 @@
       "PageSectorResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "size": {
             "type": "integer",
@@ -1539,6 +3102,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "first": {
             "type": "boolean"
           },
@@ -1549,53 +3118,7 @@
             "type": "integer",
             "format": "int32"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "empty": {
-            "type": "boolean"
-          }
-        }
-      },
-      "PageableObject": {
-        "type": "object",
-        "properties": {
-          "offset": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "unpaged": {
-            "type": "boolean"
-          },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
-          "paged": {
-            "type": "boolean"
-          }
-        }
-      },
-      "SortObject": {
-        "type": "object",
-        "properties": {
-          "empty": {
-            "type": "boolean"
-          },
-          "unsorted": {
-            "type": "boolean"
-          },
-          "sorted": {
             "type": "boolean"
           }
         }
@@ -1603,13 +3126,13 @@
       "PagePersonaResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "size": {
             "type": "integer",
@@ -1625,6 +3148,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "first": {
             "type": "boolean"
           },
@@ -1635,12 +3164,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "empty": {
             "type": "boolean"
           }
@@ -1649,13 +3172,13 @@
       "PagePaisResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "size": {
             "type": "integer",
@@ -1671,6 +3194,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "first": {
             "type": "boolean"
           },
@@ -1681,12 +3210,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "empty": {
             "type": "boolean"
           }
@@ -1695,13 +3218,13 @@
       "PageEmpleadoResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "size": {
             "type": "integer",
@@ -1717,6 +3240,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "first": {
             "type": "boolean"
           },
@@ -1727,12 +3256,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "empty": {
             "type": "boolean"
           }
@@ -1741,13 +3264,13 @@
       "PageClienteResponse": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "size": {
             "type": "integer",
@@ -1763,6 +3286,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "first": {
             "type": "boolean"
           },
@@ -1772,12 +3301,6 @@
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
