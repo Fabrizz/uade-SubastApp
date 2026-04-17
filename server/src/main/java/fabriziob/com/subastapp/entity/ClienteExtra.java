@@ -16,7 +16,6 @@ import lombok.Data;
 @Entity
 @Table(name = "clientes_extra")
 public class ClienteExtra {
-
     @Id
     @Column(name = "identificador")
     private Integer identificador;
@@ -24,7 +23,7 @@ public class ClienteExtra {
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "identificador")
-    private Cliente cliente; // ← el lado dueño de la relación
+    private Cliente cliente;
 
     @Column(name = "estadooperativo")
     private String estadoOperativo;
