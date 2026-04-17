@@ -17,8 +17,16 @@
   ],
   "tags": [
     {
+      "name": "Subastas",
+      "description": "Gestión de subastas, catálogos y registros"
+    },
+    {
       "name": "Clientes",
       "description": "Gestión de clientes, estado operativo y medios de pago"
+    },
+    {
+      "name": "Subastadores",
+      "description": "Gestión de subastadores"
     },
     {
       "name": "Productos",
@@ -54,23 +62,26 @@
     "/api/v1/subastadores/{id}": {
       "get": {
         "tags": [
-          "subastador-controller"
+          "Subastadores"
         ],
+        "summary": "Obtener subastador por ID",
         "operationId": "getById",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "ID del subastador",
             "required": true,
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
+            },
+            "example": 1
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Subastador encontrado",
             "content": {
               "*/*": {
                 "schema": {
@@ -78,26 +89,40 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Subastador no encontrado"
           }
         }
       },
       "put": {
         "tags": [
-          "subastador-controller"
+          "Subastadores"
         ],
+        "summary": "Actualizar subastador",
+        "description": "Reemplaza completamente los datos de un subastador existente",
         "operationId": "update",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "ID del subastador",
             "required": true,
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
+            },
+            "example": 1
           }
         ],
         "requestBody": {
+          "description": "Nuevos datos del subastador",
           "content": {
             "application/json": {
               "schema": {
@@ -109,7 +134,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Subastador actualizado",
             "content": {
               "*/*": {
                 "schema": {
@@ -117,18 +142,32 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Subastador no encontrado"
           }
         }
       },
       "delete": {
         "tags": [
-          "subastador-controller"
+          "Subastadores"
         ],
+        "summary": "Eliminar subastador",
         "operationId": "delete",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "ID del subastador",
             "required": true,
             "schema": {
               "type": "integer",
@@ -138,7 +177,16 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Subastador eliminado"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Subastador no encontrado"
           }
         }
       }
@@ -507,22 +555,59 @@
         }
       }
     },
-    "/api/v1/subastadores": {
+    "/api/v1/subastas": {
       "get": {
         "tags": [
-          "subastador-controller"
+          "Subastas"
         ],
+        "summary": "Listar subastas",
+        "description": "Devuelve subastas paginadas con filtros opcionales",
         "operationId": "getAll",
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "description": "Filtrar por estado (abierta, cerrada)",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EstadoSubasta"
+            }
+          },
+          {
+            "name": "categoria",
+            "in": "query",
+            "description": "Filtrar por categoría (comun, especial, plata, oro, platino)",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CategoriaSubasta"
+            }
+          },
+          {
+            "name": "fecha",
+            "in": "query",
+            "description": "Filtrar por fecha exacta (yyyy-MM-dd)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Lista de subastas",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SubastadorResponse"
-                  }
+                  "$ref": "#/components/schemas/Page"
                 }
               }
             }
@@ -531,10 +616,393 @@
       },
       "post": {
         "tags": [
-          "subastador-controller"
+          "Subastas"
         ],
+        "summary": "Crear subasta",
         "operationId": "create",
         "requestBody": {
+          "description": "Datos de la subasta",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubastaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Subasta creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubastaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          }
+        }
+      }
+    },
+    "/api/v1/subastas/{id}/registro": {
+      "get": {
+        "tags": [
+          "Subastas"
+        ],
+        "summary": "Obtener registros de la subasta",
+        "description": "Devuelve el resultado final de la subasta con todos los registros de venta",
+        "operationId": "getRegistro",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID de la subasta",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Registros encontrados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegistroDeSubastaResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta no encontrada"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Subastas"
+        ],
+        "summary": "Agregar registro a la subasta",
+        "description": "Registra la venta de un item durante la subasta",
+        "operationId": "addRegistro",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID de la subasta",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "description": "Datos del registro de venta",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistroDeSubastaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Registro creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistroDeSubastaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta no encontrada"
+          }
+        }
+      }
+    },
+    "/api/v1/subastas/{id}/catalogo": {
+      "get": {
+        "tags": [
+          "Subastas"
+        ],
+        "summary": "Obtener catálogo de la subasta",
+        "description": "Devuelve el catálogo con todos sus items",
+        "operationId": "getCatalogo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID de la subasta",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catálogo encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta no encontrada"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Subastas"
+        ],
+        "summary": "Crear catálogo para la subasta",
+        "operationId": "createCatalogo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID de la subasta",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "description": "Datos del catálogo",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Catálogo creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta no encontrada"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Subastas"
+        ],
+        "summary": "Actualizar catálogo",
+        "operationId": "patchCatalogo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID de la subasta",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "description": "Campos a actualizar",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogoPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Catálogo actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta o catálogo no encontrado"
+          }
+        }
+      }
+    },
+    "/api/v1/subastas/{id}/catalogo/items": {
+      "post": {
+        "tags": [
+          "Subastas"
+        ],
+        "summary": "Agregar item al catálogo",
+        "operationId": "addItem",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID de la subasta",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "description": "Datos del item",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemCatalogoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Item agregado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemCatalogoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta no encontrada"
+          }
+        }
+      }
+    },
+    "/api/v1/subastadores": {
+      "get": {
+        "tags": [
+          "Subastadores"
+        ],
+        "summary": "Listar subastadores",
+        "description": "Devuelve todos los subastadores registrados",
+        "operationId": "getAll_1",
+        "responses": {
+          "200": {
+            "description": "Lista de subastadores",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageSubastadorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Subastadores"
+        ],
+        "summary": "Crear subastador",
+        "operationId": "create_1",
+        "requestBody": {
+          "description": "Datos del subastador a crear",
           "content": {
             "application/json": {
               "schema": {
@@ -545,8 +1013,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Subastador creado",
             "content": {
               "*/*": {
                 "schema": {
@@ -554,6 +1022,18 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos para acceder a este recurso"
+          },
+          "404": {
+            "description": "Subastador no encontrado"
           }
         }
       }
@@ -563,7 +1043,7 @@
         "tags": [
           "seguro-controller"
         ],
-        "operationId": "getAll_1",
+        "operationId": "getAll_2",
         "responses": {
           "200": {
             "description": "OK",
@@ -584,7 +1064,7 @@
         "tags": [
           "seguro-controller"
         ],
-        "operationId": "create_1",
+        "operationId": "create_2",
         "requestBody": {
           "content": {
             "application/json": {
@@ -602,64 +1082,6 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/SeguroResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/sectores": {
-      "get": {
-        "tags": [
-          "sector-controller"
-        ],
-        "operationId": "getAll_2",
-        "parameters": [
-          {
-            "name": "pageable",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Pageable"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/PageSectorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "sector-controller"
-        ],
-        "operationId": "create_2",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SectorRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/SectorResponse"
                 }
               }
             }
@@ -718,64 +1140,6 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/PaisResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/empleados": {
-      "get": {
-        "tags": [
-          "empleado-controller"
-        ],
-        "operationId": "getAll_4",
-        "parameters": [
-          {
-            "name": "pageable",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Pageable"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/PageEmpleadoResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "empleado-controller"
-        ],
-        "operationId": "create_4",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/EmpleadoRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/EmpleadoResponse"
                 }
               }
             }
@@ -1214,79 +1578,74 @@
         }
       }
     },
-    "/api/v1/sectores/{id}": {
+    "/api/v1/subastas/{id}": {
       "get": {
         "tags": [
-          "sector-controller"
+          "Subastas"
         ],
+        "summary": "Obtener subasta por ID",
         "operationId": "getById_3",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "ID de la subasta",
             "required": true,
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
+            },
+            "example": 1
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Subasta encontrada",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SectorResponse"
+                  "$ref": "#/components/schemas/SubastaResponse"
                 }
               }
             }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "sector-controller"
-        ],
-        "operationId": "delete_2",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta no encontrada"
           }
         }
       },
       "patch": {
         "tags": [
-          "sector-controller"
+          "Subastas"
         ],
-        "operationId": "update_3",
+        "summary": "Actualizar subasta",
+        "description": "Actualiza parcialmente los campos de una subasta",
+        "operationId": "patch_1",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "ID de la subasta",
             "required": true,
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
+            },
+            "example": 1
           }
         ],
         "requestBody": {
+          "description": "Campos a actualizar",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SectorRequest"
+                "$ref": "#/components/schemas/SubastaPatchRequest"
               }
             }
           },
@@ -1294,91 +1653,276 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Subasta actualizada",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SectorResponse"
+                  "$ref": "#/components/schemas/SubastaResponse"
                 }
               }
             }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta no encontrada"
           }
         }
       }
     },
-    "/api/v1/empleados/{id}": {
-      "get": {
+    "/api/v1/subastas/{id}/estado": {
+      "patch": {
         "tags": [
-          "empleado-controller"
+          "Subastas"
         ],
-        "operationId": "getById_4",
+        "summary": "Cambiar estado de la subasta",
+        "description": "Cambia el estado simple (abierta / cerrada)",
+        "operationId": "cambiarEstado",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "ID de la subasta",
             "required": true,
             "schema": {
               "type": "integer",
               "format": "int32"
+            },
+            "example": 1
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "description": "Nuevo estado",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EstadoSubasta"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Estado actualizado",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EmpleadoResponse"
+                  "$ref": "#/components/schemas/SubastaResponse"
                 }
               }
             }
+          },
+          "400": {
+            "description": "Transición de estado inválida"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta no encontrada"
+          }
+        }
+      }
+    },
+    "/api/v1/subastas/{id}/estado-detallado": {
+      "patch": {
+        "tags": [
+          "Subastas"
+        ],
+        "summary": "Cambiar estado detallado de la subasta",
+        "description": "Avanza el estado detallado (creada → publicada → en_curso → cerrada → finalizada)",
+        "operationId": "cambiarEstadoDetallado",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID de la subasta",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          },
+          {
+            "name": "estadoDetallado",
+            "in": "query",
+            "description": "Nuevo estado detallado",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EstadoDetalladoSubasta"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado detallado actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubastaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Transición de estado inválida"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta no encontrada"
+          }
+        }
+      }
+    },
+    "/api/v1/subastas/{id}/catalogo/items/{idItem}": {
+      "get": {
+        "tags": [
+          "Subastas"
+        ],
+        "summary": "Obtener item del catálogo por ID",
+        "operationId": "getItem",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID de la subasta",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          },
+          {
+            "name": "idItem",
+            "in": "path",
+            "description": "ID del item",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 5
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemCatalogoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta o item no encontrado"
           }
         }
       },
       "delete": {
         "tags": [
-          "empleado-controller"
+          "Subastas"
         ],
-        "operationId": "desactivar_1",
+        "summary": "Eliminar item del catálogo",
+        "operationId": "deleteItem",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "ID de la subasta",
             "required": true,
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
+            },
+            "example": 1
+          },
+          {
+            "name": "idItem",
+            "in": "path",
+            "description": "ID del item",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 5
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "Item eliminado"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta o item no encontrado"
           }
         }
       },
       "patch": {
         "tags": [
-          "empleado-controller"
+          "Subastas"
         ],
-        "operationId": "update_4",
+        "summary": "Actualizar item del catálogo",
+        "operationId": "patchItem",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "ID de la subasta",
             "required": true,
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
+            },
+            "example": 1
+          },
+          {
+            "name": "idItem",
+            "in": "path",
+            "description": "ID del item",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 5
           }
         ],
         "requestBody": {
+          "description": "Campos a actualizar",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EmpleadoUpdateRequest"
+                "$ref": "#/components/schemas/ItemCatalogoPatchRequest"
               }
             }
           },
@@ -1386,14 +1930,26 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Item actualizado",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EmpleadoResponse"
+                  "$ref": "#/components/schemas/ItemCatalogoResponse"
                 }
               }
             }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta o item no encontrado"
           }
         }
       }
@@ -1506,7 +2062,7 @@
         ],
         "summary": "Desactivar medio de pago",
         "description": "Desactiva un medio de pago, impidiendo su uso en futuras operaciones",
-        "operationId": "desactivar_2",
+        "operationId": "desactivar_1",
         "parameters": [
           {
             "name": "id",
@@ -1816,7 +2372,7 @@
         "tags": [
           "persona-controller"
         ],
-        "operationId": "getAll_5",
+        "operationId": "getAll_4",
         "parameters": [
           {
             "name": "pageable",
@@ -1846,7 +2402,7 @@
         "tags": [
           "pais-controller"
         ],
-        "operationId": "getById_5",
+        "operationId": "getById_4",
         "parameters": [
           {
             "name": "id",
@@ -1875,7 +2431,7 @@
         "tags": [
           "pais-controller"
         ],
-        "operationId": "delete_3",
+        "operationId": "delete_2",
         "parameters": [
           {
             "name": "id",
@@ -1901,7 +2457,7 @@
         ],
         "summary": "Listar clientes",
         "description": "Devuelve todos los clientes paginados",
-        "operationId": "getAll_6",
+        "operationId": "getAll_5",
         "parameters": [
           {
             "name": "pageable",
@@ -1939,7 +2495,7 @@
         ],
         "summary": "Obtener cliente por ID",
         "description": "Devuelve un cliente por su ID",
-        "operationId": "getById_6",
+        "operationId": "getById_5",
         "parameters": [
           {
             "name": "id",
@@ -2441,40 +2997,280 @@
           }
         }
       },
-      "SectorRequest": {
+      "CategoriaSubasta": {
+        "type": "string",
+        "enum": [
+          "comun",
+          "especial",
+          "plata",
+          "oro",
+          "platino"
+        ]
+      },
+      "Moneda": {
+        "type": "string",
+        "enum": [
+          "ARS",
+          "USD"
+        ]
+      },
+      "SubastaRequest": {
         "type": "object",
         "properties": {
-          "nombreSector": {
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "hora": {
             "type": "string"
           },
-          "codigoSector": {
-            "type": "string"
-          },
-          "responsableSector": {
+          "subastadorId": {
             "type": "integer",
             "format": "int32"
+          },
+          "ubicacion": {
+            "type": "string"
+          },
+          "capacidadAsistentes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tieneDeposito": {
+            "type": "string"
+          },
+          "seguridadPropia": {
+            "type": "string"
+          },
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaSubasta"
+          },
+          "moneda": {
+            "$ref": "#/components/schemas/Moneda"
+          },
+          "esColeccion": {
+            "type": "boolean"
+          },
+          "nombreColeccion": {
+            "type": "string"
           }
         }
       },
-      "SectorResponse": {
+      "EstadoDetalladoSubasta": {
+        "type": "string",
+        "enum": [
+          "creada",
+          "publicada",
+          "en_curso",
+          "cerrada",
+          "finalizada"
+        ]
+      },
+      "EstadoSubasta": {
+        "type": "string",
+        "enum": [
+          "abierta",
+          "cerrada"
+        ]
+      },
+      "SubastaResponse": {
         "type": "object",
         "properties": {
           "identificador": {
             "type": "integer",
             "format": "int32"
           },
-          "nombreSector": {
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "hora": {
             "type": "string"
           },
-          "codigoSector": {
-            "type": "string"
+          "estado": {
+            "$ref": "#/components/schemas/EstadoSubasta"
           },
-          "responsableSectorId": {
+          "subastadorId": {
             "type": "integer",
             "format": "int32"
           },
-          "responsableSectorNombre": {
+          "subastadorNombre": {
             "type": "string"
+          },
+          "ubicacion": {
+            "type": "string"
+          },
+          "capacidadAsistentes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tieneDeposito": {
+            "type": "string"
+          },
+          "seguridadPropia": {
+            "type": "string"
+          },
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaSubasta"
+          },
+          "moneda": {
+            "$ref": "#/components/schemas/Moneda"
+          },
+          "estadoDetallado": {
+            "$ref": "#/components/schemas/EstadoDetalladoSubasta"
+          },
+          "esColeccion": {
+            "type": "boolean"
+          },
+          "nombreColeccion": {
+            "type": "string"
+          }
+        }
+      },
+      "RegistroDeSubastaRequest": {
+        "type": "object",
+        "properties": {
+          "duenioId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "productoId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "clienteId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "importe": {
+            "type": "number"
+          },
+          "comision": {
+            "type": "number"
+          }
+        }
+      },
+      "RegistroDeSubastaResponse": {
+        "type": "object",
+        "properties": {
+          "identificador": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "subastaId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "duenioId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "duenioNombre": {
+            "type": "string"
+          },
+          "productoId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "productoDescripcion": {
+            "type": "string"
+          },
+          "clienteId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "clienteNombre": {
+            "type": "string"
+          },
+          "importe": {
+            "type": "number"
+          },
+          "comision": {
+            "type": "number"
+          }
+        }
+      },
+      "CatalogoRequest": {
+        "type": "object",
+        "properties": {
+          "descripcion": {
+            "type": "string"
+          },
+          "responsableId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CatalogoResponse": {
+        "type": "object",
+        "properties": {
+          "identificador": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "subastaId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "responsableId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "responsableNombre": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemCatalogoResponse"
+            }
+          }
+        }
+      },
+      "ItemCatalogoResponse": {
+        "type": "object",
+        "properties": {
+          "identificador": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "catalogoId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "productoId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "productoDescripcion": {
+            "type": "string"
+          },
+          "precioBase": {
+            "type": "number"
+          },
+          "comision": {
+            "type": "number"
+          },
+          "subastado": {
+            "type": "string"
+          }
+        }
+      },
+      "ItemCatalogoRequest": {
+        "type": "object",
+        "properties": {
+          "productoId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "precioBase": {
+            "type": "number"
+          },
+          "comision": {
+            "type": "number"
           }
         }
       },
@@ -2526,70 +3322,6 @@
           }
         }
       },
-      "EmpleadoRequest": {
-        "type": "object",
-        "properties": {
-          "nombre": {
-            "type": "string"
-          },
-          "documento": {
-            "type": "string"
-          },
-          "direccion": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "telefono": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
-          },
-          "cargo": {
-            "type": "string"
-          },
-          "sector": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "EmpleadoResponse": {
-        "type": "object",
-        "properties": {
-          "identificador": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "nombre": {
-            "type": "string"
-          },
-          "documento": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "telefono": {
-            "type": "string"
-          },
-          "cargo": {
-            "type": "string"
-          },
-          "estado": {
-            "type": "string"
-          },
-          "sectorId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sectorNombre": {
-            "type": "string"
-          }
-        }
-      },
       "MedioPagoTarjetaRequest": {
         "type": "object",
         "properties": {
@@ -2612,13 +3344,6 @@
             "type": "boolean"
           }
         }
-      },
-      "Moneda": {
-        "type": "string",
-        "enum": [
-          "ARS",
-          "USD"
-        ]
       },
       "MedioPagoChequeDetail": {
         "type": "object",
@@ -2900,15 +3625,70 @@
           "estadoBien"
         ]
       },
-      "EmpleadoUpdateRequest": {
+      "SubastaPatchRequest": {
         "type": "object",
         "properties": {
-          "cargo": {
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "hora": {
             "type": "string"
           },
-          "sector": {
+          "subastadorId": {
             "type": "integer",
             "format": "int32"
+          },
+          "ubicacion": {
+            "type": "string"
+          },
+          "capacidadAsistentes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tieneDeposito": {
+            "type": "string"
+          },
+          "seguridadPropia": {
+            "type": "string"
+          },
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaSubasta"
+          },
+          "moneda": {
+            "$ref": "#/components/schemas/Moneda"
+          },
+          "esColeccion": {
+            "type": "boolean"
+          },
+          "nombreColeccion": {
+            "type": "string"
+          }
+        }
+      },
+      "CatalogoPatchRequest": {
+        "type": "object",
+        "properties": {
+          "descripcion": {
+            "type": "string"
+          },
+          "responsableId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ItemCatalogoPatchRequest": {
+        "type": "object",
+        "properties": {
+          "precioBase": {
+            "type": "number"
+          },
+          "comision": {
+            "type": "number"
+          },
+          "subastado": {
+            "type": "string"
           }
         }
       },
@@ -2967,12 +3747,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "first": {
             "type": "boolean"
           },
@@ -2982,6 +3756,12 @@
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -3001,16 +3781,16 @@
           "paged": {
             "type": "boolean"
           },
-          "unpaged": {
-            "type": "boolean"
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
           },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
           },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
+          "unpaged": {
+            "type": "boolean"
           }
         }
       },
@@ -3020,10 +3800,10 @@
           "empty": {
             "type": "boolean"
           },
-          "sorted": {
+          "unsorted": {
             "type": "boolean"
           },
-          "unsorted": {
+          "sorted": {
             "type": "boolean"
           }
         }
@@ -3077,7 +3857,51 @@
           }
         }
       },
-      "PageSectorResponse": {
+      "Page": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {}
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageSubastadorResponse": {
         "type": "object",
         "properties": {
           "totalPages": {
@@ -3095,18 +3919,12 @@
           "content": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SectorResponse"
+              "$ref": "#/components/schemas/SubastadorResponse"
             }
           },
           "number": {
             "type": "integer",
             "format": "int32"
-          },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "first": {
             "type": "boolean"
@@ -3117,6 +3935,12 @@
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -3148,12 +3972,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "first": {
             "type": "boolean"
           },
@@ -3163,6 +3981,12 @@
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -3194,12 +4018,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "first": {
             "type": "boolean"
           },
@@ -3210,51 +4028,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "empty": {
-            "type": "boolean"
-          }
-        }
-      },
-      "PageEmpleadoResponse": {
-        "type": "object",
-        "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EmpleadoResponse"
-            }
-          },
-          "number": {
-            "type": "integer",
-            "format": "int32"
-          },
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
           },
           "empty": {
             "type": "boolean"
@@ -3286,12 +4064,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "first": {
             "type": "boolean"
           },
@@ -3301,6 +4073,12 @@
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"

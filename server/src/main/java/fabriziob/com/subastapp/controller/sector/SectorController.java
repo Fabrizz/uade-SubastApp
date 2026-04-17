@@ -16,8 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import fabriziob.com.subastapp.entity.Sector;
 import fabriziob.com.subastapp.service.SectorService;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 
+@Hidden
 @RestController
 @RequestMapping("/api/v1/sectores")
 @RequiredArgsConstructor

@@ -48,8 +48,9 @@ public class Producto {
     @Column(name = "revisor", nullable = false)
     private Integer revisor;
 
-    @Column(name = "duenio", nullable = false)
-    private Integer duenio;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "duenio", nullable = false)
+    private Duenio duenio;
 
     @Column(name = "seguro", length = 30)
     private String seguro;
