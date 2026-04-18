@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 
 import fabriziob.com.subastapp.entity.Persona;
 import fabriziob.com.subastapp.entity.PersonaExtra;
+import fabriziob.com.subastapp.entity.enums.EstadoPersona;
 import fabriziob.com.subastapp.repository.PersonaExtraRepository;
 import fabriziob.com.subastapp.repository.UserRepository;
 
@@ -44,7 +45,7 @@ public class PersonaService {
 
     public void desactivar(Integer id) {
         Persona persona = findById(id);
-        persona.setEstado(Persona.EstadoPersona.INACTIVO);
+        persona.setEstado(EstadoPersona.inactivo);
         userRepository.save(persona);
     }
 }

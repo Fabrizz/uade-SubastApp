@@ -13,4 +13,5 @@ public class PersonaResponse {
     private String estado;
     private String email;
     private String telefono;
+    private String categoria;
 }

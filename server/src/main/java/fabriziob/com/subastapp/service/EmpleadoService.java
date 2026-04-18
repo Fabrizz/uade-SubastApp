@@ -11,6 +11,7 @@ import fabriziob.com.subastapp.controller.empleado.EmpleadoUpdateRequest;
 import fabriziob.com.subastapp.entity.Empleado;
 import fabriziob.com.subastapp.entity.Persona;
 import fabriziob.com.subastapp.entity.PersonaExtra;
+import fabriziob.com.subastapp.entity.enums.EstadoPersona;
 import fabriziob.com.subastapp.repository.EmpleadoRepository;
 import fabriziob.com.subastapp.repository.PersonaExtraRepository;
 import fabriziob.com.subastapp.repository.SectorRepository;
@@ -48,7 +49,7 @@ public class EmpleadoService {
                 .nombre(request.getNombre())
                 .documento(request.getDocumento())
                 .direccion(request.getDireccion())
-                .estado(Persona.EstadoPersona.ACTIVO)
+                .estado(EstadoPersona.activo)
                 .build();
         persona = userRepository.save(persona);
 
@@ -86,7 +87,7 @@ public class EmpleadoService {
 
     public void desactivar(Integer id) {
         Empleado empleado = findById(id);
-        empleado.getPersona().setEstado(Persona.EstadoPersona.INACTIVO);
+        empleado.getPersona().setEstado(EstadoPersona.inactivo);
         userRepository.save(empleado.getPersona());
     }
 }

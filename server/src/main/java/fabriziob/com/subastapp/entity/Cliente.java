@@ -2,9 +2,13 @@ package fabriziob.com.subastapp.entity;
 
 import java.util.List;
 
+import fabriziob.com.subastapp.entity.enums.ClienteCategoria;
+import fabriziob.com.subastapp.entity.enums.EstadoPersona;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -38,8 +42,9 @@ public class Cliente {
     @Column(name = "admitido", length = 2)
     private String admitido; // 'si' / 'no'
 
-    @Column(name = "categoria", length = 10)
-    private String categoria; // 'comun','especial','plata','oro','platino'
+    @Enumerated(EnumType.STRING)
+    @Column(name = "categoria", length = 15)
+    private ClienteCategoria categoria;
 
     // -------------------------------------------------------
     // Relaciones

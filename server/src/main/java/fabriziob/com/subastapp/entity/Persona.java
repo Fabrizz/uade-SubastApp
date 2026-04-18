@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import fabriziob.com.subastapp.entity.enums.EstadoPersona;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -50,10 +51,6 @@ public class Persona implements UserDetails {
     @Column(name = "estado", length = 15)
     private EstadoPersona estado;
 
-    public enum EstadoPersona {
-        ACTIVO, INACTIVO
-    }
-
     @Column(name = "foto")
     private byte[] foto;
 
@@ -81,12 +78,17 @@ public class Persona implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (cliente == null)
             return List.of();
-        return List.of(new SimpleGrantedAuthority("ROLE_" + cliente.getCategoria().toUpperCase()));
+        return List.of(
+                new SimpleGrantedAuthority("ROLE_" + cliente.getCategoria().name().toUpperCase()),
+                new SimpleGrantedAuthority("ROLE_ADMITIDO_" + cliente.getAdmitido().toUpperCase()),
+                new SimpleGrantedAuthority("ROLE_ESTADO_" + (cliente.getClienteExtra() != null
+                        ? cliente.getClienteExtra().getEstadoOperativo().toUpperCase()
+                        : "SIN_ESTADO")));
     }
 
     @Override
     public boolean isEnabled() {
-        boolean personaActiva = EstadoPersona.ACTIVO.equals(estado);
+        boolean personaActiva = EstadoPersona.activo.equals(estado);
         boolean clienteHabilitado = cliente == null
                 || cliente.getClienteExtra() == null
                 || !"inhabilitado".equals(cliente.getClienteExtra().getEstadoOperativo());
