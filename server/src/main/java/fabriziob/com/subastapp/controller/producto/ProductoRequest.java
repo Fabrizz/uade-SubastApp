@@ -18,6 +18,7 @@ public class ProductoRequest {
     // campos de productos_extra
     // private EstadoBien estadoBien;
     // private String motivoRechazo;
+    private String titulo;
     private Boolean declaracionPropiedad;
     private Boolean esPiezaMultiple;
     private Integer cantidadPiezas;

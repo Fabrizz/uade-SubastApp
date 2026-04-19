@@ -2,8 +2,11 @@ package fabriziob.com.subastapp.entity;
 
 import java.math.BigDecimal;
 
+import fabriziob.com.subastapp.entity.enums.EstadoAceptacionItem;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -45,4 +48,9 @@ public class ItemCatalogo {
 
     @Column(name = "subastado", length = 2)
     private String subastado;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estadoaceptacion", nullable = false, length = 15)
+    private EstadoAceptacionItem estadoAceptacion = EstadoAceptacionItem.espera;
 }

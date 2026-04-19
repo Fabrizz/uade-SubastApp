@@ -8,6 +8,7 @@ import lombok.Data;
 public class ProductoUpdateRequest {
     private LocalDate fecha;
     private String disponible;
+    private String titulo;
     private String descripcionCatalogo;
     private String descripcionCompleta;
     private Integer revisor;

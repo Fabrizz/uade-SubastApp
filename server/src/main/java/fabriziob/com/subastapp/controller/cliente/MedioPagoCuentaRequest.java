@@ -1,5 +1,6 @@
 package fabriziob.com.subastapp.controller.cliente;
 
+import fabriziob.com.subastapp.entity.enums.CajaAhorroTipoCuenta;
 import fabriziob.com.subastapp.entity.enums.Moneda;
 import lombok.Data;
 
@@ -13,4 +14,5 @@ public class MedioPagoCuentaRequest {
     private Boolean esExterior;
     private String iban;
     private Integer pais;
+    private CajaAhorroTipoCuenta tipoDeCuenta;
 }

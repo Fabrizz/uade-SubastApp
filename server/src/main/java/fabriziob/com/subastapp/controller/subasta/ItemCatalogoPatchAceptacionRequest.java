@@ -1,14 +1,10 @@
 package fabriziob.com.subastapp.controller.subasta;
 
-import java.math.BigDecimal;
-
 import fabriziob.com.subastapp.entity.enums.EstadoAceptacionItem;
 import lombok.Data;
 
 @Data
-public class ItemCatalogoPatchRequest {
-    private BigDecimal precioBase;
-    private BigDecimal comision;
-    private String subastado;
+public class ItemCatalogoPatchAceptacionRequest {
+
     private EstadoAceptacionItem estadoAceptacion;
 }

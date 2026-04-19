@@ -196,6 +196,22 @@ public class SubastaController {
                 return null;
         }
 
+        @Operation(summary = "Aceptar o rechazar item del catálogo", description = "Actualiza el estado de aceptación del item (aceptado / rechazado)")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "201", description = "Estado de aceptación actualizado"),
+                        @ApiResponse(responseCode = "400", description = "Datos inválidos", content = @Content),
+                        @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Subasta no encontrada", content = @Content)
+        })
+        @PostMapping("/{id}/catalogo/items/{idItem}/aceptacion")
+        public ResponseEntity<ItemCatalogoResponse> setAceptacion(
+                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
+                        @Parameter(description = "ID del item", required = true, example = "5") @PathVariable Integer idItem,
+                        @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Datos del item", required = true) @RequestBody ItemCatalogoPatchAceptacionRequest request) {
+                return null;
+        }
+
         @Operation(summary = "Agregar item al catálogo")
         @ApiResponses({
                         @ApiResponse(responseCode = "201", description = "Item agregado"),

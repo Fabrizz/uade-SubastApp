@@ -1144,6 +1144,75 @@
         }
       }
     },
+    "/api/v1/subastas/{id}/catalogo/items/{idItem}/aceptacion": {
+      "post": {
+        "tags": [
+          "Subastas"
+        ],
+        "summary": "Aceptar o rechazar item del catálogo",
+        "description": "Actualiza el estado de aceptación del item (aceptado / rechazado)",
+        "operationId": "setAceptacion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID de la subasta",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 1
+          },
+          {
+            "name": "idItem",
+            "in": "path",
+            "description": "ID del item",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "example": 5
+          }
+        ],
+        "requestBody": {
+          "description": "Datos del item",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemCatalogoPatchAceptacionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Estado de aceptación actualizado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemCatalogoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "401": {
+            "description": "No autenticado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Subasta no encontrada"
+          }
+        }
+      }
+    },
     "/api/v1/subastas/{id}/asistentes": {
       "get": {
         "tags": [
@@ -4784,6 +4853,9 @@
           "descripcionCompleta": {
             "type": "string"
           },
+          "titulo": {
+            "type": "string"
+          },
           "declaracionPropiedad": {
             "type": "boolean"
           },
@@ -4836,6 +4908,9 @@
             "format": "date"
           },
           "disponible": {
+            "type": "string"
+          },
+          "titulo": {
             "type": "string"
           },
           "descripcionCatalogo": {
@@ -4957,6 +5032,7 @@
       "EstadoDetalladoSubasta": {
         "type": "string",
         "enum": [
+          "en_espera",
           "creada",
           "publicada",
           "en_curso",
@@ -5198,6 +5274,14 @@
           }
         }
       },
+      "EstadoAceptacionItem": {
+        "type": "string",
+        "enum": [
+          "espera",
+          "rechazado",
+          "aceptado"
+        ]
+      },
       "ItemCatalogoResponse": {
         "type": "object",
         "properties": {
@@ -5224,6 +5308,9 @@
           },
           "subastado": {
             "type": "string"
+          },
+          "estadoAceptacion": {
+            "$ref": "#/components/schemas/EstadoAceptacionItem"
           }
         }
       },
@@ -5288,6 +5375,14 @@
           },
           "ganador": {
             "type": "string"
+          }
+        }
+      },
+      "ItemCatalogoPatchAceptacionRequest": {
+        "type": "object",
+        "properties": {
+          "estadoAceptacion": {
+            "$ref": "#/components/schemas/EstadoAceptacionItem"
           }
         }
       },
@@ -5554,6 +5649,13 @@
           }
         }
       },
+      "CajaAhorroTipoCuenta": {
+        "type": "string",
+        "enum": [
+          "caja_ahorro",
+          "cuenta_corriente"
+        ]
+      },
       "MedioPagoChequeDetail": {
         "type": "object",
         "properties": {
@@ -5596,6 +5698,9 @@
           "pais": {
             "type": "integer",
             "format": "int32"
+          },
+          "tipoDeCuenta": {
+            "$ref": "#/components/schemas/CajaAhorroTipoCuenta"
           }
         }
       },
@@ -5684,6 +5789,9 @@
           "pais": {
             "type": "integer",
             "format": "int32"
+          },
+          "tipoDeCuenta": {
+            "$ref": "#/components/schemas/CajaAhorroTipoCuenta"
           }
         }
       },
@@ -5730,6 +5838,9 @@
           },
           "categoria": {
             "type": "string"
+          },
+          "habilitado": {
+            "type": "boolean"
           }
         }
       },
@@ -5795,6 +5906,9 @@
             "format": "date"
           },
           "disponible": {
+            "type": "string"
+          },
+          "titulo": {
             "type": "string"
           },
           "descripcionCatalogo": {
@@ -5938,6 +6052,9 @@
           },
           "subastado": {
             "type": "string"
+          },
+          "estadoAceptacion": {
+            "$ref": "#/components/schemas/EstadoAceptacionItem"
           }
         }
       },
@@ -6079,11 +6196,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -6097,12 +6214,6 @@
             "type": "integer",
             "format": "int64"
           },
-          "paged": {
-            "type": "boolean"
-          },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "unpaged": {
             "type": "boolean"
           },
@@ -6113,6 +6224,12 @@
           "pageNumber": {
             "type": "integer",
             "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "paged": {
+            "type": "boolean"
           }
         }
       },
@@ -6214,11 +6331,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -6260,11 +6377,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -6306,11 +6423,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -6352,11 +6469,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -6398,11 +6515,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -6444,11 +6561,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -6490,11 +6607,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -6560,11 +6677,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -6717,11 +6834,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -6763,11 +6880,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -6809,11 +6926,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"
@@ -6855,11 +6972,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "pageable": {
             "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
           },
           "empty": {
             "type": "boolean"

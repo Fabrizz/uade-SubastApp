@@ -13,6 +13,7 @@ public class ProductoResponse {
     private Integer identificador;
     private LocalDate fecha;
     private String disponible;
+    private String titulo;
     private String descripcionCatalogo;
     private String descripcionCompleta;
     private Integer revisor;

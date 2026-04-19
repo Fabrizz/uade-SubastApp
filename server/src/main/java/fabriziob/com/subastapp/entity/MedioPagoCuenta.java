@@ -1,7 +1,11 @@
 package fabriziob.com.subastapp.entity;
 
+import fabriziob.com.subastapp.entity.enums.CajaAhorroTipoCuenta;
+import fabriziob.com.subastapp.entity.enums.EstadoAceptacionItem;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
@@ -50,4 +54,9 @@ public class MedioPagoCuenta {
 
     @Column(name = "pais")
     private Integer pais;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipodecuenta", nullable = false, length = 15)
+    private CajaAhorroTipoCuenta tipoDeCuenta = CajaAhorroTipoCuenta.caja_ahorro;
 }

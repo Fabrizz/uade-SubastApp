@@ -2,6 +2,7 @@ package fabriziob.com.subastapp.controller.subasta;
 
 import java.math.BigDecimal;
 
+import fabriziob.com.subastapp.entity.enums.EstadoAceptacionItem;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,4 +20,5 @@ public class ItemCatalogoResponse {
     private BigDecimal precioBase;
     private BigDecimal comision;
     private String subastado;
+    private EstadoAceptacionItem estadoAceptacion;
 }

@@ -60,6 +60,9 @@ public class ProductoExtra {
     @Column(name = "artista", length = 200)
     private String artista;
 
+    @Column(name = "titulo", length = 200)
+    private String titulo;
+
     @Column(name = "fechacreacionobra")
     private LocalDate fechaCreacionObra;
 
