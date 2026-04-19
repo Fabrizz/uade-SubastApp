@@ -1798,12 +1798,74 @@
               }
             }
           },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "El usuario ya existe",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AuthenticationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/pre-register": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Pre-registro de usuario",
+        "description": "Primera etapa del registro. Crea el usuario con estado pendiente\ny devuelve una contraseña temporal de un solo uso que se envía\npor mail. El usuario debe completar el registro con /register\nusando esa contraseña y generando la definitiva.\n",
+        "operationId": "preRegister",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreRegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Pre-registro exitoso, mail enviado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreRegisterResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreRegisterResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El email ya está registrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreRegisterResponse"
                 }
               }
             }
@@ -1860,6 +1922,16 @@
         "responses": {
           "200": {
             "description": "Autenticación exitosa",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
             "content": {
               "*/*": {
                 "schema": {
@@ -5639,6 +5711,31 @@
       "RegisterRequest": {
         "type": "object",
         "properties": {
+          "email": {
+            "type": "string"
+          },
+          "temporaryPassword": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "AuthenticationResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "categoria": {
+            "type": "string"
+          }
+        }
+      },
+      "PreRegisterRequest": {
+        "type": "object",
+        "properties": {
           "nombre": {
             "type": "string"
           },
@@ -5654,22 +5751,19 @@
           "telefono": {
             "type": "string"
           },
-          "password": {
-            "type": "string"
-          },
           "numeroPais": {
             "type": "integer",
             "format": "int32"
           }
         }
       },
-      "AuthenticationResponse": {
+      "PreRegisterResponse": {
         "type": "object",
         "properties": {
-          "accessToken": {
+          "email": {
             "type": "string"
           },
-          "categoria": {
+          "temporaryPassword": {
             "type": "string"
           }
         }
