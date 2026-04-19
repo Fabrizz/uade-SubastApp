@@ -26,8 +26,14 @@ public class Duenio {
     @Column(name = "identificador")
     private Integer identificador;
 
-    @Column(name = "numeropais")
-    private Integer numeroPais;
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "identificador")
+    private Persona persona;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "numeropais", nullable = true)
+    private Pais pais;
 
     @Column(name = "verificacionfinanciera", length = 2)
     private String verificacionFinanciera;
@@ -38,20 +44,7 @@ public class Duenio {
     @Column(name = "calificacionriesgo")
     private Integer calificacionRiesgo;
 
-    @Column(name = "verificador")
-    private Integer verificador;
-
-    // Navegación
-    @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "identificador")
-    private Persona persona;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "numeropais", insertable = false, updatable = false)
-    private Pais pais;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "verificador", insertable = false, updatable = false)
-    private Empleado empleadoVerificador;
+    @JoinColumn(name = "verificador", nullable = false)
+    private Empleado verificador;
 }

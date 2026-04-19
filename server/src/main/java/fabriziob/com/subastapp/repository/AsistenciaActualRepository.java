@@ -27,4 +27,16 @@ public interface AsistenciaActualRepository extends JpaRepository<AsistenciaActu
             AND a.estado = 'activo'
             """)
     List<AsistenciaActual> findActivosBySubastaId(@Param("subastaId") Integer subastaId);
+
+    @Query("""
+            SELECT a FROM AsistenciaActual a
+            LEFT JOIN FETCH a.asistente ast
+            LEFT JOIN FETCH ast.cliente
+            WHERE ast.subasta.identificador = :subastaId
+            AND ast.cliente.identificador   = :clienteId
+            AND a.estado = 'activo'
+            """)
+    Optional<AsistenciaActual> findActivaBySubastaIdAndClienteId(
+            @Param("subastaId") Integer subastaId,
+            @Param("clienteId") Integer clienteId);
 }

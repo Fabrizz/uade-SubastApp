@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import fabriziob.com.subastapp.entity.enums.CategoriaSubasta;
 import fabriziob.com.subastapp.entity.enums.EstadoDetalladoSubasta;
+import fabriziob.com.subastapp.entity.enums.EstadoPagoDuenio;
 import fabriziob.com.subastapp.entity.enums.EstadoSubasta;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -176,7 +177,7 @@ public class SubastaController {
                         @ApiResponse(responseCode = "404", description = "Subasta o catálogo no encontrado", content = @Content)
         })
         @GetMapping("/{id}/catalogo/items")
-        public ResponseEntity<List<ItemCatalogoResponse>> getItems(
+        public ResponseEntity<Page<ItemCatalogoResponse>> getItems(
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id) {
                 return null;
         }
@@ -250,7 +251,7 @@ public class SubastaController {
                         @ApiResponse(responseCode = "404", description = "Subasta no encontrada", content = @Content)
         })
         @GetMapping("/{id}/asistentes")
-        public ResponseEntity<List<AsistenteResponse>> getAsistentes(
+        public ResponseEntity<Page<AsistenteResponse>> getAsistentes(
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id) {
                 return null;
         }
@@ -270,6 +271,20 @@ public class SubastaController {
                 return null;
         }
 
+        @Operation(summary = "Obtener asistencia activa de un cliente", description = "Devuelve la asistencia activa actual del cliente en la subasta")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Asistencia activa encontrada"),
+                        @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Subasta, cliente o asistencia activa no encontrada", content = @Content)
+        })
+        @GetMapping("/{id}/asistentes/{idCliente}")
+        public ResponseEntity<AsistenteResponse> getAsistenciaActiva(
+                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
+                        @Parameter(description = "ID del cliente", required = true, example = "3") @PathVariable Integer idCliente) {
+                return null;
+        }
+
         @Operation(summary = "Abandonar la subasta", description = "Marca al asistente como finalizado y registra su hora de salida")
         @ApiResponses({
                         @ApiResponse(responseCode = "204", description = "Asistente removido", content = @Content),
@@ -286,7 +301,7 @@ public class SubastaController {
 
         // ── Registro ──────────────────────────────────────────────────────────
 
-        @Operation(summary = "Obtener registros de la subasta", description = "Devuelve el resultado final de la subasta con todos los registros de venta")
+        @Operation(summary = "Obtener registros de la subasta", description = "Devuelve el resultado final de la subasta con todos los registros de venta y sus datos extra (estado de pago, envío, cuenta de cobro)")
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "Registros encontrados"),
                         @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
@@ -294,12 +309,26 @@ public class SubastaController {
                         @ApiResponse(responseCode = "404", description = "Subasta no encontrada", content = @Content)
         })
         @GetMapping("/{id}/registro")
-        public ResponseEntity<List<RegistroDeSubastaResponse>> getRegistro(
+        public ResponseEntity<Page<RegistroDeSubastaResponse>> getRegistro(
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id) {
                 return null;
         }
 
-        @Operation(summary = "Agregar registro a la subasta", description = "Registra la venta de un item durante la subasta")
+        @Operation(summary = "Obtener registro por ID", description = "Devuelve un registro de venta específico con sus datos extra")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Registro encontrado"),
+                        @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Subasta o registro no encontrado", content = @Content)
+        })
+        @GetMapping("/{id}/registro/{idRegistro}")
+        public ResponseEntity<RegistroDeSubastaResponse> getRegistroById(
+                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
+                        @Parameter(description = "ID del registro", required = true, example = "3") @PathVariable Integer idRegistro) {
+                return null;
+        }
+
+        @Operation(summary = "Agregar registro a la subasta", description = "Registra la venta de un item durante la subasta, incluyendo datos de envío y cuenta de cobro del dueño")
         @ApiResponses({
                         @ApiResponse(responseCode = "201", description = "Registro creado"),
                         @ApiResponse(responseCode = "400", description = "Datos inválidos", content = @Content),
@@ -310,7 +339,100 @@ public class SubastaController {
         @PostMapping("/{id}/registro")
         public ResponseEntity<RegistroDeSubastaResponse> addRegistro(
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
-                        @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Datos del registro de venta", required = true) @RequestBody RegistroDeSubastaRequest request) {
+                        @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Datos del registro de venta e información de envío y cobro", required = true) @RequestBody RegistroDeSubastaRequest request) {
+                return null;
+        }
+
+        @Operation(summary = "Actualizar estado de pago del dueño", description = "Avanza el estado de pago al dueño (pendiente → transferido → confirmado)")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Estado actualizado"),
+                        @ApiResponse(responseCode = "400", description = "Transición inválida", content = @Content),
+                        @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Subasta o registro no encontrado", content = @Content)
+        })
+        @PatchMapping("/{id}/registro/{idRegistro}/estado-pago")
+        public ResponseEntity<RegistroDeSubastaResponse> patchEstadoPago(
+                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
+                        @Parameter(description = "ID del registro", required = true, example = "3") @PathVariable Integer idRegistro,
+                        @Parameter(description = "Nuevo estado de pago", required = true) @RequestParam EstadoPagoDuenio estadoPago) {
+                return null;
+        }
+
+        @Operation(summary = "Actualizar medio de envío", description = "Cambia el medio de envío del registro (ENVIO_DOMICILIO / RETIRO_DEPOSITO). Si es ENVIO_DOMICILIO, direccionEnvio y paisEnvio pasan a ser requeridos")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Medio de envío actualizado"),
+                        @ApiResponse(responseCode = "400", description = "Datos inválidos o dirección requerida para envío a domicilio", content = @Content),
+                        @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Subasta o registro no encontrado", content = @Content)
+        })
+        @PatchMapping("/{id}/registro/{idRegistro}/medio-envio")
+        public ResponseEntity<RegistroDeSubastaResponse> patchMedioEnvio(
+                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
+                        @Parameter(description = "ID del registro", required = true, example = "3") @PathVariable Integer idRegistro,
+                        @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Nuevo medio de envío y datos opcionales de dirección", required = true) @RequestBody MedioEnvioRequest request) {
+                return null;
+        }
+
+        // ── Pujos ─────────────────────────────────────────────────────────────
+
+        @Operation(summary = "Listar pujos de la subasta", description = "Devuelve todos los pujos de una subasta ordenados por importe descendente")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Lista de pujos"),
+                        @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Subasta no encontrada", content = @Content)
+        })
+        @GetMapping("/{id}/pujos")
+        public ResponseEntity<List<PujoResponse>> getPujos(
+                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id) {
+                return null;
+        }
+
+        @Operation(summary = "Listar pujos de un item", description = "Devuelve todos los pujos de un item específico del catálogo ordenados por importe descendente")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Lista de pujos del item"),
+                        @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Subasta o item no encontrado", content = @Content)
+        })
+        @GetMapping("/{id}/catalogo/items/{idItem}/pujos")
+        public ResponseEntity<List<PujoResponse>> getPujosByItem(
+                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
+                        @Parameter(description = "ID del item", required = true, example = "5") @PathVariable Integer idItem) {
+                return null;
+        }
+
+        @Operation(summary = "Registrar pujo", description = "Registra un nuevo pujo sobre un item del catálogo. El servidor emite el pujo a `/topic/subastas/{id}/pujas` vía WebSocket")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "201", description = "Pujo registrado"),
+                        @ApiResponse(responseCode = "400", description = "Importe inválido o menor al pujo actual", content = @Content),
+                        @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Subasta o item no encontrado", content = @Content)
+        })
+        @PostMapping("/{id}/catalogo/items/{idItem}/pujos")
+        public ResponseEntity<PujoResponse> addPujo(
+                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
+                        @Parameter(description = "ID del item", required = true, example = "5") @PathVariable Integer idItem,
+                        @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Datos del pujo", required = true, content = @Content(schema = @Schema(implementation = PujoRequest.class))) @RequestBody PujoRequest request) {
+                return null;
+        }
+
+        @Operation(summary = "Marcar pujo como ganador", description = "Marca un pujo como ganador del item. Solo un pujo por item puede ser ganador")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Pujo marcado como ganador"),
+                        @ApiResponse(responseCode = "400", description = "El item ya tiene un ganador", content = @Content),
+                        @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Subasta, item o pujo no encontrado", content = @Content)
+        })
+        @PatchMapping("/{id}/catalogo/items/{idItem}/pujos/{idPujo}/ganador")
+        public ResponseEntity<PujoResponse> marcarGanador(
+                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
+                        @Parameter(description = "ID del item", required = true, example = "5") @PathVariable Integer idItem,
+                        @Parameter(description = "ID del pujo", required = true, example = "8") @PathVariable Integer idPujo) {
                 return null;
         }
 }

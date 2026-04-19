@@ -10,7 +10,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,8 +21,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "registrodesubasta")
-public class RegistroDeSubasta {
+@Table(name = "pujos")
+public class Pujo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,27 +30,17 @@ public class RegistroDeSubasta {
     private Integer identificador;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subasta", nullable = false)
-    private Subasta subasta;
+    @JoinColumn(name = "asistente", nullable = false)
+    private Asistente asistente;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "duenio", nullable = false)
-    private Duenio duenio;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "producto", nullable = false)
-    private Producto producto;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cliente", nullable = false)
-    private Cliente cliente;
+    @JoinColumn(name = "item", nullable = false)
+    private ItemCatalogo item;
 
     @Column(name = "importe", nullable = false, precision = 18, scale = 2)
     private BigDecimal importe;
 
-    @Column(name = "comision", nullable = false, precision = 18, scale = 2)
-    private BigDecimal comision;
-
-    @OneToOne(mappedBy = "registroSubasta", fetch = FetchType.LAZY)
-    private RegistroDeSubastaExtra extra;
+    @Builder.Default
+    @Column(name = "ganador", length = 2)
+    private String ganador = "no";
 }

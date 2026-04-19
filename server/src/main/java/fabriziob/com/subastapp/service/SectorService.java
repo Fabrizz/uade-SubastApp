@@ -5,7 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import fabriziob.com.subastapp.controller.sector.SectorRequest;
+import fabriziob.com.subastapp.controller.empleado.SectorRequest;
 import fabriziob.com.subastapp.entity.Sector;
 import fabriziob.com.subastapp.repository.EmpleadoRepository;
 import fabriziob.com.subastapp.repository.SectorRepository;

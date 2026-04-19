@@ -1,4 +1,4 @@
-package fabriziob.com.subastapp.controller.sector;
+package fabriziob.com.subastapp.controller.empleado;
 
 import lombok.Data;
 
