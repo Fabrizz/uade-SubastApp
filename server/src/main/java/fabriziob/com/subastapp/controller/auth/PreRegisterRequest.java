@@ -9,8 +9,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RegisterRequest {
+public class PreRegisterRequest {
+    private String nombre;
+    private String documento;
+    private String direccion;
     private String email;
-    private String temporaryPassword; // la que llegó por mail
-    private String newPassword; // la que elige el usuario
+    private String telefono;
+    private Integer numeroPais;
 }

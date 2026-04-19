@@ -31,4 +31,7 @@ public class PersonaExtra {
 
     @Column(name = "passwordhash")
     private String passwordHash;
+
+    @Column(name = "passwordtemporal")
+    private Boolean passwordTemporal;
 }
