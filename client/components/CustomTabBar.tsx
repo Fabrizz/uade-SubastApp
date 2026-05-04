@@ -18,20 +18,12 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     <BlurView
       intensity={40}
       tint="dark"
+      className='absolute right-0 bottom-0 left-0 overflow-hidden
+        pb-0 shadow-black/20 border-t border-[#333333]/80'
       style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        overflow: 'hidden',
-        paddingBottom: 0,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
         shadowRadius: 24,
         elevation: 20,
-        borderTopWidth: 1,
-        borderTopColor: '#333333',
       }}
     >
       <View 
@@ -39,19 +31,19 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         className="flex-row font-montserrat items-center justify-between px-4 pb-3 pt-3 bg-[#101010]/70 w-full"
       >
         {state.routes.map((route, index) => {
-          const { name, label, Icon } = TABS[index];
+          const { label, Icon } = TABS[index];
           const isActive = state.index === index;
 
           return (
             <Pressable
               key={route.key}
-              onPress={() => navigation.navigate(name)}
+              onPress={() => navigation.navigate(route.name)}
               className="items-center flex-1 rounded-xl pb-1 pt-1.5 gap-1"
               style={isActive ? {
                     backgroundColor: '#F8B8FF',
                     shadowColor: '#A51DB5',
                     shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.46,
+                    shadowOpacity: 0.40,
                     shadowRadius: 16,
                     elevation: 8,
                   }
