@@ -5,10 +5,10 @@ import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TABS = [
-  { name: 'index',         label: 'Inicio',         Icon: House },
-  { name: 'notifications', label: 'Notificaciones',  Icon: Bell  },
-  { name: 'auctions',      label: 'Subastas',        Icon: Gavel },
-  { name: 'profile',       label: 'Perfil',          Icon: User  },
+  { name: 'index', label: 'Inicio', Icon: House },
+  { name: 'notifications', label: 'Notificaciones', Icon: Bell },
+  { name: 'auctions', label: 'Subastas', Icon: Gavel },
+  { name: 'profile', label: 'Perfil', Icon: User },
 ];
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
@@ -23,10 +23,8 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         bottom: 0,
         left: 0,
         right: 0,
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
         overflow: 'hidden',
-        paddingBottom: insets.bottom,
+        paddingBottom: 0,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -4 },
         shadowOpacity: 0.1,
@@ -36,7 +34,10 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         borderTopColor: '#333333',
       }}
     >
-      <View className="flex-row items-center justify-around px-4 pt-3 pb-2 bg-[#101010]/70">
+      <View 
+        style={{ paddingBottom: insets.bottom - 12 }}
+        className="flex-row font-montserrat items-center justify-between px-4 pb-3 pt-3 bg-[#101010]/70 w-full"
+      >
         {state.routes.map((route, index) => {
           const { name, label, Icon } = TABS[index];
           const isActive = state.index === index;
@@ -45,40 +46,25 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             <Pressable
               key={route.key}
               onPress={() => navigation.navigate(name)}
-              className="items-center flex-1"
-            >
-              <View
-                className="items-center justify-center mb-1"
-                style={
-                  isActive
-                    ? {
-                        backgroundColor: '#F8B8FF',
-                        borderRadius: 12,
-                        width: 42,
-                        height: 42,
-                        shadowColor: '#A51DB5',
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: 0.46,
-                        shadowRadius: 16,
-                        elevation: 8,
-                      }
-                    : {
-                        width: 42,
-                        height: 42,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }
-                }
-              >
-                <Icon size={22} color={isActive ? '#44004C' : '#FFFFFF'} />
+              className="items-center flex-1 rounded-xl pb-1 pt-1.5 gap-1"
+              style={isActive ? {
+                    backgroundColor: '#F8B8FF',
+                    shadowColor: '#A51DB5',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.46,
+                    shadowRadius: 16,
+                    elevation: 8,
+                  }
+              : {}
+            }>
+              <View className="items-center justify-center">
+                <Icon size={24} color={isActive ? '#44004C' : '#FFFFFF'} />
               </View>
-
               <Text
                 style={{
-                  fontFamily: 'Montserrat',
                   fontSize: 12,
-                  fontWeight: isActive ? '700' : '500',
-                  color: '#FFFFFF',
+                  fontWeight: '500',
+                  color: isActive ? '#44004C' : '#FFFFFF'
                 }}
               >
                 {label}
