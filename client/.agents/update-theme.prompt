@@ -1,0 +1,3 @@
+Tip: After updating CSS variables in global.css, use this prompt to sync theme.ts:
+
+Read CSS variables under :root and .dark:root in global.css. Update the light and dark entries in the THEME object in theme.ts to match these values in HSL format. Keep all keys and NAV_THEME unchanged. Add new variables if missing; comment stale ones if no matching CSS variable exists. Maintain the original formatting and key order.
