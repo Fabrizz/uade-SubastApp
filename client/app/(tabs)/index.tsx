@@ -1,3 +1,4 @@
+import DNIScanner from '@/components/DniScanner';
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
@@ -73,6 +74,9 @@ export default function HomeScreen() {
           <ThemedText type="defaultSemiBold">app-example</ThemedText>.
         </ThemedText>
       </ThemedView>
+
+      <DNIScanner />
+
     </ParallaxScrollView>
   );
 }

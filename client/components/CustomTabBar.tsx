@@ -28,7 +28,8 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     >
       <View 
         style={{ paddingBottom: insets.bottom - 12 }}
-        className="flex-row font-montserrat items-center justify-between px-4 pb-3 pt-3 bg-[#101010]/70 w-full"
+        className="flex-row font-montserrat items-center justify-between px-4 pb-3 pt-2
+          bg-[#101010]/70 w-full overflow-hidden"
       >
         {state.routes.map((route, index) => {
           const { label, Icon } = TABS[index];
@@ -38,27 +39,25 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             <Pressable
               key={route.key}
               onPress={() => navigation.navigate(route.name)}
-              className="items-center flex-1 rounded-xl pb-1 pt-1.5 gap-1"
+              className="items-center flex-1 rounded-2xl pb-1 pt-1.5 gap-1"
               style={isActive ? {
-                    backgroundColor: '#F8B8FF',
+                    backgroundColor: '#F8B8FF15',
                     shadowColor: '#A51DB5',
                     shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.40,
-                    shadowRadius: 16,
+                    shadowOpacity: 0.5,
+                    shadowRadius: 20,
                     elevation: 8,
                   }
               : {}
             }>
               <View className="items-center justify-center">
-                <Icon size={24} color={isActive ? '#44004C' : '#FFFFFF'} />
+                <Icon size={24} color={isActive ? '#F8B8FF' : '#FFFFFF'} />
               </View>
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: '500',
-                  color: isActive ? '#44004C' : '#FFFFFF'
-                }}
-              >
+              <Text style={{
+                fontSize: 12,
+                fontWeight: '500',
+                color: isActive ? '#F8B8FF' : '#FFFFFF'
+              }}>
                 {label}
               </Text>
             </Pressable>
