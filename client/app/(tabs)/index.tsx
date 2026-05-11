@@ -1,101 +1,284 @@
-import DNIScanner from '@/components/DniScanner';
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Image } from 'expo-image';
-import { Link } from 'expo-router';
-import { Platform, StyleSheet } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useState } from "react";
+import {
+  Image,
+  Platform,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-export default function HomeScreen() {
+// ─── tipos ────────────────────────────────────────────────────────────────────
+type Category = "top" | "empezando" | "terminadas";
+type Tier = "ORO" | "Platino" | "Comun";
+
+interface Auction {
+  id: string;
+  tier: Tier;
+  timeLeft: string;
+  image: { uri: string };
+  title: string;
+  bidLabel: string;
+  bidAmount: string;
+  description: string;
+}
+
+// ─── datos de ejemplo ─────────────────────────────────────────────────────────
+const AUCTIONS: Auction[] = [
+  {
+    id: "1",
+    tier: "ORO",
+    timeLeft: "02:45:12",
+    image: {
+      uri: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600",
+    },
+    title: "First Edition '1984'",
+    bidLabel: "BASE BID",
+    bidAmount: "$12,800",
+    description:
+      "First edition hardcover in near-mint condition. One of only 1,500 copies in the 1949 UK print run.",
+  },
+  {
+    id: "2",
+    tier: "Platino",
+    timeLeft: "14:12:05",
+    image: {
+      uri: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600",
+    },
+    title: "Nike Dunk Low 'Chicago' (1985)",
+    bidLabel: "CURRENT BID",
+    bidAmount: "$8,450",
+    description:
+      "Rare archival piece, original box included. Never worn, museum-grade preservation.",
+  },
+  {
+    id: "3",
+    tier: "Comun",
+    timeLeft: "08:22:50",
+    image: {
+      uri: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600",
+    },
+    title: "Abstract Linear No. 4 by K. Richter",
+    bidLabel: "OFERTA ACTUAL",
+    bidAmount: "$31,200",
+    description:
+      "Original oil on canvas, 120x150cm. Part of the 2018 'Urban Geometry' series.",
+  },
+];
+
+// ─── colores por tier ─────────────────────────────────────────────────────────
+const TIER_COLOR: Record<Tier, string> = {
+  ORO: "#b8860b",
+  Platino: "#2dd4bf",
+  Comun: "#2dd4bf",
+};
+const TIER_BG: Record<Tier, string> = {
+  ORO: "#3d2a00",
+  Platino: "#0f3330",
+  Comun: "#0f3330",
+};
+
+// ─── tarjeta de subasta ───────────────────────────────────────────────────────
+function AuctionCard({ item }: { item: Auction }) {
+  const color = TIER_COLOR[item.tier];
+  const bg = TIER_BG[item.tier];
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
+    <View className="bg-neutral-900 rounded-2xl overflow-hidden mb-5">
+      {/* imagen */}
+      <View>
         <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+          source={item.image}
+          style={{ width: "100%", height: 220 }}
+          resizeMode="cover"
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">INDEX</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+        {/* tier badge */}
+        <View
+          className="absolute top-3 left-3 px-3 py-1 rounded-full"
+          style={{ backgroundColor: bg, borderWidth: 1, borderColor: color }}
+        >
+          <Text className="text-xs font-bold" style={{ color }}>
+            {item.tier}
+          </Text>
+        </View>
+        {/* timer */}
+        <View className="absolute top-3 right-3 flex-row items-center bg-black/60 px-2.5 py-1 rounded-full gap-1">
+          <View className="w-2 h-2 rounded-full bg-red-500" />
+          <Text className="text-white text-xs font-semibold">
+            {item.timeLeft}
+          </Text>
+        </View>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
+      {/* info */}
+      <View className="px-4 pt-3 pb-1">
+        <View className="flex-row justify-between items-start mb-1">
+          <Text className="text-white text-base font-bold flex-1 mr-3">
+            {item.title}
+          </Text>
+          <View className="items-end">
+            <Text className="text-neutral-500 text-[10px] font-semibold tracking-widest">
+              {item.bidLabel}
+            </Text>
+            <Text className="text-teal-400 text-base font-bold">
+              {item.bidAmount}
+            </Text>
+          </View>
+        </View>
+        <Text className="text-neutral-500 text-xs leading-4 mb-3">
+          {item.description}
+        </Text>
+      </View>
 
-      <DNIScanner />
-
-    </ParallaxScrollView>
+      {/* botón Unirse */}
+      <View className="px-4 pb-4">
+        <TouchableOpacity
+          activeOpacity={0.85}
+          className="rounded-xl overflow-hidden"
+        >
+          <LinearGradient
+            colors={["#7c3aed", "#9333ea"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            className="py-3.5 items-center rounded-xl"
+          >
+            <Text className="text-white font-bold text-sm tracking-wide">
+              Unirse
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
+// ─── pantalla ─────────────────────────────────────────────────────────────────
+export default function Home() {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<Category>("top");
+
+  const CATEGORIES: { key: Category; label: string }[] = [
+    { key: "top", label: "Top items" },
+    { key: "empezando", label: "Empezando" },
+    { key: "terminadas", label: "Terminadas" },
+  ];
+
+  return (
+    <View className="flex-1 bg-black">
+      <StatusBar barStyle="light-content" />
+
+      {/* ── HEADER ── */}
+      <View
+        className="bg-black px-4 pb-3"
+        style={{
+          paddingTop: Platform.OS === "ios" ? 56 : 40,
+          borderBottomWidth: 1,
+          borderBottomColor: "#1f1f1f",
+        }}
+      >
+        {/* logo + badge tier usuario */}
+        <View className="flex-row justify-between items-center mb-3">
+          <View className="flex-row items-center gap-2">
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={{ width: 32, height: 32 }}
+              resizeMode="contain"
+            />
+            <Text className="text-white text-lg font-bold tracking-wide">
+              SubastApp
+            </Text>
+          </View>
+          <View
+            className="px-3 py-1 rounded-full"
+            style={{
+              backgroundColor: "#3d2a00",
+              borderWidth: 1,
+              borderColor: "#b8860b",
+            }}
+          >
+            <Text className="text-xs font-bold" style={{ color: "#b8860b" }}>
+              ORO
+            </Text>
+          </View>
+        </View>
+
+        {/* buscador */}
+        <View
+          className="flex-row items-center bg-neutral-900 border border-neutral-700 rounded-xl px-3 mb-3"
+          style={{ paddingVertical: Platform.OS === "ios" ? 10 : 7 }}
+        >
+          <Ionicons
+            name="search-outline"
+            size={16}
+            color="#6b7280"
+            style={{ marginRight: 6 }}
+          />
+          <TextInput
+            className="flex-1 text-white text-sm"
+            placeholder="Search for luxury assets..."
+            placeholderTextColor="#6b7280"
+            value={search}
+            onChangeText={setSearch}
+          />
+        </View>
+
+        {/* categorías */}
+        <View className="flex-row gap-2">
+          {CATEGORIES.map((c) => {
+            const active = category === c.key;
+            return (
+              <TouchableOpacity
+                key={c.key}
+                onPress={() => setCategory(c.key)}
+                activeOpacity={0.8}
+                className="rounded-full overflow-hidden"
+              >
+                {active ? (
+                  <LinearGradient
+                    colors={["#7c3aed", "#9333ea"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    className="px-4 py-1.5 rounded-full"
+                  >
+                    <Text className="text-white text-xs font-bold">
+                      {c.label}
+                    </Text>
+                  </LinearGradient>
+                ) : (
+                  <View className="px-4 py-1.5 rounded-full bg-neutral-800">
+                    <Text className="text-neutral-400 text-xs font-semibold">
+                      {c.label}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* ── LISTA ── */}
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 20,
+          paddingBottom: 24,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text className="text-white text-lg font-bold mb-4">
+          Subastas activas
+        </Text>
+
+        {AUCTIONS.map((item) => (
+          <AuctionCard key={item.id} item={item} />
+        ))}
+      </ScrollView>
+    </View>
+  );
+}

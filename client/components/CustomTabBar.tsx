@@ -1,14 +1,14 @@
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { BlurView } from 'expo-blur';
-import { Bell, Gavel, House, User } from 'lucide-react-native';
-import { Pressable, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { BlurView } from "expo-blur";
+import { Bell, Gavel, House, User } from "lucide-react-native";
+import { Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TABS = [
-  { name: 'index', label: 'Inicio', Icon: House },
-  { name: 'notifications', label: 'Notificaciones', Icon: Bell },
-  { name: 'auctions', label: 'Subastas', Icon: Gavel },
-  { name: 'profile', label: 'Perfil', Icon: User },
+  { name: "index", label: "Inicio", Icon: House },
+  { name: "notifications", label: "Notificaciones", Icon: Bell },
+  { name: "auctions", label: "Subastas", Icon: Gavel },
+  { name: "profile", label: "Perfil", Icon: User },
 ];
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
@@ -18,15 +18,15 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     <BlurView
       intensity={40}
       tint="dark"
-      className='absolute right-0 bottom-0 left-0 overflow-hidden
-        pb-0 shadow-black/20 border-t border-[#333333]/80'
+      className="absolute right-0 bottom-0 left-0 overflow-hidden
+        pb-0 shadow-black/20 border-t border-[#333333]/80"
       style={{
         shadowOffset: { width: 0, height: -4 },
         shadowRadius: 24,
         elevation: 20,
       }}
     >
-      <View 
+      <View
         style={{ paddingBottom: insets.bottom - 12 }}
         className="flex-row font-montserrat items-center justify-between px-4 pb-3 pt-2
           bg-[#101010]/70 w-full overflow-hidden"
@@ -40,24 +40,29 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
               key={route.key}
               onPress={() => navigation.navigate(route.name)}
               className="items-center flex-1 rounded-2xl pb-1 pt-1.5 gap-1"
-              style={isActive ? {
-                    backgroundColor: '#F8B8FF15',
-                    shadowColor: '#A51DB5',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.5,
-                    shadowRadius: 20,
-                    elevation: 8,
-                  }
-              : {}
-            }>
+              style={
+                isActive
+                  ? {
+                      backgroundColor: "#F8B8FF15",
+                      shadowColor: "#A51DB5",
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowOpacity: 0.5,
+                      shadowRadius: 20,
+                      elevation: 8,
+                    }
+                  : {}
+              }
+            >
               <View className="items-center justify-center">
-                <Icon size={24} color={isActive ? '#F8B8FF' : '#FFFFFF'} />
+                <Icon size={24} color={isActive ? "#F8B8FF" : "#FFFFFF"} />
               </View>
-              <Text style={{
-                fontSize: 12,
-                fontWeight: '500',
-                color: isActive ? '#F8B8FF' : '#FFFFFF'
-              }}>
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "500",
+                  color: isActive ? "#F8B8FF" : "#FFFFFF",
+                }}
+              >
                 {label}
               </Text>
             </Pressable>
