@@ -26,6 +26,8 @@ export default function RootLayout() {
     'Montserrat-SemiBold': require('../assets/fonts/montserrat-v31-latin-600.ttf'),
     'Montserrat-Bold': require('../assets/fonts/montserrat-v31-latin-700.ttf'),
     'Montserrat-ExtraBold': require('../assets/fonts/montserrat-v31-latin-800.ttf'),
+
+    'Manrope-Thin': require('../assets/fonts/manrope-v20-latin-200.ttf'),
   });
 
   useEffect(() => {

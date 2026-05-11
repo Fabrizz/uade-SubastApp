@@ -52,13 +52,16 @@ export default function Login() {
       <StatusBar barStyle="light-content" />
 
       {/* Logo */}
-      <View className="items-center mb-8">
+      <View className="items-center mb-14">
         <Image
           source={require('@/assets/images/logo.png')}
           className="w-20 h-20 block mb-3"
           resizeMode="contain"
         />
-        <Text className="text-white text-4xl font-bold tracking-wide">
+        <Text
+        style={{ fontFamily: 'Montserrat-Bold' }}
+        className="text-white text-5xl tracking-wide"
+        >
           SubastApp
         </Text>
       </View>

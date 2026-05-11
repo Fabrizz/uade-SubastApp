@@ -16,6 +16,8 @@ module.exports = {
         'montserrat-semibold': ['Montserrat-SemiBold'],
         'montserrat-bold': ['Montserrat-Bold'],
         'montserrat-extrabold': ['Montserrat-ExtraBold'],
+
+        'manrope-thin': ['Manrope-Thin']
       },
       colors: {
         border: 'hsl(var(--border))',
