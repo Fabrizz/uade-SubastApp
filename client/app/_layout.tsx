@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 
 import "@/global.css";
 
+import { AuthProvider } from '@/context/auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEffect } from 'react';
 
@@ -43,15 +44,16 @@ export default function RootLayout() {
   if (!loaded) return null;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="auctions/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-      <PortalHost />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="auth" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        </Stack>
+        <StatusBar style="auto" />
+        <PortalHost />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

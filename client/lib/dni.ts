@@ -9,17 +9,18 @@ export interface DNIData {
 }
 
 export function parseDNI(raw: string): DNIData {
-  // Format: @APELLIDO@NOMBRE@SEXO@DNI@ORDEN@NACIMIENTO@VENCIMIENTO@...
+  // Formato RENAPER: @DNI@APELLIDO@NOMBRE@SEXO@TRAMITE@EJEMPLAR@NACIMIENTO@VENCIMIENTO@
   const fields = raw.split('@').filter(Boolean);
 
   return {
-    apellido: fields[0] ?? '',
-    nombre: fields[1] ?? '',
-    sexo: fields[2] ?? '',
-    dni: fields[3] ?? '',
-    tramite: fields[4] ?? '',
-    fechaNacimiento: fields[5] ?? '',
-    fechaVencimiento: fields[6] ?? '',
+    dni:              (fields[0] ?? '').trim(),
+    apellido:         (fields[1] ?? '').trim(),
+    nombre:           (fields[2] ?? '').trim(),
+    sexo:             (fields[3] ?? '').trim(),
+    tramite:          (fields[4] ?? '').trim(),
+    // fields[5] = ejemplar (A / B) — skip
+    fechaNacimiento:  (fields[6] ?? '').trim(),
+    fechaVencimiento: (fields[7] ?? '').trim(),
   };
 }
 
@@ -33,7 +34,7 @@ function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function randomApellido() {
+export function randomApellido() {
   return APELLIDOS[randomInt(0, APELLIDOS.length - 1)];
 }
 
