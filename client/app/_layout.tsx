@@ -28,6 +28,12 @@ export default function RootLayout() {
     'Montserrat-ExtraBold': require('../assets/fonts/montserrat-v31-latin-800.ttf'),
 
     'Manrope-Thin': require('../assets/fonts/manrope-v20-latin-200.ttf'),
+    'Manrope-Light': require('../assets/fonts/manrope-v20-latin-300.ttf'),
+    'Manrope-Regular': require('../assets/fonts/manrope-v20-latin-regular.ttf'),
+    'Manrope-Medium': require('../assets/fonts/manrope-v20-latin-500.ttf'),
+    'Manrope-SemiBold': require('../assets/fonts/manrope-v20-latin-600.ttf'),
+    'Manrope-Bold': require('../assets/fonts/manrope-v20-latin-700.ttf'),
+    'Manrope-ExtraBold': require('../assets/fonts/manrope-v20-latin-800.ttf'),
   });
 
   useEffect(() => {
@@ -41,6 +47,7 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="auctions/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />

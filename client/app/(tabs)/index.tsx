@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { Link } from "expo-router";
 import { useState } from "react";
 import {
   Image,
@@ -101,14 +102,14 @@ function AuctionCard({ item }: { item: Auction }) {
           className="absolute top-3 left-3 px-3 py-1 rounded-full"
           style={{ backgroundColor: bg, borderWidth: 1, borderColor: color }}
         >
-          <Text className="text-xs font-bold" style={{ color }}>
+          <Text className="text-xs font-manrope-bold" style={{ color }}>
             {item.tier}
           </Text>
         </View>
         {/* timer */}
         <View className="absolute top-3 right-3 flex-row items-center bg-black/60 px-2.5 py-1 rounded-full gap-1">
           <View className="w-2 h-2 rounded-full bg-red-500" />
-          <Text className="text-white text-xs font-semibold">
+          <Text className="text-white text-xs font-manrope-semibold">
             {item.timeLeft}
           </Text>
         </View>
@@ -117,40 +118,42 @@ function AuctionCard({ item }: { item: Auction }) {
       {/* info */}
       <View className="px-4 pt-3 pb-1">
         <View className="flex-row justify-between items-start mb-1">
-          <Text className="text-white text-base font-bold flex-1 mr-3">
+          <Text className="text-white text-base flex-1 mr-3 font-manrope-bold">
             {item.title}
           </Text>
           <View className="items-end">
-            <Text className="text-neutral-500 text-[10px] font-semibold tracking-widest">
+            <Text className="text-neutral-500 text-[10px] tracking-widest font-manrope-semibold">
               {item.bidLabel}
             </Text>
-            <Text className="text-teal-400 text-base font-bold">
+            <Text className="text-teal-400 text-base font-manrope-bold">
               {item.bidAmount}
             </Text>
           </View>
         </View>
-        <Text className="text-neutral-500 text-xs leading-4 mb-3">
+        <Text className="text-neutral-500 text-xs leading-4 mb-3 font-manrope">
           {item.description}
         </Text>
       </View>
 
       {/* botón Unirse */}
       <View className="px-4 pb-4">
-        <TouchableOpacity
-          activeOpacity={0.85}
-          className="rounded-xl overflow-hidden"
-        >
-          <LinearGradient
-            colors={["#7c3aed", "#9333ea"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            className="py-3.5 items-center rounded-xl"
+        <Link href={{ pathname: "/auctions/[id]", params: { id: item.id } }} asChild>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            className="rounded-xl overflow-hidden"
           >
-            <Text className="text-white font-bold text-sm tracking-wide">
-              Unirse
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              colors={["#7c3aed", "#9333ea"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              className="py-3.5 items-center rounded-xl"
+            >
+              <Text className="text-white text-sm tracking-wide font-manrope-bold">
+                Unirse
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Link>
       </View>
     </View>
   );
@@ -188,7 +191,7 @@ export default function Home() {
               style={{ width: 32, height: 32 }}
               resizeMode="contain"
             />
-            <Text className="text-white text-lg font-bold tracking-wide">
+            <Text className="text-white text-lg tracking-wide font-montserrat-bold">
               SubastApp
             </Text>
           </View>
@@ -200,7 +203,7 @@ export default function Home() {
               borderColor: "#b8860b",
             }}
           >
-            <Text className="text-xs font-bold" style={{ color: "#b8860b" }}>
+            <Text className="text-xs font-manrope-bold" style={{ color: "#b8860b" }}>
               ORO
             </Text>
           </View>
@@ -218,7 +221,7 @@ export default function Home() {
             style={{ marginRight: 6 }}
           />
           <TextInput
-            className="flex-1 text-white text-sm"
+            className="flex-1 text-white text-sm font-manrope"
             placeholder="Search for luxury assets..."
             placeholderTextColor="#6b7280"
             value={search}
@@ -244,13 +247,13 @@ export default function Home() {
                     end={{ x: 1, y: 0 }}
                     className="px-4 py-1.5 rounded-full"
                   >
-                    <Text className="text-white text-xs font-bold">
+                    <Text className="text-white text-xs font-manrope-bold">
                       {c.label}
                     </Text>
                   </LinearGradient>
                 ) : (
                   <View className="px-4 py-1.5 rounded-full bg-neutral-800">
-                    <Text className="text-neutral-400 text-xs font-semibold">
+                    <Text className="text-neutral-400 text-xs font-manrope-semibold">
                       {c.label}
                     </Text>
                   </View>
@@ -271,7 +274,7 @@ export default function Home() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <Text className="text-white text-lg font-bold mb-4">
+        <Text className="text-white text-lg mb-4 font-montserrat-bold">
           Subastas activas
         </Text>
 

@@ -32,7 +32,10 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           bg-[#101010]/70 w-full overflow-hidden"
       >
         {state.routes.map((route, index) => {
-          const { label, Icon } = TABS[index];
+          const tabConfig = TABS[index];
+          if (!tabConfig) return null;
+
+          const { label, Icon } = tabConfig;
           const isActive = state.index === index;
 
           return (

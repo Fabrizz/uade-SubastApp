@@ -238,29 +238,29 @@ export default function Register() {
               resizeMode="contain"
             />
 
-            <Text className="text-white text-4xl font-bold tracking-wide">
+            <Text className="text-white text-4xl tracking-wide font-montserrat-bold">
               SubastApp
             </Text>
           </View>
 
           {/* CARD */}
           <View className="w-full bg-neutral-900 rounded-2xl p-6">
-            <Text className="text-teal-400 text-xl font-bold mb-1">
+            <Text className="text-teal-400 text-xl mb-1 font-montserrat-bold">
               Bienvenido
             </Text>
 
-            <Text className="text-neutral-400 text-sm mb-5 leading-5">
+            <Text className="text-neutral-400 text-sm mb-5 leading-5 font-manrope">
               Crea tu cuenta para participar en subastas
               exclusivas.
             </Text>
 
             {/* NOMBRE */}
-            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+            <Text className="text-neutral-300 text-xs mb-1 font-manrope-semibold">
               Nombre completo
             </Text>
 
             <TextInput
-              className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 text-white text-base mb-4"
+              className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 text-white text-base mb-4 font-manrope"
               style={{
                 paddingVertical:
                   Platform.OS === "ios" ? 14 : 11,
@@ -273,12 +273,12 @@ export default function Register() {
             />
 
             {/* EMAIL */}
-            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+            <Text className="text-neutral-300 text-xs mb-1 font-manrope-semibold">
               Email
             </Text>
 
             <TextInput
-              className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 text-white text-base mb-4"
+              className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 text-white text-base mb-4 font-manrope"
               style={{
                 paddingVertical:
                   Platform.OS === "ios" ? 14 : 11,
@@ -293,12 +293,12 @@ export default function Register() {
             />
 
             {/* PAIS */}
-            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+            <Text className="text-neutral-300 text-xs mb-1 font-manrope-semibold">
               País de origen
             </Text>
 
             <TextInput
-              className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 text-white text-base mb-4"
+              className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 text-white text-base mb-4 font-manrope"
               style={{
                 paddingVertical:
                   Platform.OS === "ios" ? 14 : 11,
@@ -311,12 +311,12 @@ export default function Register() {
             />
 
             {/* DNI */}
-            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+            <Text className="text-neutral-300 text-xs mb-1 font-manrope-semibold">
               DNI
             </Text>
 
             <TextInput
-              className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 text-white text-base mb-4"
+              className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 text-white text-base mb-4 font-manrope"
               style={{
                 paddingVertical:
                   Platform.OS === "ios" ? 14 : 11,
@@ -362,7 +362,7 @@ export default function Register() {
                       </View>
                     </View>
 
-                    <Text className="text-neutral-400 text-xs font-semibold">
+                    <Text className="text-neutral-400 text-xs font-manrope-semibold">
                       Subir dorso
                     </Text>
                   </View>
@@ -401,7 +401,7 @@ export default function Register() {
                       </View>
                     </View>
 
-                    <Text className="text-neutral-400 text-xs font-semibold">
+                    <Text className="text-neutral-400 text-xs font-manrope-semibold">
                       Subir frente
                     </Text>
                   </View>
@@ -410,7 +410,7 @@ export default function Register() {
             </View>
 
             {/* DOMICILIO */}
-            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+            <Text className="text-neutral-300 text-xs mb-1 font-manrope-semibold">
               Domicilio
             </Text>
 
@@ -510,7 +510,7 @@ export default function Register() {
             </View>
 
             {/* AVISO */}
-            <Text className="text-neutral-600 text-xs text-center mb-5">
+            <Text className="text-neutral-600 text-xs text-center mb-5 font-manrope">
               Los datos serán verificados por la
               empresa.
             </Text>
@@ -536,11 +536,11 @@ export default function Register() {
                   <ActivityIndicator color="#000" />
                 ) : (
                   <>
-                    <Text className="text-black font-bold text-base">
+                    <Text className="text-black text-base font-manrope-bold">
                       Crear cuenta
                     </Text>
 
-                    <Text className="text-black font-bold text-lg">
+                    <Text className="text-black text-lg font-manrope-bold">
                       →
                     </Text>
                   </>
@@ -550,7 +550,7 @@ export default function Register() {
 
             {/* LOGIN */}
             <View className="flex-row justify-center">
-              <Text className="text-neutral-500 text-xs">
+              <Text className="text-neutral-500 text-xs font-manrope">
                 ¿Ya tenés una cuenta?{" "}
               </Text>
 
@@ -559,7 +559,7 @@ export default function Register() {
                   router.push("/auth/login")
                 }
               >
-                <Text className="text-teal-400 text-xs font-bold">
+                <Text className="text-teal-400 text-xs font-manrope-bold">
                   Iniciar sesión
                 </Text>
               </TouchableOpacity>

@@ -60,7 +60,7 @@ export default function Login() {
         />
         <Text
         style={{ fontFamily: 'Montserrat-Bold' }}
-        className="text-white text-5xl tracking-wide"
+        className="text-white text-5xl tracking-wide font-montserrat"
         >
           SubastApp
         </Text>
@@ -69,19 +69,19 @@ export default function Login() {
       {/* Card */}
       <View className="w-full bg-neutral-900 rounded-2xl p-6">
 
-        <Text className="text-teal-400 text-xl font-bold mb-1">
+        <Text className="text-teal-400 text-xl mb-1 font-montserrat-bold">
           Bienvenido
         </Text>
-        <Text className="text-neutral-400 text-sm mb-5 leading-5">
+        <Text className="text-neutral-400 text-sm mb-5 leading-5 font-manrope">
           Inicia sesión para participar en las subastas exclusivas.
         </Text>
 
         {/* Email */}
-        <Text className="text-neutral-300 text-xs font-semibold mb-1">
+        <Text className="text-neutral-300 text-xs mb-1 font-manrope-semibold">
           Email
         </Text>
         <TextInput
-          className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 text-white text-base mb-4"
+          className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 text-white text-base mb-4 font-manrope"
           style={{ paddingVertical: Platform.OS === 'ios' ? 14 : 11 }}
           placeholder="nombre@email.com"
           placeholderTextColor="#555"
@@ -93,11 +93,11 @@ export default function Login() {
         />
 
         {/* Contraseña */}
-        <Text className="text-neutral-300 text-xs font-semibold mb-1">
+        <Text className="text-neutral-300 text-xs mb-1 font-manrope-semibold">
           Contraseña
         </Text>
         <TextInput
-          className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 text-white text-base mb-3"
+          className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 text-white text-base mb-3 font-manrope"
           style={{ paddingVertical: Platform.OS === 'ios' ? 14 : 11 }}
           placeholder="••••••••"
           placeholderTextColor="#555"
@@ -109,9 +109,9 @@ export default function Login() {
 
         {/* Forgot */}
         <View className="flex-row mb-6">
-          <Text className="text-neutral-500 text-xs">¿Olvidaste tu contraseña? </Text>
+          <Text className="text-neutral-500 text-xs font-manrope">¿Olvidaste tu contraseña? </Text>
           <TouchableOpacity>
-            <Text className="text-teal-400 text-xs font-semibold">Enviar mail</Text>
+            <Text className="text-teal-400 text-xs font-manrope-semibold">Enviar mail</Text>
           </TouchableOpacity>
         </View>
 
@@ -131,8 +131,8 @@ export default function Login() {
             {loading
               ? <ActivityIndicator color="#000" />
               : <>
-                  <Text className="text-black font-bold text-base">Log In</Text>
-                  <Text className="text-black font-bold text-lg">→</Text>
+                  <Text className="text-black text-base font-manrope-bold">Log In</Text>
+                  <Text className="text-black text-lg font-manrope-bold">→</Text>
                 </>
             }
           </LinearGradient>
@@ -140,9 +140,9 @@ export default function Login() {
 
         {/* Registro */}
         <View className="flex-row justify-center">
-          <Text className="text-neutral-500 text-xs">¿No tiene una cuenta? </Text>
+          <Text className="text-neutral-500 text-xs font-manrope">¿No tiene una cuenta? </Text>
           <TouchableOpacity onPress={() => router.push('/auth/register')}>
-            <Text className="text-teal-400 text-xs font-bold">Registrarse</Text>
+            <Text className="text-teal-400 text-xs font-manrope-bold">Registrarse</Text>
           </TouchableOpacity>
         </View>
 

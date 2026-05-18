@@ -17,7 +17,13 @@ module.exports = {
         'montserrat-bold': ['Montserrat-Bold'],
         'montserrat-extrabold': ['Montserrat-ExtraBold'],
 
-        'manrope-thin': ['Manrope-Thin']
+        'manrope-thin': ['Manrope-Thin'],
+        'manrope-light': ['Manrope-Light'],
+        'manrope': ['Manrope-Regular'],
+        'manrope-medium': ['Manrope-Medium'],
+        'manrope-semibold': ['Manrope-SemiBold'],
+        'manrope-bold': ['Manrope-Bold'],
+        'manrope-extrabold': ['Manrope-ExtraBold']
       },
       colors: {
         border: 'hsl(var(--border))',
