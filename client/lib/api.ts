@@ -1,5 +1,5 @@
+import type { paths } from "@/types/api";
 import createClient from "openapi-fetch";
-import type { paths } from "../types/api";
 
 const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4002";
 
