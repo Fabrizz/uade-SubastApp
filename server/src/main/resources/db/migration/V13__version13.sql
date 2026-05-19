@@ -1,2 +1,2 @@
 ALTER TABLE personas_extra
-ADD COLUMN passwordtemporal BOOLEAN NULL;
+ADD COLUMN IF NOT EXISTS passwordtemporal BOOLEAN NULL;
