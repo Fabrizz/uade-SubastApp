@@ -1,3 +1,3 @@
 CREATE TABLE test (
-    numero          INT             NOT NULL,
+    numero          INT             NOT NULL
 );
