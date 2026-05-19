@@ -11,7 +11,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "api:generate": "openapi-typescript http://localhost:4002/api-docs -o types/api.d.ts"
+    "api:generate": "openapi-typescript http://localhost:4002/api-docs -o types/api.d.ts",
+    "api:tunnel": "cloudflared tunnel --url http://localhost:4002"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
