@@ -43,7 +43,7 @@ CREATE TABLE medios_pago_tarjeta (
     identificador       INT             NOT NULL,
     titular             VARCHAR(150)    NOT NULL,
     ultimos4            VARCHAR(4)      NOT NULL,
-    marca               VARCHAR(20)     NOT NULL
+    marca               VARCHAR(20)     NOT NULL,
     vencimiento         VARCHAR(7)      NOT NULL,   -- MM/YYYY
     esInternacional     BOOLEAN         NOT NULL DEFAULT FALSE,
     CONSTRAINT pk_mp_tarjeta PRIMARY KEY (identificador),
