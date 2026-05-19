@@ -1,15 +1,18 @@
 import DniScanner from "@/components/DniScanner";
+import GenericModal from "@/components/ui/GenericModal";
 import { useAuth } from "@/context/auth";
+import { api } from "@/lib/api";
 import { DNIData } from "@/lib/dni";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ArrowRight, ChevronLeft, CreditCard, Search, User } from "lucide-react-native";
-import { useState } from "react";
+import { ArrowRight, ChevronDown, ChevronLeft, CreditCard, Search, User } from "lucide-react-native";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -52,6 +55,31 @@ export default function Register() {
 
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+
+  // ── Países ──
+  const [paises, setPaises] = useState<{ nombre: string; nombreCorto: string }[]>([]);
+  const [showPaisesPicker, setShowPaisesPicker] = useState(false);
+  const [searchPais, setSearchPais] = useState("");
+
+  useEffect(() => {
+    api.GET("/api/v1/paises", {
+      params: { query: { pageable: { page: 0, size: 500 } } },
+      querySerializer: () => "page=0&size=500",
+    }).then(({ data, error }) => {
+      if (error) {
+        Alert.alert("Error", "No se pudieron cargar los países. Intentá de nuevo.");
+        console.error("Error al cargar países", error);
+        return;
+      }
+      const items = (data?.content ?? [])
+        .filter((p): p is typeof p & { nombreCorto: string } => !!p.nombreCorto)
+        .map((p) => ({ nombre: p.nombre ?? p.nombreCorto, nombreCorto: p.nombreCorto }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+      setPaises(items);
+    }).catch(() => {
+      Alert.alert("Error", "No se pudieron cargar los países. Intentá de nuevo.");
+    });
+  }, []);
 
   // ── Geocoding (Nominatim) ──
 
@@ -115,7 +143,7 @@ export default function Register() {
             return;
           }
           const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ["images"],
             quality: 0.7,
           });
           if (!result.canceled) setter(result.assets[0].uri);
@@ -270,14 +298,55 @@ export default function Register() {
                 <Text className="text-neutral-300 text-xs font-semibold mb-1">
                   País de origen
                 </Text>
-                <TextInput
-                  style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
-                  placeholder="País"
-                  placeholderTextColor="#555"
-                  autoCapitalize="words"
-                  value={paisOrigen}
-                  onChangeText={setPaisOrigen}
-                />
+                <TouchableOpacity
+                  onPress={() => { setSearchPais(""); setShowPaisesPicker(true); }}
+                  activeOpacity={0.8}
+                  style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                >
+                  <Text style={{ color: paisOrigen ? 'white' : '#555', fontSize: 16 }}>
+                    {paisOrigen || "País"}
+                  </Text>
+                  <ChevronDown size={16} color="#555" />
+                </TouchableOpacity>
+
+                <GenericModal visible={showPaisesPicker} onClose={() => setShowPaisesPicker(false)}>
+                  <View style={{ backgroundColor: '#171717', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%', padding: 16 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                      <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', flex: 1 }}>País de origen</Text>
+                      <TouchableOpacity onPress={() => setShowPaisesPicker(false)}>
+                        <Text style={{ color: '#2dd4bf', fontSize: 14 }}>Cerrar</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 10, paddingHorizontal: 12, marginBottom: 12 }}>
+                      <Search size={16} color="#555" />
+                      <TextInput
+                        style={{ flex: 1, height: 40, color: 'white', fontSize: 14, marginLeft: 8 }}
+                        placeholder="Buscar país..."
+                        placeholderTextColor="#555"
+                        value={searchPais}
+                        onChangeText={setSearchPais}
+                        autoCorrect={false}
+                      />
+                    </View>
+                    <FlatList
+                      data={paises.filter(p =>
+                        p.nombre.toLowerCase().includes(searchPais.toLowerCase()) ||
+                        p.nombreCorto.toLowerCase().includes(searchPais.toLowerCase())
+                      )}
+                      keyExtractor={(item) => item.nombreCorto}
+                      keyboardShouldPersistTaps="handled"
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          onPress={() => { setPaisOrigen(item.nombre); setShowPaisesPicker(false); }}
+                          style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#262626', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                        >
+                          <Text style={{ color: item.nombre === paisOrigen ? '#2dd4bf' : 'white', fontSize: 15, flex: 1 }}>{item.nombre}</Text>
+                          <Text style={{ color: item.nombre === paisOrigen ? '#2dd4bf' : '#737373', fontSize: 12, fontFamily: 'monospace', marginLeft: 12 }}>{item.nombreCorto}</Text>
+                        </TouchableOpacity>
+                      )}
+                    />
+                  </View>
+                </GenericModal>
 
                 {/* DNI */}
                 <Text className="text-neutral-300 text-xs font-semibold mb-1">
