@@ -62,7 +62,7 @@ export default function PaymentMethodsScreen() {
               SubastApp
             </Text>
           </View>
-          <View className="w-10" /> {/* Spacer for centering */}
+          <View className="w-10" />
         </View>
 
         <Text className="text-white text-3xl font-bold tracking-wide mb-8">
@@ -119,6 +119,7 @@ export default function PaymentMethodsScreen() {
 
         {/* Botón Agregar Metodo - Full Width Login Style */}
         <TouchableOpacity
+          onPress={() => router.push('/add-payment-method')}
           activeOpacity={0.85}
           style={{ borderRadius: 16, overflow: "hidden", marginBottom: 20, width: "100%" }}
         >

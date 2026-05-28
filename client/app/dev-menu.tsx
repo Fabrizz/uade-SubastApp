@@ -14,6 +14,9 @@ const ROUTES = [
   { name: "Tabs: Perfil", path: "/(tabs)/profile", icon: "person-outline" },
   { name: "Pantalla: Detalle Subasta (Test ID: 1)", path: "/(tabs)/auctions/1", icon: "eye-outline" },
   { name: "Pantalla: Métodos de Pago", path: "/payment-methods", icon: "card-outline" },
+  { name: "Pantalla: Agregar Tarjeta", path: "/add-card", icon: "add-circle-outline" },
+  { name: "Pantalla: Cargar Cheque", path: "/add-check", icon: "document-text-outline" },
+  { name: "Pantalla: Vincular Cuenta", path: "/add-bank-account", icon: "business-outline" },
 ];
 
 export default function DevMenu() {
