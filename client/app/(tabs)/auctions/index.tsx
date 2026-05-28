@@ -131,8 +131,16 @@ export default function AuctionsScreen() {
               const statusStyle = getStatusColor(auction.status);
               
               return (
-                <View 
+                <TouchableOpacity 
                   key={auction.id}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    if (auction.status === "EN REVISIÓN") {
+                      router.push("/auction-verification");
+                    } else if (auction.status === "ACEPTADA") {
+                      router.push("/auction-accepted");
+                    }
+                  }}
                   className="flex-row items-center justify-between bg-[#141414] border border-neutral-800 p-4"
                   style={{ borderRadius: 24 }}
                 >
@@ -153,7 +161,7 @@ export default function AuctionsScreen() {
                     style={{ borderRadius: 16 }}
                     resizeMode="cover"
                   />
-                </View>
+                </TouchableOpacity>
               )
             })}
           </View>

@@ -19,6 +19,7 @@ const ROUTES = [
   { name: "Pantalla: Vincular Cuenta", path: "/add-bank-account", icon: "business-outline" },
   { name: "Pantalla: Estadísticas", path: "/stats", icon: "stats-chart-outline" },
   { name: "Pantalla: Subastar Artículo", path: "/request-auction", icon: "hammer-outline" },
+  { name: "Pantalla: Subasta Aceptada", path: "/auction-accepted", icon: "checkmark-circle-outline" },
 ];
 
 export default function DevMenu() {
