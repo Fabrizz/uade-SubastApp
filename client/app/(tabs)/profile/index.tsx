@@ -62,6 +62,7 @@ export default function ProfileScreen() {
 
           {/* Stats Button */}
           <TouchableOpacity
+            onPress={() => router.push('/stats')}
             className="bg-[#9102A2] px-5 py-2.5 rounded-xl"
             activeOpacity={0.8}
           >

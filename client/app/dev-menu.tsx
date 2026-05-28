@@ -17,6 +17,8 @@ const ROUTES = [
   { name: "Pantalla: Agregar Tarjeta", path: "/add-card", icon: "add-circle-outline" },
   { name: "Pantalla: Cargar Cheque", path: "/add-check", icon: "document-text-outline" },
   { name: "Pantalla: Vincular Cuenta", path: "/add-bank-account", icon: "business-outline" },
+  { name: "Pantalla: Estadísticas", path: "/stats", icon: "stats-chart-outline" },
+  { name: "Pantalla: Subastar Artículo", path: "/request-auction", icon: "hammer-outline" },
 ];
 
 export default function DevMenu() {
