@@ -1,6 +1,6 @@
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link } from "expo-router";
+import { Search } from "lucide-react-native";
 import { useState } from "react";
 import {
   Image,
@@ -214,12 +214,7 @@ export default function Home() {
           className="flex-row items-center bg-neutral-900 border border-neutral-700 rounded-xl px-3 mb-3"
           style={{ paddingVertical: Platform.OS === "ios" ? 10 : 7 }}
         >
-          <Ionicons
-            name="search-outline"
-            size={16}
-            color="#6b7280"
-            style={{ marginRight: 6 }}
-          />
+          <Search size={16} color="#6b7280" style={{ marginRight: 6 }} />
           <TextInput
             className="flex-1 text-white text-sm font-manrope"
             placeholder="Search for luxury assets..."

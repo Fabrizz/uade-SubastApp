@@ -1,7 +1,6 @@
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { FileText, MapPin } from "lucide-react-native";
+import { ChevronLeft, FileText, Hammer, Info, MapPin } from "lucide-react-native";
 import React from "react";
 import {
   Image,
@@ -54,7 +53,7 @@ export default function AuctionDetailScreen() {
         <View className="flex-row justify-between items-center px-4 mb-4 mt-2">
           <View className="flex-row items-center gap-2">
             <TouchableOpacity onPress={() => router.back()} className="mr-1">
-              <Ionicons name="chevron-back" size={28} color="white" />
+              <ChevronLeft size={28} color="white" />
             </TouchableOpacity>
             {/* Glow effect container */}
             <View className="items-center justify-center p-1">
@@ -116,7 +115,7 @@ export default function AuctionDetailScreen() {
               end={{ x: 1, y: 0 }}
               className="py-3.5 flex-row items-center justify-center gap-2"
             >
-              <Ionicons name="hammer-outline" size={20} color="white" style={{ transform: [{ rotate: '-45deg' }] }} />
+              <Hammer size={20} color="white" style={{ transform: [{ rotate: '-45deg' }] }} />
               <Text className="text-white text-lg font-manrope-bold">Unirse</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -156,7 +155,7 @@ export default function AuctionDetailScreen() {
                 }`}
               >
                 <Text className="text-neutral-300 text-sm font-manrope-medium">{desc}</Text>
-                <Ionicons name="information-circle-outline" size={22} color="#4ade80" />
+                <Info size={22} color="#4ade80" />
               </View>
             ))}
           </View>

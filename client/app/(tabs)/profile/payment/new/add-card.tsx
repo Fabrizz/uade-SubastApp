@@ -1,11 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ArrowRight, ChevronLeft, Square, Wifi } from "lucide-react-native";
+import { ArrowRight, Check, ChevronLeft, Square, Wifi } from "lucide-react-native";
 import React, { useState } from "react";
 import { Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "@/components/ui/Button";
 
 export default function AddCardScreen() {
   const router = useRouter();
@@ -210,47 +210,33 @@ export default function AddCardScreen() {
               </View>
             </View>
 
-            {/* Boton Exterior */}
-            <TouchableOpacity
-              activeOpacity={0.8}
+            <Button
+              label="Exterior"
               onPress={() => setIsExterior(!isExterior)}
-              className="mt-2 overflow-hidden"
-              style={{ borderRadius: 9999 }}
-            >
-              <LinearGradient
-                colors={["#A14EBF", "#9102A2"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                className="flex-row items-center justify-between p-4 px-6"
-              >
-                <Text className="text-white font-bold text-lg">Exterior</Text>
-                {isExterior ? (
+              colors={["#A14EBF", "#9102A2"]}
+              className="mt-2 w-full rounded-full"
+              textClassName="text-white text-lg"
+              innerClassName="py-4 px-6"
+              rightIcon={
+                isExterior ? (
                   <View className="w-6 h-6 bg-white rounded border border-white items-center justify-center">
-                    <Ionicons name="checkmark" size={18} color="#9102A2" />
+                    <Check size={18} color="#9102A2" />
                   </View>
                 ) : (
                   <Square size={24} color="white" strokeWidth={2.5} />
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
+                )
+              }
+            />
 
-            {/* Guardar Tarjeta */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => router.back()} // Simular guardado volviendo atrás
-              className="mt-2 overflow-hidden"
-              style={{ borderRadius: 9999 }}
-            >
-              <LinearGradient
-                colors={["#A14EBF", "#9102A2"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                className="flex-row items-center justify-between p-4 px-6"
-              >
-                <Text className="text-white font-bold text-lg">Guardar Tarjeta</Text>
-                <ArrowRight size={24} color="white" strokeWidth={2.5} />
-              </LinearGradient>
-            </TouchableOpacity>
+            <Button
+              label="Guardar Tarjeta"
+              onPress={() => router.back()}
+              colors={["#A14EBF", "#9102A2"]}
+              className="mt-2 w-full rounded-full"
+              textClassName="text-white text-lg"
+              innerClassName="py-4 px-6"
+              rightIcon={<ArrowRight size={24} color="white" strokeWidth={2.5} />}
+            />
 
           </View>
         </View>

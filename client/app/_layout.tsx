@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { PortalHost } from '@rn-primitives/portal';
 import { useFonts } from 'expo-font';
 import { SplashScreen, Stack } from 'expo-router';
@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import "@/global.css";
 
+import { DevMenuButton } from '@/components/dev-button';
 import { AuthProvider } from '@/context/auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEffect } from 'react';
@@ -20,6 +21,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
   const [loaded] = useFonts({
     'Montserrat-Thin': require('../assets/fonts/montserrat-v31-latin-200.ttf'),
     'Montserrat-Light': require('../assets/fonts/montserrat-v31-latin-300.ttf'),
@@ -51,10 +53,11 @@ export default function RootLayout() {
           <Stack>
             <Stack.Screen name="auth" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+            <Stack.Screen name="dev-menu" options={{ presentation: 'modal', headerShown: false }} />
           </Stack>
           <StatusBar style="auto" />
           <PortalHost />
+          <DevMenuButton />
         </ThemeProvider>
       </AuthProvider>
     </GestureHandlerRootView>

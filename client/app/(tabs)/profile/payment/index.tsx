@@ -1,11 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { CreditCard, Plus } from "lucide-react-native";
+import { ChevronLeft, CreditCard, Plus } from "lucide-react-native";
 import React from "react";
 import { Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "@/components/ui/Button";
 
 const MOCK_METHODS = [
   { id: "1", name: "Visa terminada en 4242", type: "visa" },
@@ -38,7 +38,7 @@ export default function PaymentMethodsScreen() {
             onPress={() => router.back()} 
             className="w-10 h-10 items-center justify-center rounded-xl bg-neutral-900 border border-neutral-800"
           >
-            <Ionicons name="chevron-back" size={24} color="white" />
+            <ChevronLeft size={24} color="white" />
           </TouchableOpacity>
           <View className="flex-row items-center gap-3">
             <View
@@ -85,56 +85,37 @@ export default function PaymentMethodsScreen() {
             </View>
 
             <View className="flex-row gap-3">
-              {/* Botón Eliminar - Secondary Action */}
-              <TouchableOpacity
+              <Button
+                label="Eliminar"
+                onPress={() => {}}
                 activeOpacity={0.7}
-                className="flex-[0.4] rounded-xl overflow-hidden"
-              >
-                <View className="bg-[#262626] border border-[#404040] py-3.5 items-center justify-center rounded-xl">
-                  <Text className="text-neutral-300 font-bold text-sm">Eliminar</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Botón Modificar - Primary Action */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                className="flex-[0.6] rounded-xl overflow-hidden"
-              >
-                <LinearGradient
-                  colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  className="py-3.5 items-center justify-center"
-                >
-                  <Text className="text-black font-bold text-sm">
-                    Modificar
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+                className="flex-[0.4] bg-[#262626] border border-[#404040]"
+                textClassName="text-neutral-300"
+                innerClassName="px-4 py-3.5"
+              />
+              <Button
+                label="Modificar"
+                onPress={() => {}}
+                colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
+                className="flex-[0.6]"
+                textClassName="text-black"
+                innerClassName="px-4 py-3.5"
+              />
             </View>
           </View>
         ))}
 
         <View className="h-6" />
 
-        {/* Botón Agregar Metodo - Full Width Login Style */}
-        <TouchableOpacity
-          onPress={() => router.push('/add-payment-method')}
-          activeOpacity={0.85}
-          style={{ borderRadius: 16, overflow: "hidden", marginBottom: 20, width: "100%" }}
-        >
-          <LinearGradient
-            colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16 }}
-          >
-            <Plus size={20} color="#000" strokeWidth={2.5} style={{ marginRight: 8 }} />
-            <Text style={{ color: "#000", fontWeight: "bold", fontSize: 16 }}>
-              Agregar Método
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        <Button
+          label="Agregar Método"
+          onPress={() => router.push('/profile/payment/new')}
+          colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
+          className="w-full mb-5"
+          textClassName="text-black text-base"
+          innerClassName="px-6 py-4"
+          icon={<Plus size={20} color="#000" strokeWidth={2.5} />}
+        />
       </ScrollView>
     </LinearGradient>
   );

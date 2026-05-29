@@ -1,12 +1,12 @@
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Camera, ChevronLeft } from "lucide-react-native";
+import { Camera, ChevronLeft, Plus } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import { Alert, Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "@/components/ui/Button";
 
 export default function AddCheckScreen() {
   const router = useRouter();
@@ -145,7 +145,7 @@ export default function AddCheckScreen() {
                 <Camera size={28} color="#9102A2" strokeWidth={2.5} />
                 {/* Plus Badge */}
                 <View className="absolute -top-1 -right-1 bg-[#9102A2] rounded-full w-5 h-5 items-center justify-center border-2 border-[#fbcfe8]">
-                  <Ionicons name="add" size={12} color="white" />
+                  <Plus size={12} color="white" />
                 </View>
               </View>
               <Text className="text-white font-bold text-lg mb-1">
@@ -224,22 +224,14 @@ export default function AddCheckScreen() {
               />
             </View>
 
-            {/* Confirmar Depósito */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => router.back()} // Simular guardado volviendo atrás
-              className="overflow-hidden"
-              style={{ borderRadius: 9999 }}
-            >
-              <LinearGradient
-                colors={["#A14EBF", "#9102A2"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                className="items-center justify-center p-4 py-4"
-              >
-                <Text className="text-white font-bold text-lg">Confirmar Depósito</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            <Button
+              label="Confirmar Depósito"
+              onPress={() => router.back()}
+              colors={["#A14EBF", "#9102A2"]}
+              className="w-full rounded-full"
+              textClassName="text-white text-lg"
+              innerClassName="py-4"
+            />
           </View>
 
         </View>

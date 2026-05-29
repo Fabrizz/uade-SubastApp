@@ -62,7 +62,7 @@ export default function ProfileScreen() {
 
           {/* Stats Button */}
           <TouchableOpacity
-            onPress={() => router.push('/stats')}
+            onPress={() => router.push('/profile/stats')}
             className="bg-[#9102A2] px-5 py-2.5 rounded-xl"
             activeOpacity={0.8}
           >
@@ -140,7 +140,7 @@ export default function ProfileScreen() {
         {/* Payment Methods Button */}
         <View className="items-center mb-8">
           <TouchableOpacity
-            onPress={() => router.push('/payment-methods')}
+            onPress={() => router.push('/profile/payment')}
             activeOpacity={0.85}
             className="rounded-2xl overflow-hidden shadow-lg shadow-black/50"
           >

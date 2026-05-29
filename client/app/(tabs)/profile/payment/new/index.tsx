@@ -5,6 +5,7 @@ import { ArrowRight, ChevronLeft } from "lucide-react-native";
 import React from "react";
 import { Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "@/components/ui/Button";
 
 export default function AddPaymentMethodScreen() {
   const router = useRouter();
@@ -70,29 +71,20 @@ export default function AddPaymentMethodScreen() {
 
             <View className="items-center gap-4">
               {[
-                { id: "card", label: "Tarjeta", route: "/add-card" as const },
-                { id: "check", label: "Cheque", route: "/add-check" as const },
-                { id: "bank", label: "Cuenta bancaria", route: "/add-bank-account" as const },
+                { id: "card", label: "Tarjeta", route: "/profile/payment/new/add-card" as const },
+                { id: "check", label: "Cheque", route: "/profile/payment/new/add-check" as const },
+                { id: "bank", label: "Cuenta bancaria", route: "/profile/payment/new/add-bank-account" as const },
               ].map((method) => (
-                <TouchableOpacity
+                <Button
                   key={method.id}
-                  activeOpacity={0.8}
-                  onPress={() => method.route && router.push(method.route)}
-                  className="rounded-2xl overflow-hidden shadow-lg shadow-[#AF2BBF]/20 w-64"
-                >
-                  <LinearGradient
-                    // Gradiente morado que sigue la forma del mockup pero con la vibra del Login
-                    colors={["#A14EBF", "#9102A2"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    className="flex-row items-center justify-between py-3.5 px-6"
-                  >
-                    <Text className="text-white font-bold text-base">
-                      {method.label}
-                    </Text>
-                    <ArrowRight size={20} color="white" strokeWidth={2.5} />
-                  </LinearGradient>
-                </TouchableOpacity>
+                  label={method.label}
+                  onPress={() => router.push(method.route)}
+                  colors={["#A14EBF", "#9102A2"]}
+                  className="w-64"
+                  textClassName="text-white text-base"
+                  innerClassName="py-3.5 px-6"
+                  rightIcon={<ArrowRight size={20} color="white" strokeWidth={2.5} />}
+                />
               ))}
             </View>
           </View>

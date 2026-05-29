@@ -12,7 +12,7 @@ export default function StatsScreen() {
 
   return (
     <View className="flex-1 bg-[#121212]">
-      <Stack.Screen options={{ headerShown: false, presentation: "modal" }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <StatusBar style="light" />
       <ScrollView
         contentContainerStyle={{
@@ -24,14 +24,14 @@ export default function StatsScreen() {
       >
         {/* Header */}
         <View className="flex-row items-center justify-between mb-8 px-2">
-          <TouchableOpacity 
-            onPress={() => router.back()} 
+          <TouchableOpacity
+            onPress={() => router.back()}
             className="w-10 h-10 items-center justify-center"
           >
             <ArrowLeft size={28} color="#A14EBF" strokeWidth={2.5} />
           </TouchableOpacity>
           <View className="flex-row items-center gap-3">
-            <View 
+            <View
               className="items-center justify-center rounded-full"
               style={{
                 shadowColor: "#d946ef",
@@ -56,7 +56,7 @@ export default function StatsScreen() {
         </View>
 
         {/* Tarjeta Principal */}
-        <View 
+        <View
           className="bg-neutral-900 border border-neutral-800 p-6 w-full mb-6 relative overflow-hidden"
           style={{ borderRadius: 32 }}
         >
@@ -82,7 +82,7 @@ export default function StatsScreen() {
         </View>
 
         {/* Tasa de Éxito */}
-        <View 
+        <View
           className="bg-neutral-900 border border-neutral-800 p-6 w-full mb-6 flex-row items-center justify-between"
           style={{ borderRadius: 24 }}
         >
@@ -96,7 +96,7 @@ export default function StatsScreen() {
           </View>
 
           {/* Target Icon */}
-          <View 
+          <View
             className="w-16 h-16 rounded-full border-[6px] border-[#2dd4bf] items-center justify-center bg-black"
           >
             <View className="w-8 h-8 rounded-full bg-[#115e59] items-center justify-center">
@@ -107,7 +107,7 @@ export default function StatsScreen() {
 
         {/* Participadas & Ganadas Row */}
         <View className="flex-row gap-4 mb-6">
-          <View 
+          <View
             className="flex-1 bg-neutral-900 border border-neutral-800 p-5"
             style={{ borderRadius: 24 }}
           >
@@ -122,7 +122,7 @@ export default function StatsScreen() {
             </Text>
           </View>
 
-          <View 
+          <View
             className="flex-1 bg-neutral-900 border border-neutral-800 p-5"
             style={{ borderRadius: 24 }}
           >
@@ -139,7 +139,7 @@ export default function StatsScreen() {
         </View>
 
         {/* Total pujado */}
-        <View 
+        <View
           className="bg-neutral-900 border border-neutral-800 p-6 w-full mb-6"
           style={{ borderRadius: 24 }}
         >
@@ -149,7 +149,7 @@ export default function StatsScreen() {
             </Text>
             <Banknote size={20} color="#475569" strokeWidth={2} />
           </View>
-          
+
           <Text className="text-[#93c5fd] text-3xl font-black mb-5">
             €45,280.00
           </Text>
@@ -160,8 +160,8 @@ export default function StatsScreen() {
           </View>
         </View>
 
-        {/* Ahorro Total (Tarjeta semi-visible en el mockup original si se sube) */}
-        <View 
+        {/* Ahorro Total */}
+        <View
           className="bg-[#A14EBF] p-6 w-full mb-8 relative overflow-hidden"
           style={{ borderRadius: 24 }}
         >
@@ -192,11 +192,10 @@ export default function StatsScreen() {
             </TouchableOpacity>
           </View>
 
-          <View 
+          <View
             className="bg-neutral-900 border border-neutral-800 w-full h-40 flex-row items-end justify-between px-4 pb-0 pt-6 overflow-hidden"
             style={{ borderRadius: 24 }}
           >
-            {/* Barras del gráfico simuladas */}
             <View className="w-[12%] bg-[#1a1a1a] rounded-t-lg" style={{ height: '20%' }} />
             <View className="w-[12%] bg-[#262626] rounded-t-lg" style={{ height: '35%' }} />
             <View className="w-[12%] bg-[#2dd4bf] rounded-t-lg" style={{ height: '65%' }} />
