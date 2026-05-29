@@ -12,7 +12,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/api/v1/ws").withSockJS(); // ← único endpoint HTTP
+        registry.addEndpoint("/api/v1/ws").withSockJS(); // web (browsers)
+        registry.addEndpoint("/api/v1/ws/native") // React Native
+                .setAllowedOriginPatterns("*");
     }
 
     @Override

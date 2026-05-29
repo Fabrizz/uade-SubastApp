@@ -10,6 +10,7 @@ import "@/global.css";
 
 import { DevMenuButton } from '@/components/dev-button';
 import { AuthProvider } from '@/context/auth';
+import { WebSocketProvider } from '@/context/websocket';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useEffect } from 'react';
 
@@ -49,16 +50,18 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
-        <ThemeProvider value={DarkTheme}>
-          <Stack>
-            <Stack.Screen name="auth" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="dev-menu" options={{ presentation: 'modal', headerShown: false }} />
-          </Stack>
-          <StatusBar style="auto" />
-          <PortalHost />
-          <DevMenuButton />
-        </ThemeProvider>
+        <WebSocketProvider>
+          <ThemeProvider value={DarkTheme}>
+            <Stack>
+              <Stack.Screen name="auth" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="dev-menu" options={{ presentation: 'modal', headerShown: false }} />
+            </Stack>
+            <StatusBar style="auto" />
+            <PortalHost />
+            <DevMenuButton />
+          </ThemeProvider>
+        </WebSocketProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );
