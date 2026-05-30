@@ -105,7 +105,7 @@ export default function AuctionsScreen() {
         {/* Solicitar subasta Button */}
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={() => router.push("/request-auction")}
+          onPress={() => router.push("/request-auction" as any)}
           className="mb-10 shadow-lg shadow-[#9102A2]/30"
         >
           <LinearGradient
@@ -136,9 +136,9 @@ export default function AuctionsScreen() {
                   activeOpacity={0.8}
                   onPress={() => {
                     if (auction.status === "EN REVISIÓN") {
-                      router.push("/auction-verification");
+                      router.push("/auction-verification" as any);
                     } else if (auction.status === "ACEPTADA") {
-                      router.push("/auction-accepted");
+                      router.push("/auction-accepted" as any);
                     }
                   }}
                   className="flex-row items-center justify-between bg-[#141414] border border-neutral-800 p-4"
