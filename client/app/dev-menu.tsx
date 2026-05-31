@@ -1,9 +1,11 @@
 import { useAuth } from "@/context/auth";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { openBrowserAsync, WebBrowserPresentationStyle } from "expo-web-browser";
 import {
   BarChart2,
   Bell,
+  BookOpen,
   Building2,
   CheckCircle,
   ChevronRight,
@@ -14,8 +16,8 @@ import {
   Home,
   LogIn,
   PlusCircle,
-  ShieldCheck,
   ShieldAlert,
+  ShieldCheck,
   User,
   UserPlus,
   X,
@@ -23,6 +25,8 @@ import {
 import React from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const SWAGGER_URL = "https://cly-subastapp.fabriziob.com/swagger-ui/index.html";
 
 const ICON_MAP = {
   "log-in-outline": LogIn,
@@ -111,6 +115,21 @@ export default function DevMenu() {
             </View>
           </View>
         </View>
+        {/* Swagger docs */}
+        <TouchableOpacity
+          onPress={() => openBrowserAsync(SWAGGER_URL, { presentationStyle: WebBrowserPresentationStyle.AUTOMATIC })}
+          className="flex-row items-center bg-blue-950 border border-blue-800 p-4 rounded-xl mb-6"
+          activeOpacity={0.8}
+        >
+          <View className="bg-blue-900 p-2 rounded-lg mr-4">
+            <BookOpen size={20} color="#93c5fd" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-blue-200 font-semibold text-base">API Docs</Text>
+            <Text className="text-blue-500 text-xs mt-0.5">Swagger UI</Text>
+          </View>
+          <ChevronRight size={20} color="#3b82f6" />
+        </TouchableOpacity>
 
         <Text className="text-neutral-400 text-sm mb-6">
           Navega rápidamente a cualquier pantalla de la aplicación durante el desarrollo.

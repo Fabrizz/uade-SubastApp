@@ -7,19 +7,21 @@ import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ArrowRight, ChevronDown, ChevronLeft, CreditCard, Search, User } from "lucide-react-native";
+import { ArrowRight, CheckCircle, ChevronDown, ChevronLeft, CreditCard, Loader, Search, User, XCircle } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -55,6 +57,8 @@ export default function Register() {
 
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const [emailAvailable, setEmailAvailable] = useState<'available' | 'taken' | 'error' | null>(null);
 
   // ── Países ──
   const [paises, setPaises] = useState<{ nombre: string; nombreCorto: string }[]>([]);
@@ -80,6 +84,23 @@ export default function Register() {
       Alert.alert("Error", "No se pudieron cargar los países. Intentá de nuevo.");
     });
   }, []);
+
+  // ── Check email ──
+
+  async function handleCheckEmail() {
+    const trimmed = mail.trim();
+    if (!trimmed) return;
+    setCheckingEmail(true);
+    try {
+      const { data, error } = await api.POST('/api/v1/auth/check', { body: { email: trimmed } });
+      if (error) { setEmailAvailable('error'); return; }
+      setEmailAvailable(data.available ? 'available' : 'taken');
+    } catch {
+      setEmailAvailable('error');
+    } finally {
+      setCheckingEmail(false);
+    }
+  }
 
   // ── Geocoding (Nominatim) ──
 
@@ -160,6 +181,24 @@ export default function Register() {
       Alert.alert("Campos requeridos", "Completá los datos obligatorios.");
       return;
     }
+    if (emailAvailable === 'taken') {
+      Alert.alert("Email no disponible", "Ese correo ya está registrado. Usá otro o iniciá sesión.");
+      return;
+    }
+    if (emailAvailable === null || emailAvailable === 'error') {
+      try {
+        const { data, error } = await api.POST('/api/v1/auth/check', { body: { email: mail.trim() } });
+        if (error || !data.available) {
+          setEmailAvailable(error ? 'error' : 'taken');
+          Alert.alert(error ? "Error de conexión" : "Email no disponible", error ? "No se pudo verificar el correo. Revisá tu conexión e intentá de nuevo." : "Ese correo ya está registrado. Usá otro o iniciá sesión.");
+          return;
+        }
+        setEmailAvailable('available');
+      } catch {
+        Alert.alert("Error de conexión", "No se pudo verificar el correo. Revisá tu conexión e intentá de nuevo.");
+        return;
+      }
+    }
     setLoading(true);
     try {
       const formData = new FormData();
@@ -218,11 +257,13 @@ export default function Register() {
   return (
     <LinearGradient colors={["#000000", "#3f0146", "#9102A2"]} style={{ flex: 1 }}>
       <StatusBar style="light" />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
+          keyboardDismissMode="on-drag"
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: "center",
@@ -283,16 +324,44 @@ export default function Register() {
                 <Text className="text-neutral-300 text-xs font-semibold mb-1">
                   Email
                 </Text>
-                <TextInput
-                  style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
-                  placeholder="nombre@email.com"
-                  placeholderTextColor="#555"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  value={mail}
-                  onChangeText={setMail}
-                />
+                <View style={{ position: 'relative', marginBottom: 4 }}>
+                  <TextInput
+                    style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: emailAvailable === 'taken' || emailAvailable === 'error' ? '#ef4444' : emailAvailable === 'available' ? '#22c55e' : '#404040', borderRadius: 12, paddingHorizontal: 16, paddingRight: 44, color: 'white', fontSize: 16 }}
+                    placeholder="nombre@email.com"
+                    placeholderTextColor="#555"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={mail}
+                    onChangeText={(v) => { setMail(v); setEmailAvailable(null); }}
+                    onBlur={handleCheckEmail}
+                  />
+                  <View style={{ position: 'absolute', right: 14, top: 0, bottom: 0, justifyContent: 'center' }}>
+                    {checkingEmail
+                      ? <Loader size={18} color="#6b7280" />
+                      : emailAvailable === 'available'
+                        ? <CheckCircle size={18} color="#22c55e" />
+                        : emailAvailable === 'taken' || emailAvailable === 'error'
+                          ? <XCircle size={18} color="#ef4444" />
+                          : null}
+                  </View>
+                </View>
+                {emailAvailable === 'taken' && (
+                  <Text style={{ color: '#ef4444', fontSize: 11, marginBottom: 12 }}>
+                    Este correo ya está registrado.
+                  </Text>
+                )}
+                {emailAvailable === 'error' && (
+                  <Text style={{ color: '#ef4444', fontSize: 11, marginBottom: 12 }}>
+                    Error de conexión. Verificá tu red.
+                  </Text>
+                )}
+                {emailAvailable === 'available' && (
+                  <Text style={{ color: '#22c55e', fontSize: 11, marginBottom: 12 }}>
+                    Correo disponible.
+                  </Text>
+                )}
+                {emailAvailable === null && <View style={{ marginBottom: 16 }} />}
 
                 {/* PAIS */}
                 <Text className="text-neutral-300 text-xs font-semibold mb-1">
@@ -562,6 +631,7 @@ export default function Register() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </LinearGradient>
   );
 }

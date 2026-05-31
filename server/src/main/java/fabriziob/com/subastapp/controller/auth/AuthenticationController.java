@@ -70,17 +70,13 @@ public class AuthenticationController {
                 return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
 
-        @Operation(summary = "Verificar disponibilidad de correo", description = "Verifica si un correo electrónico está disponible para registro")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Correo disponible"),
-                        @ApiResponse(responseCode = "409", description = "El correo ya está en uso")
+                        @ApiResponse(responseCode = "200", description = "Resultado de disponibilidad")
         })
         @PostMapping("/check")
-        public ResponseEntity<Void> check(@RequestBody CheckRequest request) {
+        public ResponseEntity<CheckResponse> check(@RequestBody CheckRequest request) {
                 boolean available = service.emailDisponible(request.getEmail());
 
-                return available
-                                ? ResponseEntity.noContent().build()
-                                : ResponseEntity.status(HttpStatus.CONFLICT).build();
+                return ResponseEntity.ok(new CheckResponse(available));
         }
 }

@@ -6,8 +6,8 @@ import { ArrowRight, Terminal } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator, Alert,
-  Image,
-  Text, TextInput, TouchableOpacity, View,
+  Image, Keyboard,
+  Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -41,6 +41,7 @@ export default function Login() {
       style={{ flex: 1 }}
     >
       <StatusBar style="light" />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
         
         {/* Subtle Dev Menu Button */}
@@ -133,7 +134,8 @@ export default function Login() {
           </View>
 
         </View >
-      </SafeAreaView >
-    </LinearGradient >
+      </SafeAreaView>
+      </TouchableWithoutFeedback>
+    </LinearGradient>
   );
 }
