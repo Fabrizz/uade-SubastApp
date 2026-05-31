@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/auth";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -13,6 +14,8 @@ import {
   Home,
   LogIn,
   PlusCircle,
+  ShieldCheck,
+  ShieldAlert,
   User,
   UserPlus,
   X,
@@ -35,11 +38,13 @@ const ICON_MAP = {
   "business-outline": Building2,
   "stats-chart-outline": BarChart2,
   "checkmark-circle-outline": CheckCircle,
+  "shield-outline": ShieldAlert,
 } as const;
 
 const ROUTES = [
   { name: "Auth: Login", path: "/auth/login", icon: "log-in-outline" },
   { name: "Auth: Register", path: "/auth/register", icon: "person-add-outline" },
+  { name: "Admin: Panel", path: "/admin", icon: "shield-outline" },
   { name: "Tabs: Inicio", path: "/(tabs)", icon: "home-outline" },
   { name: "Tabs: Notificaciones", path: "/(tabs)/notifications", icon: "notifications-outline" },
   { name: "Tabs: Subastas", path: "/(tabs)/auctions", icon: "hammer-outline" },
@@ -57,6 +62,7 @@ const ROUTES = [
 
 export default function DevMenu() {
   const router = useRouter();
+  const { isAuthenticated, isLoading, user, token } = useAuth();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#1c1c1c" }}>
@@ -71,6 +77,41 @@ export default function DevMenu() {
       </View>
 
       <ScrollView className="flex-1 px-4 pt-4">
+        {/* Auth status card */}
+        <View className="bg-neutral-900 border border-neutral-700 rounded-2xl p-4 mb-6">
+          <View className="flex-row items-center mb-3">
+            <ShieldCheck size={18} color={isLoading ? "#a3a3a3" : isAuthenticated ? "#4ade80" : "#f87171"} />
+            <Text className="text-white font-bold text-base ml-2">Estado de Auth</Text>
+            <View
+              className="ml-auto px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: isLoading ? "#525252" : isAuthenticated ? "#14532d" : "#450a0a" }}
+            >
+              <Text
+                className="text-xs font-semibold"
+                style={{ color: isLoading ? "#a3a3a3" : isAuthenticated ? "#4ade80" : "#f87171" }}
+              >
+                {isLoading ? "Cargando..." : isAuthenticated ? "Autenticado" : "No autenticado"}
+              </Text>
+            </View>
+          </View>
+          <View className="gap-1">
+            <View className="flex-row">
+              <Text className="text-neutral-500 text-xs w-20">Email</Text>
+              <Text className="text-neutral-300 text-xs flex-1">{user?.email ?? "—"}</Text>
+            </View>
+            <View className="flex-row">
+              <Text className="text-neutral-500 text-xs w-20">Categoría</Text>
+              <Text className="text-neutral-300 text-xs flex-1">{user?.category ?? "—"}</Text>
+            </View>
+            <View className="flex-row">
+              <Text className="text-neutral-500 text-xs w-20">Token</Text>
+              <Text className="text-neutral-300 text-xs flex-1" numberOfLines={1}>
+                {token ? `${token.slice(0, 24)}…` : "—"}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         <Text className="text-neutral-400 text-sm mb-6">
           Navega rápidamente a cualquier pantalla de la aplicación durante el desarrollo.
         </Text>

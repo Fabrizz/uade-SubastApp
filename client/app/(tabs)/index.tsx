@@ -1,5 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
 import { useState } from "react";
 import {
@@ -161,6 +161,7 @@ function AuctionCard({ item }: { item: Auction }) {
 
 // ─── pantalla ─────────────────────────────────────────────────────────────────
 export default function Home() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<Category>("top");
 
@@ -185,7 +186,12 @@ export default function Home() {
       >
         {/* logo + badge tier usuario */}
         <View className="flex-row justify-between items-center mb-3">
-          <View className="flex-row items-center gap-2">
+          <TouchableOpacity
+            onLongPress={() => router.push("/admin")}
+            delayLongPress={800}
+            activeOpacity={1}
+            className="flex-row items-center gap-2"
+          >
             <Image
               source={require("@/assets/images/logo.png")}
               style={{ width: 32, height: 32 }}
@@ -194,7 +200,7 @@ export default function Home() {
             <Text className="text-white text-lg tracking-wide font-montserrat-bold">
               SubastApp
             </Text>
-          </View>
+          </TouchableOpacity>
           <View
             className="px-3 py-1 rounded-full"
             style={{

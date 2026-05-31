@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080';
+const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://cly-subastapp.fabriziob.com/';
 
 // TODO: replace with auto-generated type from backend
 export type UserCategory = 'comun' | 'especial' | 'plata' | 'oro' | 'platino';
