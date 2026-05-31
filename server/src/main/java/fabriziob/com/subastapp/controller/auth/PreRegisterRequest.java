@@ -16,4 +16,8 @@ public class PreRegisterRequest {
     private String email;
     private String telefono;
     private Integer numeroPais;
+
+    // Foto del documento (frente y dorso) codificada en base64
+    private String fotoFrenteDocumento;
+    private String fotoDorsoDocumento;
 }

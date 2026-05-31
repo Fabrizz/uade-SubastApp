@@ -2,12 +2,16 @@ package fabriziob.com.subastapp.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
 import fabriziob.com.subastapp.entity.Cliente;
+import fabriziob.com.subastapp.entity.ClienteExtra;
+import fabriziob.com.subastapp.entity.PersonaExtra;
+import fabriziob.com.subastapp.entity.enums.ClienteCategoria;
 import fabriziob.com.subastapp.repository.ClienteRepository;
 import jakarta.persistence.EntityNotFoundException;
 
@@ -17,6 +21,8 @@ import jakarta.persistence.EntityNotFoundException;
 public class ClienteService {
 
     private final ClienteRepository clienteRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     @Transactional(readOnly = true)
     public Cliente findById(Integer id) {
@@ -27,5 +33,54 @@ public class ClienteService {
     @Transactional(readOnly = true)
     public Page<Cliente> findAll(Pageable pageable) {
         return clienteRepository.findAll(pageable);
+    }
+
+    /**
+     * Investigación externa simulada: acepta al cliente, le asigna una categoría
+     * aleatoria ponderada, genera su clave temporal y le envía el mail de bienvenida.
+     */
+    public Cliente admitir(Integer id) {
+        Cliente cliente = findById(id);
+
+        ClienteCategoria categoria = ClienteCategoria.randomPonderada();
+        cliente.setAdmitido("si");
+        cliente.setCategoria(categoria);
+
+        ClienteExtra extra = cliente.getClienteExtra();
+        if (extra != null) {
+            extra.setCategoriaBase(categoria);
+            extra.setEstadoOperativo("habilitado");
+        }
+
+        // Clave temporal: se genera al admitir y se envía por mail.
+        PersonaExtra personaExtra = cliente.getPersona().getPersonaExtra();
+        String claveTemporal = PasswordUtil.generateTemporary();
+        personaExtra.setPasswordHash(passwordEncoder.encode(claveTemporal));
+        personaExtra.setPasswordTemporal(true);
+
+        emailService.enviarBienvenida(personaExtra.getEmail(), claveTemporal);
+
+        return cliente;
+    }
+
+    /** Override administrativo de la categoría. Pasa a ser el nuevo piso de la mejora. */
+    public Cliente actualizarCategoria(Integer id, String categoria) {
+        ClienteCategoria nueva = parseCategoria(categoria);
+        Cliente cliente = findById(id);
+        cliente.setCategoria(nueva);
+        ClienteExtra extra = cliente.getClienteExtra();
+        if (extra != null)
+            extra.setCategoriaBase(nueva);
+        return cliente;
+    }
+
+    private ClienteCategoria parseCategoria(String categoria) {
+        try {
+            return ClienteCategoria.valueOf(categoria);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new IllegalArgumentException(
+                    "Categoría inválida: " + categoria
+                            + ". Valores válidos: comun, especial, plata, oro, platino");
+        }
     }
 }

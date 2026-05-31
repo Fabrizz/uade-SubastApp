@@ -16,6 +16,8 @@ public interface PujoRepository extends JpaRepository<Pujo, Integer> {
 
     List<Pujo> findByAsistente_Identificador(Integer asistenteId);
 
+    long countByAsistente_Cliente_Identificador(Integer clienteId);
+
     List<Pujo> findByItem_IdentificadorAndGanador(Integer itemId, String ganador);
 
     List<Pujo> findByAsistente_Subasta_Identificador(Integer subastaId);

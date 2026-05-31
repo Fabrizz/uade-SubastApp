@@ -17,9 +17,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.http.HttpStatus;
+
 import fabriziob.com.subastapp.entity.Cliente;
 import fabriziob.com.subastapp.entity.ClienteExtra;
+import fabriziob.com.subastapp.service.CategoriaService;
 import fabriziob.com.subastapp.service.ClienteService;
+import fabriziob.com.subastapp.service.MedioPagoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -39,6 +43,8 @@ public class ClienteController {
         private static final String R_404_MP = "Cliente o medio de pago no encontrado";
 
         private final ClienteService clienteService;
+        private final MedioPagoService medioPagoService;
+        private final CategoriaService categoriaService;
 
         @Operation(summary = "Listar clientes", description = "Devuelve todos los clientes paginados")
         @ApiResponses({
@@ -75,7 +81,7 @@ public class ClienteController {
         })
         @PatchMapping("/{id}/admitir")
         public ResponseEntity<ClienteResponse> admitir(@PathVariable Integer id) {
-                return null;
+                return ResponseEntity.ok(toResponse(clienteService.admitir(id)));
         }
 
         @Operation(summary = "Actualizar categoría", description = "Cambia la categoría del cliente (comun, especial, plata, oro, platino)")
@@ -89,7 +95,7 @@ public class ClienteController {
         public ResponseEntity<ClienteResponse> actualizarCategoria(
                         @PathVariable Integer id,
                         @RequestParam String categoria) {
-                return null;
+                return ResponseEntity.ok(toResponse(clienteService.actualizarCategoria(id, categoria)));
         }
 
         @Operation(summary = "Inhabilitar cliente", description = "Inhabilita operativamente al cliente para participar en subastas")
@@ -142,7 +148,7 @@ public class ClienteController {
         @GetMapping("/{id}/medios-pago")
         public ResponseEntity<List<MedioPagoResponse>> getMediosPago(
                         @PathVariable Integer id) {
-                return null;
+                return ResponseEntity.ok(medioPagoService.listar(id));
         }
 
         @Operation(summary = "Obtener medio de pago", description = "Devuelve un medio de pago específico del cliente por su ID")
@@ -156,7 +162,7 @@ public class ClienteController {
         public ResponseEntity<MedioPagoResponse> getMedioPago(
                         @PathVariable Integer id,
                         @PathVariable Integer mpId) {
-                return null;
+                return ResponseEntity.ok(medioPagoService.obtener(id, mpId));
         }
 
         @Operation(summary = "Agregar cheque", description = "Registra un cheque certificado como medio de pago del cliente")
@@ -171,7 +177,8 @@ public class ClienteController {
         public ResponseEntity<MedioPagoResponse> addCheque(
                         @PathVariable Integer id,
                         @RequestBody MedioPagoChequeRequest request) {
-                return null;
+                return ResponseEntity.status(HttpStatus.CREATED)
+                                .body(medioPagoService.agregarCheque(id, request));
         }
 
         @Operation(summary = "Agregar cuenta bancaria", description = "Registra una cuenta bancaria (local o exterior) como medio de pago del cliente")
@@ -186,7 +193,8 @@ public class ClienteController {
         public ResponseEntity<MedioPagoResponse> addCuenta(
                         @PathVariable Integer id,
                         @RequestBody MedioPagoCuentaRequest request) {
-                return null;
+                return ResponseEntity.status(HttpStatus.CREATED)
+                                .body(medioPagoService.agregarCuenta(id, request));
         }
 
         @Operation(summary = "Agregar tarjeta de crédito", description = "Registra una tarjeta de crédito como medio de pago del cliente")
@@ -201,7 +209,8 @@ public class ClienteController {
         public ResponseEntity<MedioPagoResponse> addTarjeta(
                         @PathVariable Integer id,
                         @RequestBody MedioPagoTarjetaRequest request) {
-                return null;
+                return ResponseEntity.status(HttpStatus.CREATED)
+                                .body(medioPagoService.agregarTarjeta(id, request));
         }
 
         @Operation(summary = "Verificar medio de pago", description = "Marca un medio de pago como verificado por la empresa")
@@ -215,7 +224,7 @@ public class ClienteController {
         public ResponseEntity<MedioPagoResponse> verificar(
                         @PathVariable Integer id,
                         @PathVariable Integer mpId) {
-                return null;
+                return ResponseEntity.ok(medioPagoService.verificar(id, mpId));
         }
 
         @Operation(summary = "Desactivar medio de pago", description = "Desactiva un medio de pago, impidiendo su uso en futuras operaciones")
@@ -229,7 +238,7 @@ public class ClienteController {
         public ResponseEntity<MedioPagoResponse> desactivar(
                         @PathVariable Integer id,
                         @PathVariable Integer mpId) {
-                return null;
+                return ResponseEntity.ok(medioPagoService.desactivar(id, mpId));
         }
 
         @Operation(summary = "Eliminar medio de pago", description = "Elimina definitivamente un medio de pago del cliente")
@@ -243,7 +252,20 @@ public class ClienteController {
         public ResponseEntity<Void> deleteMedioPago(
                         @PathVariable Integer id,
                         @PathVariable Integer mpId) {
-                return null;
+                medioPagoService.eliminar(id, mpId);
+                return ResponseEntity.noContent().build();
+        }
+
+        @Operation(summary = "Recalcular categoría", description = "Recalcula la categoría del cliente según la diversidad de medios de pago verificados y su actividad. Nunca baja de la categoría base.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Categoría recalculada"),
+                        @ApiResponse(responseCode = "401", description = R_401, content = @Content),
+                        @ApiResponse(responseCode = "403", description = R_403, content = @Content),
+                        @ApiResponse(responseCode = "404", description = R_404, content = @Content)
+        })
+        @PatchMapping("/{id}/categoria/recalcular")
+        public ResponseEntity<ClienteResponse> recalcularCategoria(@PathVariable Integer id) {
+                return ResponseEntity.ok(toResponse(categoriaService.recalcular(id)));
         }
 
         private ClienteResponse toResponse(Cliente c) {

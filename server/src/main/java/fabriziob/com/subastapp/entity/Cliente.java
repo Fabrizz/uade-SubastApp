@@ -56,10 +56,9 @@ public class Cliente {
     @JoinColumn(name = "identificador") // es el mismo que el de Persona
     private Persona persona;
 
-    // El empleado que verificó / aprobó al cliente
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "verificador", nullable = false)
-    // private Empleado verificador;
+    // El empleado que verificó / aprobó al cliente (FK a empleados)
+    @Column(name = "verificador")
+    private Integer verificador;
 
     // País de origen del cliente
     @ManyToOne(fetch = FetchType.LAZY)
