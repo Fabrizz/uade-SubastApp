@@ -4,12 +4,12 @@ import { Bell, Gavel, House, User } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const TABS = [
-  { name: "index", label: "Inicio", Icon: House },
-  { name: "notifications", label: "Notificaciones", Icon: Bell },
-  { name: "auctions", label: "Subastas", Icon: Gavel },
-  { name: "profile", label: "Perfil", Icon: User },
-];
+const TABS: Record<string, { label: string; Icon: typeof House }> = {
+  index:         { label: "Inicio",          Icon: House  },
+  notifications: { label: "Notificaciones",  Icon: Bell   },
+  auctions:      { label: "Subastas",        Icon: Gavel  },
+  profile:       { label: "Perfil",          Icon: User   },
+};
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -33,7 +33,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           bg-[#101010]/70 w-full overflow-hidden"
       >
         {state.routes.map((route, index) => {
-          const tabConfig = TABS[index];
+          const tabConfig = TABS[route.name];
           if (!tabConfig) return null;
 
           const { label, Icon } = tabConfig;
