@@ -1,10 +1,8 @@
 package fabriziob.com.subastapp.service;
 
-import java.math.BigDecimal;
-import java.security.SecureRandom;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.Base64;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -47,7 +45,8 @@ public class AuthenticationService {
         private final JwtService jwtService;
         private final AuthenticationManager authenticationManager;
 
-        private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        @Value("${app.empleado-sistema-id:1}")
+        private Integer empleadoSistemaId;
 
         // ─── PRE-REGISTER ────────────────────────────────────────────────────
 
@@ -55,8 +54,6 @@ public class AuthenticationService {
 
                 if (personaExtraRepository.existsByEmail(request.getEmail()))
                         throw new RuntimeException("Email ya registrado: " + request.getEmail());
-
-                String tempPassword = generateTemporaryPassword();
 
                 // 1. Persona base — estado inactivo hasta que complete el paso 2
                 Persona persona = Persona.builder()
@@ -68,17 +65,16 @@ public class AuthenticationService {
 
                 persona = userRepository.save(persona);
 
-                // 2. PersonaExtra — password temporal, mustChangePassword = true
+                // 2. PersonaExtra — la clave temporal se genera y envía recién al admitir
                 PersonaExtra personaExtra = new PersonaExtra();
                 personaExtra.setIdentificador(persona.getIdentificador());
                 personaExtra.setPersona(persona);
                 personaExtra.setEmail(request.getEmail());
                 personaExtra.setTelefono(request.getTelefono());
-                personaExtra.setPasswordHash(passwordEncoder.encode(tempPassword));
                 personaExtra.setPasswordTemporal(true);
                 personaExtraRepository.save(personaExtra);
 
-                // 3. Cliente — admitido=no, inhabilitado hasta aprobación externa
+                // 3. Cliente — admitido=no hasta la investigación externa (endpoint /admitir)
                 Pais pais = paisRepository.findById(request.getNumeroPais())
                                 .orElseThrow(() -> new RuntimeException(
                                                 "País no encontrado: " + request.getNumeroPais()));
@@ -89,22 +85,34 @@ public class AuthenticationService {
                                 .pais(pais)
                                 .admitido("no")
                                 .categoria(ClienteCategoria.comun)
+                                .verificador(empleadoSistemaId)
                                 .build();
 
                 clienteRepository.save(cliente);
 
-                // 4. ClienteExtra — inhabilitado hasta que la empresa apruebe
+                // 4. ClienteExtra — inhabilitado y con fotos del documento hasta que la empresa apruebe
                 ClienteExtra clienteExtra = new ClienteExtra();
                 clienteExtra.setIdentificador(persona.getIdentificador());
                 clienteExtra.setCliente(cliente);
                 clienteExtra.setEstadoOperativo("inhabilitado");
-                clienteExtra.setMultaPendiente(BigDecimal.ZERO);
+                clienteExtra.setMultaPendiente(null);
+                clienteExtra.setFotoDocumentoFrente(decodeBase64(request.getFotoFrenteDocumento()));
+                clienteExtra.setFotoDocumentoDorso(decodeBase64(request.getFotoDorsoDocumento()));
                 clienteExtraRepository.save(clienteExtra);
 
                 return PreRegisterResponse.builder()
                                 .email(request.getEmail())
-                                .temporaryPassword(tempPassword)
+                                .mensaje("Pre-registro recibido. Su identidad está siendo verificada; "
+                                                + "recibirá un mail cuando sea aprobado.")
                                 .build();
+        }
+
+        private byte[] decodeBase64(String value) {
+                if (value == null || value.isBlank())
+                        return null;
+                // Tolera el prefijo data URL ("data:image/png;base64,...")
+                String payload = value.contains(",") ? value.substring(value.indexOf(',') + 1) : value;
+                return Base64.getDecoder().decode(payload);
         }
 
         // ─── REGISTER (paso 2) ───────────────────────────────────────────────
@@ -170,13 +178,5 @@ public class AuthenticationService {
 
         public boolean emailDisponible(String email) {
                 return !personaExtraRepository.existsByEmail(email);
-        }
-
-        private String generateTemporaryPassword() {
-                SecureRandom random = new SecureRandom();
-                return IntStream.range(0, 12)
-                                .mapToObj(i -> String.valueOf(
-                                                CHARACTERS.charAt(random.nextInt(CHARACTERS.length()))))
-                                .collect(Collectors.joining());
         }
 }

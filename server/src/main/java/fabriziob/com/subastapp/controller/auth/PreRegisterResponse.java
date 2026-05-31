@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PreRegisterResponse {
     private String email;
-    private String temporaryPassword;
+    private String mensaje;
 }
