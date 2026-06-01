@@ -1,3 +1,4 @@
+import PasswordInput from "@/components/ui/PasswordInput";
 import { useAuth } from "@/context/auth";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -124,12 +125,9 @@ export default function Start() {
               <Text className="text-neutral-300 text-xs font-semibold mb-1">
                 Contraseña temporal
               </Text>
-              <TextInput
-                style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
+              <PasswordInput
+                containerStyle={{ marginBottom: 16 }}
                 placeholder="La que recibiste por mail"
-                placeholderTextColor="#555"
-                secureTextEntry
-                autoCapitalize="none"
                 value={tempPassword}
                 onChangeText={setTempPassword}
               />
@@ -137,12 +135,9 @@ export default function Start() {
               <Text className="text-neutral-300 text-xs font-semibold mb-1">
                 Nueva contraseña
               </Text>
-              <TextInput
-                style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
+              <PasswordInput
+                containerStyle={{ marginBottom: 16 }}
                 placeholder="Mínimo 8 caracteres"
-                placeholderTextColor="#555"
-                secureTextEntry
-                autoCapitalize="none"
                 value={newPassword}
                 onChangeText={setNewPassword}
               />
@@ -150,12 +145,9 @@ export default function Start() {
               <Text className="text-neutral-300 text-xs font-semibold mb-1">
                 Confirmar contraseña
               </Text>
-              <TextInput
-                style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 24 }}
+              <PasswordInput
+                containerStyle={{ marginBottom: 24 }}
                 placeholder="Repetí la nueva contraseña"
-                placeholderTextColor="#555"
-                secureTextEntry
-                autoCapitalize="none"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
               />

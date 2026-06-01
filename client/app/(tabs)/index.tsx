@@ -1,3 +1,5 @@
+import { CategoryPill } from "@/components/ui/CategoryPill";
+import { useAuth } from "@/context/auth";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
@@ -162,6 +164,7 @@ function AuctionCard({ item }: { item: Auction }) {
 // ─── pantalla ─────────────────────────────────────────────────────────────────
 export default function Home() {
   const router = useRouter();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<Category>("top");
 
@@ -201,18 +204,9 @@ export default function Home() {
               SubastApp
             </Text>
           </TouchableOpacity>
-          <View
-            className="px-3 py-1 rounded-full"
-            style={{
-              backgroundColor: "#3d2a00",
-              borderWidth: 1,
-              borderColor: "#b8860b",
-            }}
-          >
-            <Text className="text-xs font-manrope-bold" style={{ color: "#b8860b" }}>
-              ORO
-            </Text>
-          </View>
+          {user?.category && (
+            <CategoryPill category={user.category as any} size="sm" />
+          )}
         </View>
 
         {/* buscador */}

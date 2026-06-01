@@ -1,3 +1,4 @@
+import PasswordInput from '@/components/ui/PasswordInput';
 import { useAuth } from '@/context/auth';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -85,12 +86,8 @@ export default function Login() {
           />
 
           <Text className="text-neutral-300 text-xs font-semibold mb-1">Contraseña</Text>
-          <TextInput
-            style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 12 }}
-            placeholder="••••••••"
-            placeholderTextColor="#555"
-            secureTextEntry
-            autoCapitalize="none"
+          <PasswordInput
+            containerStyle={{ marginBottom: 12 }}
             value={password}
             onChangeText={setPassword}
           />
