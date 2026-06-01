@@ -16,6 +16,7 @@ export type WsNotification = {
 
 interface WebSocketContextValue {
   isConnected: boolean;
+  connectionError: string | null;
   notifications: WsNotification[];
   removeNotification: (id: number | string) => void;
   clearNotifications: () => void;
@@ -32,6 +33,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const { token, isAuthenticated } = useAuth();
   const clientRef = useRef<Client | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<WsNotification[]>([]);
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       reconnectDelay: 5000,
       onConnect: () => {
         setIsConnected(true);
+        setConnectionError(null);
         client.subscribe('/user/queue/notificaciones', (msg: IMessage) => {
           try {
             const notif: WsNotification = JSON.parse(msg.body);
@@ -58,7 +61,14 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         });
       },
       onDisconnect: () => setIsConnected(false),
-      onStompError: () => setIsConnected(false),
+      onStompError: (frame) => {
+        setIsConnected(false);
+        setConnectionError(frame.headers?.message ?? 'Error de conexión STOMP');
+      },
+      onWebSocketError: () => {
+        setIsConnected(false);
+        setConnectionError('No se pudo conectar al servidor');
+      },
     });
 
     client.activate();
@@ -78,7 +88,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const clearNotifications = useCallback(() => setNotifications([]), []);
 
   return (
-    <WebSocketContext.Provider value={{ isConnected, notifications, removeNotification, clearNotifications }}>
+    <WebSocketContext.Provider value={{ isConnected, connectionError, notifications, removeNotification, clearNotifications }}>
       {children}
     </WebSocketContext.Provider>
   );

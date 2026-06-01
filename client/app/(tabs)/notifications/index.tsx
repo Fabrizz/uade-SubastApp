@@ -21,7 +21,7 @@ function getIcon(type: WsNotification["type"]) {
   switch (type) {
     case "warning": return <AlertTriangle size={22} color="#f43f5e" />;
     case "success": return <Trophy size={22} color="#10b981" />;
-    default:        return <Bell size={22} color="#2dd4bf" />;
+    default: return <Bell size={22} color="#2dd4bf" />;
   }
 }
 
@@ -29,14 +29,14 @@ function getIconBg(type: WsNotification["type"]) {
   switch (type) {
     case "warning": return "bg-rose-500/10";
     case "success": return "bg-emerald-500/10";
-    default:        return "bg-teal-500/10";
+    default: return "bg-teal-500/10";
   }
 }
 
 export default function NotificationsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { notifications, removeNotification, isConnected } = useWebSocket();
+  const { notifications, removeNotification, isConnected, connectionError } = useWebSocket();
 
   return (
     <LinearGradient
@@ -88,18 +88,25 @@ export default function NotificationsScreen() {
           <View className="w-10" />
         </View>
 
-        <View className="flex-row items-center justify-between mb-6 px-2">
-          <Text className="text-white text-3xl font-bold tracking-wide">
-            Notificaciones
-          </Text>
-          <View className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full ${isConnected ? "bg-teal-500/15" : "bg-neutral-800"}`}>
-            {isConnected
-              ? <CheckCircle size={13} color="#2dd4bf" strokeWidth={2.5} />
-              : <WifiOff size={13} color="#525252" strokeWidth={2.5} />}
-            <Text className={`text-xs font-semibold ${isConnected ? "text-teal-400" : "text-neutral-500"}`}>
-              {isConnected ? "En vivo" : "Sin conexión"}
+        <View className="mb-6 px-2 gap-2">
+          <View className="flex-row items-center justify-between">
+            <Text className="text-white text-3xl font-bold tracking-wide">
+              Notificaciones
             </Text>
+            <View className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full ${isConnected ? "bg-teal-500/15" : "bg-neutral-800"}`}>
+              {isConnected
+                ? <CheckCircle size={13} color="#2dd4bf" strokeWidth={2.5} />
+                : <WifiOff size={13} color="#525252" strokeWidth={2.5} />}
+              <Text className={`text-xs font-semibold ${isConnected ? "text-teal-400" : "text-neutral-500"}`}>
+                {isConnected ? "En vivo" : "Sin conexión"}
+              </Text>
+            </View>
           </View>
+          {connectionError && (
+            <Text className="text-neutral-600 text-xs opacity-60" numberOfLines={1}>
+              {connectionError}
+            </Text>
+          )}
         </View>
 
         {notifications.length === 0 ? (
