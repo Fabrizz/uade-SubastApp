@@ -1,7 +1,7 @@
 {
   "properties": [
     {
-      "name": "application.security.jwt.secretKey",
+      "name": "application.security.jwt.secretkey",
       "type": "java.lang.String",
       "description": "Secret Key for JWT auth"
     },
@@ -9,6 +9,16 @@
       "name": "application.security.jwt.expiration",
       "type": "java.lang.String",
       "description": "Expiration time for JWT auth"
+    },
+    {
+      "name": "app.empleado-sistema-id",
+      "type": "java.lang.String",
+      "description": "Empleado del sistema verificador simulado"
+    },
+    {
+      "name": "discord.webhook-url",
+      "type": "java.lang.String",
+      "description": "Webhook para notificaciones en Discord (DEV)"
     }
   ]
 }

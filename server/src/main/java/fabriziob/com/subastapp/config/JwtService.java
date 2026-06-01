@@ -17,7 +17,7 @@ import fabriziob.com.subastapp.entity.Persona;
 
 @Service
 public class JwtService {
-    @Value("${application.security.jwt.secretKey}")
+    @Value("${application.security.jwt.secretkey}")
     private String secretKey;
     @Value("${application.security.jwt.expiration}")
     private long jwtExpiration;

@@ -13,7 +13,7 @@ public final class PasswordUtil {
     }
 
     public static String generateTemporary() {
-        return IntStream.range(0, 12)
+        return IntStream.range(0, 8)
                 .mapToObj(i -> String.valueOf(CHARACTERS.charAt(RANDOM.nextInt(CHARACTERS.length()))))
                 .collect(Collectors.joining());
     }

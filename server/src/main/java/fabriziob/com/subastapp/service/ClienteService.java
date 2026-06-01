@@ -37,7 +37,8 @@ public class ClienteService {
 
     /**
      * Investigación externa simulada: acepta al cliente, le asigna una categoría
-     * aleatoria ponderada, genera su clave temporal y le envía el mail de bienvenida.
+     * aleatoria ponderada, genera su clave temporal y le envía el mail de
+     * bienvenida.
      */
     public Cliente admitir(Integer id) {
         Cliente cliente = findById(id);
@@ -63,7 +64,10 @@ public class ClienteService {
         return cliente;
     }
 
-    /** Override administrativo de la categoría. Pasa a ser el nuevo piso de la mejora. */
+    /**
+     * Override administrativo de la categoría. Pasa a ser el nuevo piso de la
+     * mejora.
+     */
     public Cliente actualizarCategoria(Integer id, String categoria) {
         ClienteCategoria nueva = parseCategoria(categoria);
         Cliente cliente = findById(id);

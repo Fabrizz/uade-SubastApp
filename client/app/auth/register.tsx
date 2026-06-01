@@ -3,12 +3,17 @@ import GenericModal from "@/components/ui/GenericModal";
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
 import { DNIData } from "@/lib/dni";
-import * as ImagePicker from "expo-image-picker";
+import {
+  launchCameraAsync,
+  launchImageLibraryAsync,
+  requestCameraPermissionsAsync,
+  requestMediaLibraryPermissionsAsync,
+} from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ArrowRight, CheckCircle, ChevronDown, ChevronLeft, CreditCard, Loader, Search, User, XCircle } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { ArrowRight, CheckCircle, ChevronDown, CreditCard, Loader, Search, User, XCircle } from "lucide-react-native";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -31,18 +36,18 @@ import MapView, { Marker } from "react-native-maps";
 export default function Register() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { preRegister, register } = useAuth();
+  const { preRegister } = useAuth();
 
-  // ── Step 1: datos personales ──
-  const [step, setStep] = useState<1 | 2>(1);
   const [nombreCompleto, setNombreCompleto] = useState("");
   const [mail, setMail] = useState("");
   const [paisOrigen, setPaisOrigen] = useState("");
+  const [paisNumero, setPaisNumero] = useState<number | undefined>(undefined);
   const [dni, setDni] = useState("");
   const [fechaNacimiento, setFechaNacimiento] = useState("");
   const [domicilio, setDomicilio] = useState("");
-  const [dniDorso, setDniDorso] = useState<string | null>(null);
-  const [dniFrente, setDniFrente] = useState<string | null>(null);
+  type DniImage = { uri: string; base64: string } | null;
+  const [dniDorso, setDniDorso] = useState<DniImage>(null);
+  const [dniFrente, setDniFrente] = useState<DniImage>(null);
   const [region, setRegion] = useState({
     latitude: -34.6037,
     longitude: -58.3816,
@@ -50,18 +55,13 @@ export default function Register() {
     longitudeDelta: 0.01,
   });
 
-  // ── Step 2: contraseñas ──
-  const [tempPassword, setTempPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
   const [emailAvailable, setEmailAvailable] = useState<'available' | 'taken' | 'error' | null>(null);
+  const emailDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Países ──
-  const [paises, setPaises] = useState<{ nombre: string; nombreCorto: string }[]>([]);
+  const [paises, setPaises] = useState<{ numero: number; nombre: string; nombreCorto: string }[]>([]);
   const [showPaisesPicker, setShowPaisesPicker] = useState(false);
   const [searchPais, setSearchPais] = useState("");
 
@@ -72,12 +72,11 @@ export default function Register() {
     }).then(({ data, error }) => {
       if (error) {
         Alert.alert("Error", "No se pudieron cargar los países. Intentá de nuevo.");
-        console.error("Error al cargar países", error);
         return;
       }
       const items = (data?.content ?? [])
-        .filter((p): p is typeof p & { nombreCorto: string } => !!p.nombreCorto)
-        .map((p) => ({ nombre: p.nombre ?? p.nombreCorto, nombreCorto: p.nombreCorto }))
+        .filter((p): p is typeof p & { numero: number; nombreCorto: string } => !!p.nombreCorto && p.numero != null)
+        .map((p) => ({ numero: p.numero, nombre: p.nombre ?? p.nombreCorto, nombreCorto: p.nombreCorto }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
       setPaises(items);
     }).catch(() => {
@@ -85,24 +84,23 @@ export default function Register() {
     });
   }, []);
 
-  // ── Check email ──
-
-  async function handleCheckEmail() {
+  useEffect(() => {
+    if (emailDebounceRef.current) clearTimeout(emailDebounceRef.current);
     const trimmed = mail.trim();
-    if (!trimmed) return;
-    setCheckingEmail(true);
-    try {
-      const { data, error } = await api.POST('/api/v1/auth/check', { body: { email: trimmed } });
-      if (error) { setEmailAvailable('error'); return; }
-      setEmailAvailable(data.available ? 'available' : 'taken');
-    } catch {
-      setEmailAvailable('error');
-    } finally {
-      setCheckingEmail(false);
-    }
-  }
-
-  // ── Geocoding (Nominatim) ──
+    if (!trimmed) { setEmailAvailable(null); return; }
+    emailDebounceRef.current = setTimeout(async () => {
+      setCheckingEmail(true);
+      try {
+        const { data, error } = await api.POST('/api/v1/auth/check', { body: { email: trimmed } });
+        if (error) { setEmailAvailable('error'); return; }
+        setEmailAvailable(data.available ? 'available' : 'taken');
+      } catch {
+        setEmailAvailable('error');
+      } finally {
+        setCheckingEmail(false);
+      }
+    }, 600);
+  }, [mail]);
 
   async function handleBuscarDomicilio() {
     if (!domicilio.trim()) return;
@@ -126,55 +124,42 @@ export default function Register() {
     }
   }
 
-  // ── DNI Scanner ──
-
   function handleDniScan(data: DNIData) {
     const firstName = data.nombre.split(/\s+/)[0] ?? data.nombre;
     setNombreCompleto(`${data.apellido} ${firstName}`.trim());
     setDni(data.dni.replace(/\D/g, ""));
     setFechaNacimiento(data.fechaNacimiento);
-    setPaisOrigen("Argentina");
+    const argentina = paises.find(p => p.nombreCorto === 'AR');
+    if (argentina) { setPaisOrigen(argentina.nombre); setPaisNumero(argentina.numero); }
   }
 
-  // ── Imágenes DNI ──
+  async function seleccionarImagen(setter: (value: DniImage) => void) {
+    const pickerOptions = { mediaTypes: ['images'] as any, quality: 0.5, base64: true };
 
-  async function seleccionarImagen(setter: (value: string) => void) {
     Alert.alert("Seleccionar imagen", "Elegí una opción", [
       {
         text: "Cámara",
         onPress: async () => {
-          const permission = await ImagePicker.requestCameraPermissionsAsync();
-          if (!permission.granted) {
-            Alert.alert("Permiso denegado", "Necesitamos acceso a la cámara.");
-            return;
-          }
-          const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            quality: 0.7,
-          });
-          if (!result.canceled) setter(result.assets[0].uri);
+          const permission = await requestCameraPermissionsAsync();
+          if (!permission.granted) { Alert.alert("Permiso denegado", "Necesitamos acceso a la cámara."); return; }
+          const result = await launchCameraAsync(pickerOptions);
+          if (!result.canceled && result.assets[0].base64)
+            setter({ uri: result.assets[0].uri, base64: result.assets[0].base64 });
         },
       },
       {
         text: "Galería",
         onPress: async () => {
-          const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (!permission.granted) {
-            Alert.alert("Permiso denegado", "Necesitamos acceso a la galería.");
-            return;
-          }
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ["images"],
-            quality: 0.7,
-          });
-          if (!result.canceled) setter(result.assets[0].uri);
+          const permission = await requestMediaLibraryPermissionsAsync();
+          if (!permission.granted) { Alert.alert("Permiso denegado", "Necesitamos acceso a la galería."); return; }
+          const result = await launchImageLibraryAsync(pickerOptions);
+          if (!result.canceled && result.assets[0].base64)
+            setter({ uri: result.assets[0].uri, base64: result.assets[0].base64 });
         },
       },
       { text: "Cancelar", style: "cancel" },
     ]);
   }
-
-  // ── Paso 1: pre-registro ──
 
   async function handlePreRegistrar() {
     if (!nombreCompleto.trim() || !mail.trim() || !dni.trim()) {
@@ -190,7 +175,10 @@ export default function Register() {
         const { data, error } = await api.POST('/api/v1/auth/check', { body: { email: mail.trim() } });
         if (error || !data.available) {
           setEmailAvailable(error ? 'error' : 'taken');
-          Alert.alert(error ? "Error de conexión" : "Email no disponible", error ? "No se pudo verificar el correo. Revisá tu conexión e intentá de nuevo." : "Ese correo ya está registrado. Usá otro o iniciá sesión.");
+          Alert.alert(
+            error ? "Error de conexión" : "Email no disponible",
+            error ? "No se pudo verificar el correo. Revisá tu conexión e intentá de nuevo." : "Ese correo ya está registrado. Usá otro o iniciá sesión."
+          );
           return;
         }
         setEmailAvailable('available');
@@ -201,54 +189,18 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append("name", nombreCompleto.trim());
-      formData.append("email", mail.trim());
-      formData.append("country", paisOrigen.trim());
-      formData.append("dni", dni.trim());
-      formData.append("birthDate", fechaNacimiento.trim());
-      formData.append("address", domicilio.trim());
-      if (dniFrente) {
-        formData.append("dniFront", { uri: dniFrente, name: "dni-frente.jpg", type: "image/jpeg" } as any);
-      }
-      if (dniDorso) {
-        formData.append("dniBack", { uri: dniDorso, name: "dni-dorso.jpg", type: "image/jpeg" } as any);
-      }
-
-      await preRegister(formData);
-      setStep(2);
+      await preRegister({
+        nombre:               nombreCompleto.trim(),
+        email:                mail.trim(),
+        documento:            dni.trim(),
+        direccion:            domicilio.trim() || undefined,
+        numeroPais:           paisNumero,
+        fotoFrenteDocumento:  dniFrente?.base64,
+        fotoDorsoDocumento:   dniDorso?.base64,
+      });
+      router.push({ pathname: '/auth/start', params: { email: mail.trim() } });
     } catch (e: any) {
       Alert.alert("Error", e?.message ?? "No se pudo iniciar el registro.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // ── Paso 2: confirmar registro ──
-
-  async function handleConfirmar() {
-    if (!tempPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
-      Alert.alert("Campos requeridos", "Completá todos los campos.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "Las contraseñas no coinciden.");
-      return;
-    }
-    if (newPassword.length < 8) {
-      Alert.alert("Error", "La contraseña debe tener al menos 8 caracteres.");
-      return;
-    }
-    setLoading(true);
-    try {
-      await register({
-        email: mail.trim(),
-        temporaryPassword: tempPassword.trim(),
-        password: newPassword,
-      });
-      router.replace("/(tabs)");
-    } catch (e: any) {
-      Alert.alert("Error", e?.message ?? "No se pudo completar el registro.");
     } finally {
       setLoading(false);
     }
@@ -288,346 +240,262 @@ export default function Register() {
 
           {/* CARD */}
           <View className="w-full bg-neutral-900 rounded-2xl p-6">
+            <Text className="text-teal-400 text-xl font-bold mb-1">
+              Bienvenido
+            </Text>
+            <Text className="text-neutral-400 text-sm mb-5 leading-5">
+              Crea tu cuenta para participar en subastas exclusivas.
+            </Text>
 
-            {step === 1 ? (
-              <>
-                <Text className="text-teal-400 text-xl font-bold mb-1">
-                  Bienvenido
-                </Text>
-                <Text className="text-neutral-400 text-sm mb-5 leading-5">
-                  Crea tu cuenta para participar en subastas exclusivas.
-                </Text>
+            {/* DNI SCANNER */}
+            <DniScanner onScan={handleDniScan} />
 
-                {/* DNI SCANNER */}
-                <DniScanner onScan={handleDniScan} />
+            <View className="flex-row items-center gap-3 my-4">
+              <View className="flex-1 h-px bg-neutral-700" />
+              <Text className="text-neutral-600 text-xs">o completá manualmente</Text>
+              <View className="flex-1 h-px bg-neutral-700" />
+            </View>
 
-                <View className="flex-row items-center gap-3 my-4">
-                  <View className="flex-1 h-px bg-neutral-700" />
-                  <Text className="text-neutral-600 text-xs">o completá manualmente</Text>
-                  <View className="flex-1 h-px bg-neutral-700" />
-                </View>
+            {/* NOMBRE */}
+            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+              Nombre completo
+            </Text>
+            <TextInput
+              style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
+              placeholder="Tu nombre completo"
+              placeholderTextColor="#555"
+              autoCapitalize="words"
+              value={nombreCompleto}
+              onChangeText={setNombreCompleto}
+            />
 
-                {/* NOMBRE */}
-                <Text className="text-neutral-300 text-xs font-semibold mb-1">
-                  Nombre completo
-                </Text>
-                <TextInput
-                  style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
-                  placeholder="Tu nombre completo"
-                  placeholderTextColor="#555"
-                  autoCapitalize="words"
-                  value={nombreCompleto}
-                  onChangeText={setNombreCompleto}
-                />
-
-                {/* EMAIL */}
-                <Text className="text-neutral-300 text-xs font-semibold mb-1">
-                  Email
-                </Text>
-                <View style={{ position: 'relative', marginBottom: 4 }}>
-                  <TextInput
-                    style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: emailAvailable === 'taken' || emailAvailable === 'error' ? '#ef4444' : emailAvailable === 'available' ? '#22c55e' : '#404040', borderRadius: 12, paddingHorizontal: 16, paddingRight: 44, color: 'white', fontSize: 16 }}
-                    placeholder="nombre@email.com"
-                    placeholderTextColor="#555"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={mail}
-                    onChangeText={(v) => { setMail(v); setEmailAvailable(null); }}
-                    onBlur={handleCheckEmail}
-                  />
-                  <View style={{ position: 'absolute', right: 14, top: 0, bottom: 0, justifyContent: 'center' }}>
-                    {checkingEmail
-                      ? <Loader size={18} color="#6b7280" />
-                      : emailAvailable === 'available'
-                        ? <CheckCircle size={18} color="#22c55e" />
-                        : emailAvailable === 'taken' || emailAvailable === 'error'
-                          ? <XCircle size={18} color="#ef4444" />
-                          : null}
-                  </View>
-                </View>
-                {emailAvailable === 'taken' && (
-                  <Text style={{ color: '#ef4444', fontSize: 11, marginBottom: 12 }}>
-                    Este correo ya está registrado.
-                  </Text>
-                )}
-                {emailAvailable === 'error' && (
-                  <Text style={{ color: '#ef4444', fontSize: 11, marginBottom: 12 }}>
-                    Error de conexión. Verificá tu red.
-                  </Text>
-                )}
-                {emailAvailable === 'available' && (
-                  <Text style={{ color: '#22c55e', fontSize: 11, marginBottom: 12 }}>
-                    Correo disponible.
-                  </Text>
-                )}
-                {emailAvailable === null && <View style={{ marginBottom: 16 }} />}
-
-                {/* PAIS */}
-                <Text className="text-neutral-300 text-xs font-semibold mb-1">
-                  País de origen
-                </Text>
-                <TouchableOpacity
-                  onPress={() => { setSearchPais(""); setShowPaisesPicker(true); }}
-                  activeOpacity={0.8}
-                  style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-                >
-                  <Text style={{ color: paisOrigen ? 'white' : '#555', fontSize: 16 }}>
-                    {paisOrigen || "País"}
-                  </Text>
-                  <ChevronDown size={16} color="#555" />
-                </TouchableOpacity>
-
-                <GenericModal visible={showPaisesPicker} onClose={() => setShowPaisesPicker(false)}>
-                  <View style={{ backgroundColor: '#171717', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%', padding: 16 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                      <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', flex: 1 }}>País de origen</Text>
-                      <TouchableOpacity onPress={() => setShowPaisesPicker(false)}>
-                        <Text style={{ color: '#2dd4bf', fontSize: 14 }}>Cerrar</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 10, paddingHorizontal: 12, marginBottom: 12 }}>
-                      <Search size={16} color="#555" />
-                      <TextInput
-                        style={{ flex: 1, height: 40, color: 'white', fontSize: 14, marginLeft: 8 }}
-                        placeholder="Buscar país..."
-                        placeholderTextColor="#555"
-                        value={searchPais}
-                        onChangeText={setSearchPais}
-                        autoCorrect={false}
-                      />
-                    </View>
-                    <FlatList
-                      data={paises.filter(p =>
-                        p.nombre.toLowerCase().includes(searchPais.toLowerCase()) ||
-                        p.nombreCorto.toLowerCase().includes(searchPais.toLowerCase())
-                      )}
-                      keyExtractor={(item) => item.nombreCorto}
-                      keyboardShouldPersistTaps="handled"
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
-                          onPress={() => { setPaisOrigen(item.nombre); setShowPaisesPicker(false); }}
-                          style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#262626', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-                        >
-                          <Text style={{ color: item.nombre === paisOrigen ? '#2dd4bf' : 'white', fontSize: 15, flex: 1 }}>{item.nombre}</Text>
-                          <Text style={{ color: item.nombre === paisOrigen ? '#2dd4bf' : '#737373', fontSize: 12, fontFamily: 'monospace', marginLeft: 12 }}>{item.nombreCorto}</Text>
-                        </TouchableOpacity>
-                      )}
-                    />
-                  </View>
-                </GenericModal>
-
-                {/* DNI */}
-                <Text className="text-neutral-300 text-xs font-semibold mb-1">
-                  DNI
-                </Text>
-                <TextInput
-                  style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
-                  placeholder="Número de DNI"
-                  placeholderTextColor="#555"
-                  keyboardType="numeric"
-                  value={dni}
-                  onChangeText={setDni}
-                />
-
-                {/* FECHA DE NACIMIENTO */}
-                <Text className="text-neutral-300 text-xs font-semibold mb-1">
-                  Fecha de nacimiento
-                </Text>
-                <TextInput
-                  style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
-                  placeholder="DD/MM/AAAA"
-                  placeholderTextColor="#555"
-                  keyboardType="numbers-and-punctuation"
-                  value={fechaNacimiento}
-                  onChangeText={setFechaNacimiento}
-                />
-
-                {/* IMAGENES DNI */}
-                <View className="flex-row gap-3 mb-4">
-                  {[
-                    { label: "Subir dorso", state: dniDorso, onPress: () => seleccionarImagen(setDniDorso) },
-                    { label: "Subir frente", state: dniFrente, onPress: () => seleccionarImagen(setDniFrente) },
-                  ].map(({ label, state, onPress }) => (
-                    <TouchableOpacity
-                      key={label}
-                      className="flex-1 h-24 bg-neutral-800 rounded-xl border border-neutral-700 overflow-hidden"
-                      onPress={onPress}
-                      activeOpacity={0.8}
-                    >
-                      {state ? (
-                        <Image source={{ uri: state }} className="w-full h-full" resizeMode="cover" />
-                      ) : (
-                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: '#404040', justifyContent: 'center', alignItems: 'center' }}>
-                              <CreditCard size={22} color="#9ca3af" />
-                            </View>
-                            <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: '#404040', justifyContent: 'center', alignItems: 'center', marginLeft: -8 }}>
-                              <User size={16} color="#9ca3af" />
-                            </View>
-                          </View>
-                          <Text className="text-neutral-400 text-xs font-semibold">{label}</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {/* DOMICILIO */}
-                <Text className="text-neutral-300 text-xs font-semibold mb-1">
-                  Domicilio
-                </Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-                  <TextInput
-                    style={{ flex: 1, height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16 }}
-                    placeholder="Ej: Av. Corrientes 1234, CABA"
-                    placeholderTextColor="#555"
-                    value={domicilio}
-                    onChangeText={setDomicilio}
-                    onSubmitEditing={handleBuscarDomicilio}
-                    returnKeyType="search"
-                    autoCorrect={false}
-                  />
-                  <TouchableOpacity
-                    onPress={handleBuscarDomicilio}
-                    disabled={geocoding}
-                    activeOpacity={0.8}
-                    style={{ width: 48, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    {geocoding
-                      ? <ActivityIndicator size="small" color="#2dd4bf" />
-                      : <Search size={18} color="#2dd4bf" />
-                    }
-                  </TouchableOpacity>
-                </View>
-
-                {/* MAPA */}
-                <View className="mb-4 rounded-xl overflow-hidden h-40 border border-neutral-700">
-                  <MapView style={{ flex: 1 }} region={region}>
-                    <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
-                  </MapView>
-                </View>
-
-                <Text className="text-neutral-600 text-xs text-center mb-5">
-                  Los datos serán verificados por la empresa.
-                </Text>
-
-                <TouchableOpacity
-                  onPress={handlePreRegistrar}
-                  disabled={loading}
-                  activeOpacity={0.85}
-                  style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}
-                >
-                  <LinearGradient
-                    colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16 }}
-                  >
-                    {loading
-                      ? <ActivityIndicator color="#000" />
-                      : <>
-                        <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Continuar</Text>
-                        <ArrowRight size={20} color="#000" strokeWidth={2.5} />
-                      </>
-                    }
-                  </LinearGradient>
-                </TouchableOpacity>
-
-                <View className="flex-row justify-center">
-                  <Text className="text-neutral-500 text-xs">¿Ya tenés una cuenta? </Text>
-                  <TouchableOpacity onPress={() => router.push("/auth/login")}>
-                    <Text className="text-teal-400 text-xs font-bold">Iniciar sesión</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            ) : (
-              <>
-                <Text className="text-teal-400 text-xl font-bold mb-1">
-                  Verificá tu mail
-                </Text>
-                <Text className="text-neutral-400 text-sm mb-5 leading-5">
-                  Te enviamos una contraseña temporal a{" "}
-                  <Text className="text-white font-semibold">{mail}</Text>.
-                  Ingresala y elegí tu contraseña definitiva.
-                </Text>
-
-                {/* CONTRASEÑA TEMPORAL */}
-                <Text className="text-neutral-300 text-xs font-semibold mb-1">
-                  Contraseña temporal
-                </Text>
-                <TextInput
-                  style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
-                  placeholder="La que recibiste por mail"
-                  placeholderTextColor="#555"
-                  secureTextEntry
-                  autoCapitalize="none"
-                  value={tempPassword}
-                  onChangeText={setTempPassword}
-                />
-
-                {/* NUEVA CONTRASEÑA */}
-                <Text className="text-neutral-300 text-xs font-semibold mb-1">
-                  Nueva contraseña
-                </Text>
-                <TextInput
-                  style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
-                  placeholder="Mínimo 8 caracteres"
-                  placeholderTextColor="#555"
-                  secureTextEntry
-                  autoCapitalize="none"
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                />
-
-                {/* CONFIRMAR CONTRASEÑA */}
-                <Text className="text-neutral-300 text-xs font-semibold mb-1">
-                  Confirmar contraseña
-                </Text>
-                <TextInput
-                  style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 24 }}
-                  placeholder="Repetí la nueva contraseña"
-                  placeholderTextColor="#555"
-                  secureTextEntry
-                  autoCapitalize="none"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                />
-
-                <TouchableOpacity
-                  onPress={handleConfirmar}
-                  disabled={loading}
-                  activeOpacity={0.85}
-                  style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}
-                >
-                  <LinearGradient
-                    colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16 }}
-                  >
-                    {loading
-                      ? <ActivityIndicator color="#000" />
-                      : <>
-                        <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Crear cuenta</Text>
-                        <ArrowRight size={20} color="#000" strokeWidth={2.5} />
-                      </>
-                    }
-                  </LinearGradient>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => setStep(1)}
-                  activeOpacity={0.7}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <ChevronLeft size={14} color="#737373" />
-                  <Text className="text-neutral-500 text-xs">Volver a editar datos</Text>
-                </TouchableOpacity>
-              </>
+            {/* EMAIL */}
+            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+              Email
+            </Text>
+            <View style={{ position: 'relative', marginBottom: 4 }}>
+              <TextInput
+                style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: emailAvailable === 'taken' || emailAvailable === 'error' ? '#ef4444' : emailAvailable === 'available' ? '#22c55e' : '#404040', borderRadius: 12, paddingHorizontal: 16, paddingRight: 44, color: 'white', fontSize: 16 }}
+                placeholder="nombre@email.com"
+                placeholderTextColor="#555"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={mail}
+                onChangeText={(v) => { setMail(v); setEmailAvailable(null); }}
+              />
+              <View style={{ position: 'absolute', right: 14, top: 0, bottom: 0, justifyContent: 'center' }}>
+                {checkingEmail
+                  ? <Loader size={18} color="#6b7280" />
+                  : emailAvailable === 'available'
+                    ? <CheckCircle size={18} color="#22c55e" />
+                    : emailAvailable === 'taken' || emailAvailable === 'error'
+                      ? <XCircle size={18} color="#ef4444" />
+                      : null}
+              </View>
+            </View>
+            {emailAvailable === 'taken' && (
+              <Text style={{ color: '#ef4444', fontSize: 11, marginBottom: 12 }}>
+                Este correo ya está registrado.
+              </Text>
             )}
+            {emailAvailable === 'error' && (
+              <Text style={{ color: '#ef4444', fontSize: 11, marginBottom: 12 }}>
+                Error de conexión. Verificá tu red.
+              </Text>
+            )}
+            {emailAvailable === 'available' && (
+              <Text style={{ color: '#22c55e', fontSize: 11, marginBottom: 12 }}>
+                Correo disponible.
+              </Text>
+            )}
+            {emailAvailable === null && <View style={{ marginBottom: 16 }} />}
 
+            {/* PAIS */}
+            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+              País de origen
+            </Text>
+            <TouchableOpacity
+              onPress={() => { setSearchPais(""); setShowPaisesPicker(true); }}
+              activeOpacity={0.8}
+              style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <Text style={{ color: paisOrigen ? 'white' : '#555', fontSize: 16 }}>
+                {paisOrigen || "País"}
+              </Text>
+              <ChevronDown size={16} color="#555" />
+            </TouchableOpacity>
+
+            <GenericModal visible={showPaisesPicker} onClose={() => setShowPaisesPicker(false)}>
+              <View style={{ backgroundColor: '#171717', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%', padding: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', flex: 1 }}>País de origen</Text>
+                  <TouchableOpacity onPress={() => setShowPaisesPicker(false)}>
+                    <Text style={{ color: '#2dd4bf', fontSize: 14 }}>Cerrar</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 10, paddingHorizontal: 12, marginBottom: 12 }}>
+                  <Search size={16} color="#555" />
+                  <TextInput
+                    style={{ flex: 1, height: 40, color: 'white', fontSize: 14, marginLeft: 8 }}
+                    placeholder="Buscar país..."
+                    placeholderTextColor="#555"
+                    value={searchPais}
+                    onChangeText={setSearchPais}
+                    autoCorrect={false}
+                  />
+                </View>
+                <FlatList
+                  data={paises.filter(p =>
+                    p.nombre.toLowerCase().includes(searchPais.toLowerCase()) ||
+                    p.nombreCorto.toLowerCase().includes(searchPais.toLowerCase())
+                  )}
+                  keyExtractor={(item) => item.nombreCorto}
+                  keyboardShouldPersistTaps="handled"
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      onPress={() => { setPaisOrigen(item.nombre); setPaisNumero(item.numero); setShowPaisesPicker(false); }}
+                      style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#262626', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                    >
+                      <Text style={{ color: item.nombre === paisOrigen ? '#2dd4bf' : 'white', fontSize: 15, flex: 1 }}>{item.nombre}</Text>
+                      <Text style={{ color: item.nombre === paisOrigen ? '#2dd4bf' : '#737373', fontSize: 12, fontFamily: 'monospace', marginLeft: 12 }}>{item.nombreCorto}</Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            </GenericModal>
+
+            {/* DNI */}
+            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+              DNI
+            </Text>
+            <TextInput
+              style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
+              placeholder="Número de DNI"
+              placeholderTextColor="#555"
+              keyboardType="numeric"
+              value={dni}
+              onChangeText={setDni}
+            />
+
+            {/* FECHA DE NACIMIENTO */}
+            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+              Fecha de nacimiento
+            </Text>
+            <TextInput
+              style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
+              placeholder="DD/MM/AAAA"
+              placeholderTextColor="#555"
+              keyboardType="numbers-and-punctuation"
+              value={fechaNacimiento}
+              onChangeText={setFechaNacimiento}
+            />
+
+            {/* IMAGENES DNI */}
+            <View className="flex-row gap-3 mb-4">
+              {[
+                { label: "Subir dorso", state: dniDorso, onPress: () => seleccionarImagen(setDniDorso) },
+                { label: "Subir frente", state: dniFrente, onPress: () => seleccionarImagen(setDniFrente) },
+              ].map(({ label, state, onPress }) => (
+                <TouchableOpacity
+                  key={label}
+                  className="flex-1 h-24 bg-neutral-800 rounded-xl border border-neutral-700 overflow-hidden"
+                  onPress={onPress}
+                  activeOpacity={0.8}
+                >
+                  {state ? (
+                    <Image source={{ uri: state.uri }} className="w-full h-full" resizeMode="cover" />
+                  ) : (
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: '#404040', justifyContent: 'center', alignItems: 'center' }}>
+                          <CreditCard size={22} color="#9ca3af" />
+                        </View>
+                        <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: '#404040', justifyContent: 'center', alignItems: 'center', marginLeft: -8 }}>
+                          <User size={16} color="#9ca3af" />
+                        </View>
+                      </View>
+                      <Text className="text-neutral-400 text-xs font-semibold">{label}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* DOMICILIO */}
+            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+              Domicilio
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+              <TextInput
+                style={{ flex: 1, height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16 }}
+                placeholder="Ej: Av. Corrientes 1234, CABA"
+                placeholderTextColor="#555"
+                value={domicilio}
+                onChangeText={setDomicilio}
+                onSubmitEditing={handleBuscarDomicilio}
+                returnKeyType="search"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                onPress={handleBuscarDomicilio}
+                disabled={geocoding}
+                activeOpacity={0.8}
+                style={{ width: 48, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+              >
+                {geocoding
+                  ? <ActivityIndicator size="small" color="#2dd4bf" />
+                  : <Search size={18} color="#2dd4bf" />
+                }
+              </TouchableOpacity>
+            </View>
+
+            {/* MAPA */}
+            <View className="mb-4 rounded-xl overflow-hidden h-40 border border-neutral-700">
+              <MapView style={{ flex: 1 }} region={region}>
+                <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
+              </MapView>
+            </View>
+
+            <Text className="text-neutral-600 text-xs text-center mb-5">
+              Los datos serán verificados por la empresa.
+            </Text>
+
+            <TouchableOpacity
+              onPress={handlePreRegistrar}
+              disabled={loading}
+              activeOpacity={0.85}
+              style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}
+            >
+              <LinearGradient
+                colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16 }}
+              >
+                {loading
+                  ? <ActivityIndicator color="#000" />
+                  : <>
+                    <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Continuar</Text>
+                    <ArrowRight size={20} color="#000" strokeWidth={2.5} />
+                  </>
+                }
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <View className="flex-row justify-center mb-3">
+              <Text className="text-neutral-500 text-xs">¿Ya tenés una cuenta? </Text>
+              <TouchableOpacity onPress={() => router.push("/auth/login")}>
+                <Text className="text-teal-400 text-xs font-bold">Iniciar sesión</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View className="flex-row justify-center">
+              <Text className="text-neutral-500 text-xs">¿Tenés una contraseña temporal? </Text>
+              <TouchableOpacity onPress={() => router.push("/auth/start")}>
+                <Text className="text-teal-400 text-xs font-bold">Activar cuenta</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
