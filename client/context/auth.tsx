@@ -1,12 +1,12 @@
+import { api } from '@/lib/api';
+import type { components } from '@/types/api';
 import * as SecureStore from 'expo-secure-store';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://cly-subastapp.fabriziob.com/';
-
-// TODO: replace with auto-generated type from backend
 export type UserCategory = 'comun' | 'especial' | 'plata' | 'oro' | 'platino';
+
 const TOKEN_KEY = 'auth_token';
 const USER_KEY  = 'auth_user';
 
@@ -15,20 +15,12 @@ export interface User {
   category?: string;
 }
 
-export interface AuthenticationResponse {
-  token?: string;
-  category?: string;
-  message?: string;
-}
-
-export interface PreRegisterResponse {
-  message?: string;
-}
+export type PreRegisterBody = components['schemas']['PreRegisterRequest'];
 
 export interface RegisterRequest {
   email: string;
   temporaryPassword: string;
-  password: string;
+  newPassword: string;
 }
 
 // ─── Context shape ────────────────────────────────────────────────────────────
@@ -40,34 +32,13 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  /** Step 1: send user data (FormData), backend emails a temp password. */
-  preRegister: (formData: FormData) => Promise<PreRegisterResponse>;
-  /** Step 2: confirm registration with temp password + choose final password. */
+  preRegister: (body: PreRegisterBody) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
-  /** Returns true if the email is available (not yet registered). */
-  checkEmail: (email: string) => Promise<boolean>;
 }
 
-// ─── Context + helpers ────────────────────────────────────────────────────────
+// ─── Context ──────────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-async function post<T>(path: string, body: object | FormData, token?: string | null): Promise<{ ok: boolean; status: number; data: T }> {
-  const isFormData = body instanceof FormData;
-  const headers: Record<string, string> = {};
-  if (!isFormData) headers['Content-Type'] = 'application/json';
-  if (token)       headers['Authorization'] = `Bearer ${token}`;
-
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers,
-    body: isFormData ? body : JSON.stringify(body),
-  });
-
-  let data: T;
-  try { data = await res.json(); } catch { data = {} as T; }
-  return { ok: res.ok, status: res.status, data };
-}
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
@@ -76,7 +47,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user,      setUser]      = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore session on mount
   useEffect(() => {
     (async () => {
       try {
@@ -115,40 +85,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ── Actions ──
 
   const login = useCallback(async (email: string, password: string) => {
-    const { ok, data } = await post<AuthenticationResponse>(
-      '/api/v1/auth/authenticate',
-      { email, password },
-    );
-    if (!ok || !data.token) {
-      throw new Error(data.message ?? 'Credenciales incorrectas.');
+    const { data, error } = await api.POST('/api/v1/auth/authenticate', {
+      body: { email, password },
+    });
+    if (error || !data?.accessToken) {
+      throw new Error('Credenciales incorrectas.');
     }
-    await persistSession(data.token, { email, category: data.category });
+    await persistSession(data.accessToken, { email, category: data.categoria ?? undefined });
   }, [persistSession]);
 
   const logout = useCallback(async () => {
     await clearSession();
   }, [clearSession]);
 
-  const preRegister = useCallback(async (formData: FormData): Promise<PreRegisterResponse> => {
-    const { ok, data } = await post<PreRegisterResponse>('/api/v1/auth/pre-register', formData);
-    if (!ok) throw new Error(data.message ?? 'No se pudo completar el pre-registro.');
-    return data;
+  const preRegister = useCallback(async (body: PreRegisterBody) => {
+    const { error } = await api.POST('/api/v1/auth/pre-register', { body });
+    if (error) throw new Error('No se pudo completar el pre-registro.');
   }, []);
 
   const register = useCallback(async (body: RegisterRequest) => {
-    const { ok, data } = await post<AuthenticationResponse>('/api/v1/auth/register', body);
-    if (!ok || !data.token) {
-      throw new Error(data.message ?? 'No se pudo completar el registro.');
+    const { data, error } = await api.POST('/api/v1/auth/register', {
+      body: { email: body.email, temporaryPassword: body.temporaryPassword, newPassword: body.newPassword },
+    });
+    if (error || !data?.accessToken) {
+      throw new Error('No se pudo completar el registro.');
     }
-    await persistSession(data.token, { email: body.email, category: data.category });
+    await persistSession(data.accessToken, { email: body.email, category: data.categoria ?? undefined });
   }, [persistSession]);
-
-  const checkEmail = useCallback(async (email: string): Promise<boolean> => {
-    const { status } = await post<unknown>('/api/v1/auth/check', { email });
-    if (status === 200)  return true;   // available
-    if (status === 409)  return false;  // already in use
-    throw new Error('Error al verificar el correo.');
-  }, []);
 
   const value = useMemo<AuthContextValue>(() => ({
     token,
@@ -159,8 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     preRegister,
     register,
-    checkEmail,
-  }), [token, user, isLoading, login, logout, preRegister, register, checkEmail]);
+  }), [token, user, isLoading, login, logout, preRegister, register]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
@@ -173,13 +135,10 @@ function useAuthContext(): AuthContextValue {
   return ctx;
 }
 
-/** Auth actions + session state. */
 export function useAuth() {
-  const { token, user, isAuthenticated, isLoading, login, logout, preRegister, register, checkEmail } = useAuthContext();
-  return { token, user, isAuthenticated, isLoading, login, logout, preRegister, register, checkEmail };
+  return useAuthContext();
 }
 
-/** User profile data only. */
 export function useProfile() {
   const { user, isAuthenticated, isLoading } = useAuthContext();
   return { profile: user, isAuthenticated, isLoading };

@@ -126,10 +126,17 @@ export default function Login() {
             </LinearGradient>
           </TouchableOpacity>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 12 }}>
             <Text className="text-neutral-500 text-xs">¿No tiene una cuenta? </Text>
             <TouchableOpacity onPress={() => router.push('/auth/register')}>
               <Text className="text-teal-400 text-xs font-bold">Registrarse</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+            <Text className="text-neutral-500 text-xs">¿Tenés una contraseña temporal? </Text>
+            <TouchableOpacity onPress={() => router.push('/auth/start')}>
+              <Text className="text-teal-400 text-xs font-bold">Activar cuenta</Text>
             </TouchableOpacity>
           </View>
 

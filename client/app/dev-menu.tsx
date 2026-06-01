@@ -1,4 +1,5 @@
 import { useAuth } from "@/context/auth";
+import { API_BASE } from "@/lib/api";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { openBrowserAsync, WebBrowserPresentationStyle } from "expo-web-browser";
@@ -14,7 +15,9 @@ import {
   FileText,
   Hammer,
   Home,
+  KeyRound,
   LogIn,
+  LogOut,
   PlusCircle,
   ShieldAlert,
   ShieldCheck,
@@ -43,11 +46,13 @@ const ICON_MAP = {
   "stats-chart-outline": BarChart2,
   "checkmark-circle-outline": CheckCircle,
   "shield-outline": ShieldAlert,
+  "key-outline": KeyRound,
 } as const;
 
 const ROUTES = [
   { name: "Auth: Login", path: "/auth/login", icon: "log-in-outline" },
   { name: "Auth: Register", path: "/auth/register", icon: "person-add-outline" },
+  { name: "Auth: Activar Cuenta", path: "/auth/start", icon: "key-outline" },
   { name: "Admin: Panel", path: "/admin", icon: "shield-outline" },
   { name: "Tabs: Inicio", path: "/(tabs)", icon: "home-outline" },
   { name: "Tabs: Notificaciones", path: "/(tabs)/notifications", icon: "notifications-outline" },
@@ -66,7 +71,7 @@ const ROUTES = [
 
 export default function DevMenu() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, user, token } = useAuth();
+  const { isAuthenticated, isLoading, user, token, logout } = useAuth();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#1c1c1c" }}>
@@ -100,6 +105,10 @@ export default function DevMenu() {
           </View>
           <View className="gap-1">
             <View className="flex-row">
+              <Text className="text-neutral-500 text-xs w-20">Target</Text>
+              <Text className="text-neutral-300 text-xs flex-1">{API_BASE ?? "—"}</Text>
+            </View>
+            <View className="flex-row">
               <Text className="text-neutral-500 text-xs w-20">Email</Text>
               <Text className="text-neutral-300 text-xs flex-1">{user?.email ?? "—"}</Text>
             </View>
@@ -114,6 +123,18 @@ export default function DevMenu() {
               </Text>
             </View>
           </View>
+          {isAuthenticated && (
+            <TouchableOpacity
+              onPress={() => logout()}
+              activeOpacity={0.8}
+              className="flex-row items-center mt-4 pt-3 border-t border-neutral-700"
+            >
+              <LogOut size={14} color="#f87171" />
+              <Text style={{ color: "#f87171" }} className="text-xs font-semibold ml-2">
+                Cerrar sesión
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
         {/* Swagger docs */}
         <TouchableOpacity

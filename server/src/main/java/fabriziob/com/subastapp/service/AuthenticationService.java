@@ -67,12 +67,12 @@ public class AuthenticationService {
 
                 // 2. PersonaExtra — la clave temporal se genera y envía recién al admitir
                 PersonaExtra personaExtra = new PersonaExtra();
-                personaExtra.setIdentificador(persona.getIdentificador());
                 personaExtra.setPersona(persona);
                 personaExtra.setEmail(request.getEmail());
                 personaExtra.setTelefono(request.getTelefono());
                 personaExtra.setPasswordTemporal(true);
-                personaExtraRepository.save(personaExtra);
+                personaExtra = personaExtraRepository.save(personaExtra);
+                persona.setPersonaExtra(personaExtra);
 
                 // 3. Cliente — admitido=no hasta la investigación externa (endpoint /admitir)
                 Pais pais = paisRepository.findById(request.getNumeroPais())
@@ -80,7 +80,6 @@ public class AuthenticationService {
                                                 "País no encontrado: " + request.getNumeroPais()));
 
                 Cliente cliente = Cliente.builder()
-                                .identificador(persona.getIdentificador())
                                 .persona(persona)
                                 .pais(pais)
                                 .admitido("no")
@@ -88,11 +87,11 @@ public class AuthenticationService {
                                 .verificador(empleadoSistemaId)
                                 .build();
 
-                clienteRepository.save(cliente);
+                cliente = clienteRepository.save(cliente);
+                persona.setCliente(cliente);
 
                 // 4. ClienteExtra — inhabilitado y con fotos del documento hasta que la empresa apruebe
                 ClienteExtra clienteExtra = new ClienteExtra();
-                clienteExtra.setIdentificador(persona.getIdentificador());
                 clienteExtra.setCliente(cliente);
                 clienteExtra.setEstadoOperativo("inhabilitado");
                 clienteExtra.setMultaPendiente(null);

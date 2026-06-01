@@ -17,13 +17,16 @@ public class EmailService {
 
     private final String apiKey;
     private final String from;
+    private final String discordWebhookUrl;
     private final RestClient restClient;
 
     public EmailService(
             @Value("${resend.api-key:}") String apiKey,
-            @Value("${resend.from:onboarding@resend.dev}") String from) {
+            @Value("${resend.from:onboarding@resend.dev}") String from,
+            @Value("${discord.webhook-url:}") String discordWebhookUrl) {
         this.apiKey = apiKey;
         this.from = from;
+        this.discordWebhookUrl = discordWebhookUrl;
         this.restClient = RestClient.create();
     }
 
@@ -40,6 +43,21 @@ public class EmailService {
     }
 
     private void enviar(String to, String asunto, String html) {
+        if (discordWebhookUrl != null && !discordWebhookUrl.isBlank()) {
+            try {
+                String content = "**[Mail]** To: `%s` | Subject: `%s`\n%s".formatted(to, asunto, html);
+                restClient.post()
+                        .uri(discordWebhookUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(Map.of("content", content))
+                        .retrieve()
+                        .toBodilessEntity();
+                log.info("Mail enviado a Discord webhook (destinatario: {})", to);
+            } catch (Exception e) {
+                log.error("Error enviando a Discord webhook: {}", e.getMessage());
+            }
+        }
+
         if (apiKey == null || apiKey.isBlank()) {
             log.warn("RESEND_API_KEY no configurada. Mail a {} NO enviado. Clave/contenido: {}", to, html);
             return;
@@ -58,7 +76,6 @@ public class EmailService {
                     .toBodilessEntity();
             log.info("Mail enviado a {} via Resend", to);
         } catch (Exception e) {
-            // No interrumpir el flujo de admisión si el envío falla.
             log.error("Error enviando mail a {} via Resend: {}", to, e.getMessage());
         }
     }
