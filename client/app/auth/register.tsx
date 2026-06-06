@@ -3,6 +3,7 @@ import GenericModal from "@/components/ui/GenericModal";
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
 import { DNIData } from "@/lib/dni";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import {
   launchCameraAsync,
   launchImageLibraryAsync,
@@ -12,7 +13,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ArrowRight, CheckCircle, ChevronDown, CreditCard, Loader, Search, User, XCircle } from "lucide-react-native";
+import { ArrowRight, Calendar, CheckCircle, ChevronDown, CreditCard, Loader, Search, User, XCircle } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -32,6 +33,18 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import MapView, { Marker } from "react-native-maps";
+
+function parseDDMMYYYY(s: string): Date {
+  const [d, m, y] = s.split('/');
+  const date = new Date(parseInt(y ?? '2000'), parseInt(m ?? '1') - 1, parseInt(d ?? '1'));
+  return isNaN(date.getTime()) ? new Date(2000, 0, 1) : date;
+}
+
+function formatDDMMYYYY(date: Date): string {
+  const d = String(date.getDate()).padStart(2, '0');
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  return `${d}/${m}/${date.getFullYear()}`;
+}
 
 export default function Register() {
   const router = useRouter();
@@ -56,6 +69,7 @@ export default function Register() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
   const [emailAvailable, setEmailAvailable] = useState<'available' | 'taken' | 'error' | null>(null);
@@ -382,14 +396,56 @@ export default function Register() {
             <Text className="text-neutral-300 text-xs font-semibold mb-1">
               Fecha de nacimiento
             </Text>
-            <TextInput
-              style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
-              placeholder="DD/MM/AAAA"
-              placeholderTextColor="#555"
-              keyboardType="numbers-and-punctuation"
-              value={fechaNacimiento}
-              onChangeText={setFechaNacimiento}
-            />
+            <TouchableOpacity
+              onPress={() => setShowDatePicker(true)}
+              activeOpacity={0.8}
+              style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <Text style={{ color: fechaNacimiento ? 'white' : '#555', fontSize: 16 }}>
+                {fechaNacimiento || 'DD/MM/AAAA'}
+              </Text>
+              <Calendar size={18} color="#6b7280" />
+            </TouchableOpacity>
+
+            {/* Android: picker inline al tocar */}
+            {Platform.OS === 'android' && showDatePicker && (
+              <DateTimePicker
+                mode="date"
+                display="default"
+                value={fechaNacimiento ? parseDDMMYYYY(fechaNacimiento) : new Date(2000, 0, 1)}
+                maximumDate={new Date()}
+                onChange={(e: DateTimePickerEvent, date?: Date) => {
+                  setShowDatePicker(false);
+                  if (e.type === 'set' && date) setFechaNacimiento(formatDDMMYYYY(date));
+                }}
+              />
+            )}
+
+            {/* iOS: picker en modal con fondo oscuro */}
+            {Platform.OS === 'ios' && (
+              <GenericModal visible={showDatePicker} onClose={() => setShowDatePicker(false)}>
+                <View style={{ backgroundColor: '#171717', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                    <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', flex: 1 }}>Fecha de nacimiento</Text>
+                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                      <Text style={{ color: '#2dd4bf', fontSize: 14 }}>Listo</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <DateTimePicker
+                    mode="date"
+                    display="spinner"
+                    value={fechaNacimiento ? parseDDMMYYYY(fechaNacimiento) : new Date(2000, 0, 1)}
+                    maximumDate={new Date()}
+                    textColor="white"
+                    onChange={(_: DateTimePickerEvent, date?: Date) => {
+                      if (date) setFechaNacimiento(formatDDMMYYYY(date));
+                    }}
+                    style={{ height: 200 }}
+                    locale="es-AR"
+                  />
+                </View>
+              </GenericModal>
+            )}
 
             {/* IMAGENES DNI */}
             <View className="flex-row gap-3 mb-4">

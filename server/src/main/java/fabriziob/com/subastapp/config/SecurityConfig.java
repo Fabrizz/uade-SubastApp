@@ -54,6 +54,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req -> req
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(
                                 "/api-docs/**",
@@ -63,7 +65,8 @@ public class SecurityConfig {
                                 "/docs")
                         .permitAll()
                         .requestMatchers("/error").permitAll()
-                        .anyRequest().permitAll() // TODO: CAMBIAR ACA LOS PERMISOS
+                        .requestMatchers("/api/v1/paises").permitAll()
+                        .anyRequest().authenticated() // TODO: CAMBIAR ACA LOS PERMISOS
                 )
                 // Para el resto de endpoints, tu flujo stateless con JWT
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
