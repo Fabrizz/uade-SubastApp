@@ -1,7 +1,7 @@
 import { api } from '@/lib/api';
 import type { components } from '@/types/api';
 import * as SecureStore from 'expo-secure-store';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,11 +23,28 @@ export interface RegisterRequest {
   newPassword: string;
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getTokenExpiration(token: string): Date | null {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp ? new Date(payload.exp * 1000) : null;
+  } catch {
+    return null;
+  }
+}
+
+function isTokenExpired(token: string): boolean {
+  const exp = getTokenExpiration(token);
+  return exp ? exp <= new Date() : true;
+}
+
 // ─── Context shape ────────────────────────────────────────────────────────────
 
 interface AuthContextValue {
   token: string | null;
   user: User | null;
+  tokenExpiration: Date | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -46,7 +63,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token,     setToken]     = useState<string | null>(null);
   const [user,      setUser]      = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const expirationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const clearSession = useCallback(async () => {
+    if (expirationTimer.current) {
+      clearTimeout(expirationTimer.current);
+      expirationTimer.current = null;
+    }
+    await Promise.all([
+      SecureStore.deleteItemAsync(TOKEN_KEY),
+      SecureStore.deleteItemAsync(USER_KEY),
+    ]);
+    setToken(null);
+    setUser(null);
+  }, []);
+
+  const scheduleExpiration = useCallback((tok: string) => {
+    if (expirationTimer.current) {
+      clearTimeout(expirationTimer.current);
+      expirationTimer.current = null;
+    }
+    const exp = getTokenExpiration(tok);
+    if (!exp) return;
+    const msUntilExpiry = exp.getTime() - Date.now();
+    if (msUntilExpiry <= 0) return;
+    expirationTimer.current = setTimeout(() => { clearSession(); }, msUntilExpiry);
+  }, [clearSession]);
+
+  // Restore session on mount; reject already-expired tokens
   useEffect(() => {
     (async () => {
       try {
@@ -54,15 +98,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           SecureStore.getItemAsync(TOKEN_KEY),
           SecureStore.getItemAsync(USER_KEY),
         ]);
-        if (storedToken) {
+        if (storedToken && !isTokenExpired(storedToken)) {
           setToken(storedToken);
           setUser(storedUser ? JSON.parse(storedUser) : null);
+          scheduleExpiration(storedToken);
+        } else if (storedToken) {
+          await Promise.all([
+            SecureStore.deleteItemAsync(TOKEN_KEY),
+            SecureStore.deleteItemAsync(USER_KEY),
+          ]);
         }
       } finally {
         setIsLoading(false);
       }
     })();
-  }, []);
+
+    return () => {
+      if (expirationTimer.current) clearTimeout(expirationTimer.current);
+    };
+  }, [scheduleExpiration]);
 
   const persistSession = useCallback(async (newToken: string, newUser: User) => {
     await Promise.all([
@@ -71,16 +125,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ]);
     setToken(newToken);
     setUser(newUser);
-  }, []);
-
-  const clearSession = useCallback(async () => {
-    await Promise.all([
-      SecureStore.deleteItemAsync(TOKEN_KEY),
-      SecureStore.deleteItemAsync(USER_KEY),
-    ]);
-    setToken(null);
-    setUser(null);
-  }, []);
+    scheduleExpiration(newToken);
+  }, [scheduleExpiration]);
 
   // ── Actions ──
 
@@ -113,16 +159,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await persistSession(data.accessToken, { email: body.email, category: data.categoria ?? undefined });
   }, [persistSession]);
 
+  const tokenExpiration = useMemo(() => (token ? getTokenExpiration(token) : null), [token]);
+
   const value = useMemo<AuthContextValue>(() => ({
     token,
     user,
+    tokenExpiration,
     isAuthenticated: !!token,
     isLoading,
     login,
     logout,
     preRegister,
     register,
-  }), [token, user, isLoading, login, logout, preRegister, register]);
+  }), [token, user, tokenExpiration, isLoading, login, logout, preRegister, register]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

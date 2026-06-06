@@ -5,8 +5,6 @@ import { SplashScreen } from 'expo-router';
 import { useEffect } from 'react';
 import { Image, Text } from 'react-native';
 
-SplashScreen.preventAutoHideAsync();
-
 export default function SplashScreenController() {
   const { isLoading } = useAuth();
 

@@ -1,5 +1,6 @@
 package fabriziob.com.subastapp.service;
 
+import java.util.Arrays;
 import java.util.Base64;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -48,12 +49,20 @@ public class AuthenticationService {
         @Value("${app.empleado-sistema-id:1}")
         private Integer empleadoSistemaId;
 
+        @Value("${app.admins-emails:}")
+        private String adminsEmails;
+
         // ─── PRE-REGISTER ────────────────────────────────────────────────────
 
         public PreRegisterResponse preRegister(PreRegisterRequest request) {
 
                 if (personaExtraRepository.existsByEmail(request.getEmail()))
                         throw new RuntimeException("Email ya registrado: " + request.getEmail());
+
+                boolean esAdmin = !adminsEmails.isBlank() &&
+                        Arrays.stream(adminsEmails.split(","))
+                                .map(String::trim)
+                                .anyMatch(request.getEmail()::equalsIgnoreCase);
 
                 // 1. Persona base — estado inactivo hasta que complete el paso 2
                 Persona persona = Persona.builder()
@@ -82,8 +91,8 @@ public class AuthenticationService {
                 Cliente cliente = Cliente.builder()
                                 .persona(persona)
                                 .pais(pais)
-                                .admitido("no")
-                                .categoria(ClienteCategoria.comun)
+                                .admitido(esAdmin ? "si" : "no")
+                                .categoria(esAdmin ? ClienteCategoria.admin : ClienteCategoria.comun)
                                 .verificador(empleadoSistemaId)
                                 .build();
 
@@ -93,7 +102,7 @@ public class AuthenticationService {
                 // 4. ClienteExtra — inhabilitado y con fotos del documento hasta que la empresa apruebe
                 ClienteExtra clienteExtra = new ClienteExtra();
                 clienteExtra.setCliente(cliente);
-                clienteExtra.setEstadoOperativo("inhabilitado");
+                clienteExtra.setEstadoOperativo(esAdmin ? "habilitado" : "inhabilitado");
                 clienteExtra.setMultaPendiente(null);
                 clienteExtra.setFotoDocumentoFrente(decodeBase64(request.getFotoFrenteDocumento()));
                 clienteExtra.setFotoDocumentoDorso(decodeBase64(request.getFotoDorsoDocumento()));
