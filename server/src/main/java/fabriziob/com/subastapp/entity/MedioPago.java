@@ -37,7 +37,7 @@ public class MedioPago {
 
     @Builder.Default
     @Column(name = "verificado", nullable = false)
-    private Boolean verificado = true;
+    private Boolean verificado = false;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)

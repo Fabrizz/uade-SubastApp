@@ -1,5 +1,7 @@
 package fabriziob.com.subastapp.service;
 
+import java.math.BigDecimal;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -86,5 +88,50 @@ public class ClienteService {
                     "Categoría inválida: " + categoria
                             + ". Valores válidos: comun, especial, plata, oro, platino");
         }
+    }
+
+    public Cliente inhabilitar(Integer id) {
+        Cliente cliente = findById(id);
+        ClienteExtra extra = requireExtra(cliente);
+        extra.setEstadoOperativo("inhabilitado");
+        return cliente;
+    }
+
+    public Cliente habilitar(Integer id) {
+        Cliente cliente = findById(id);
+        ClienteExtra extra = requireExtra(cliente);
+        if (extra.getMultaPendiente() != null && extra.getMultaPendiente().compareTo(BigDecimal.ZERO) > 0)
+            throw new IllegalStateException(
+                    "El cliente tiene una multa pendiente; debe saldarla antes de habilitarlo");
+        extra.setEstadoOperativo("habilitado");
+        return cliente;
+    }
+
+    public Cliente asignarMulta(Integer id, BigDecimal monto) {
+        if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0)
+            throw new IllegalArgumentException("El monto de la multa debe ser mayor a 0");
+        Cliente cliente = findById(id);
+        ClienteExtra extra = requireExtra(cliente);
+        BigDecimal actual = extra.getMultaPendiente() == null ? BigDecimal.ZERO : extra.getMultaPendiente();
+        extra.setMultaPendiente(actual.add(monto));
+        extra.setEstadoOperativo("suspendido");
+        return cliente;
+    }
+
+    public Cliente saldarMulta(Integer id) {
+        Cliente cliente = findById(id);
+        ClienteExtra extra = requireExtra(cliente);
+        extra.setMultaPendiente(BigDecimal.ZERO);
+        if ("suspendido".equals(extra.getEstadoOperativo()))
+            extra.setEstadoOperativo("habilitado");
+        return cliente;
+    }
+
+    private ClienteExtra requireExtra(Cliente cliente) {
+        ClienteExtra extra = cliente.getClienteExtra();
+        if (extra == null)
+            throw new IllegalStateException(
+                    "El cliente " + cliente.getIdentificador() + " no tiene clienteExtra asociado");
+        return extra;
     }
 }
