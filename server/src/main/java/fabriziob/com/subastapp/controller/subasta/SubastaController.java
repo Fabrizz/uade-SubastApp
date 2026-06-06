@@ -21,6 +21,7 @@ import fabriziob.com.subastapp.entity.enums.CategoriaSubasta;
 import fabriziob.com.subastapp.entity.enums.EstadoDetalladoSubasta;
 import fabriziob.com.subastapp.entity.enums.EstadoPagoDuenio;
 import fabriziob.com.subastapp.entity.enums.EstadoSubasta;
+import fabriziob.com.subastapp.service.PujoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -28,6 +29,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -35,6 +37,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Tag(name = "Subastas", description = "Gestión de subastas, catálogos y registros")
 public class SubastaController {
+
+        private final PujoService pujoService;
 
         // ── Subastas ──────────────────────────────────────────────────────────
 
@@ -403,7 +407,7 @@ public class SubastaController {
         @GetMapping("/{id}/pujos")
         public ResponseEntity<List<PujoResponse>> getPujos(
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id) {
-                return null;
+                return ResponseEntity.ok(pujoService.listarPorSubasta(id));
         }
 
         @Operation(summary = "Listar pujos de un item", description = "Devuelve todos los pujos de un item específico del catálogo ordenados por importe descendente")
@@ -417,7 +421,7 @@ public class SubastaController {
         public ResponseEntity<List<PujoResponse>> getPujosByItem(
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
                         @Parameter(description = "ID del item", required = true, example = "5") @PathVariable Integer idItem) {
-                return null;
+                return ResponseEntity.ok(pujoService.listarPorItem(id, idItem));
         }
 
         @Operation(summary = "Registrar pujo", description = "Registra un nuevo pujo sobre un item del catálogo. El servidor emite el pujo a `/topic/subastas/{id}/pujas` vía WebSocket")
@@ -432,8 +436,9 @@ public class SubastaController {
         public ResponseEntity<PujoResponse> addPujo(
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
                         @Parameter(description = "ID del item", required = true, example = "5") @PathVariable Integer idItem,
-                        @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Datos del pujo", required = true, content = @Content(schema = @Schema(implementation = PujoRequest.class))) @RequestBody PujoRequest request) {
-                return null;
+                        @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Datos del pujo", required = true, content = @Content(schema = @Schema(implementation = PujoRequest.class))) @Valid @RequestBody PujoRequest request) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                                .body(pujoService.crearPujo(id, idItem, request));
         }
 
         @Operation(summary = "Marcar pujo como ganador", description = "Marca un pujo como ganador del item. Solo un pujo por item puede ser ganador")
@@ -448,7 +453,8 @@ public class SubastaController {
         public ResponseEntity<PujoResponse> marcarGanador(
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
                         @Parameter(description = "ID del item", required = true, example = "5") @PathVariable Integer idItem,
-                        @Parameter(description = "ID del pujo", required = true, example = "8") @PathVariable Integer idPujo) {
-                return null;
+                        @Parameter(description = "ID del pujo", required = true, example = "8") @PathVariable Integer idPujo,
+                        @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Medio de pago elegido por el comprador para la venta", required = true, content = @Content(schema = @Schema(implementation = MarcarGanadorRequest.class))) @Valid @RequestBody MarcarGanadorRequest request) {
+                return ResponseEntity.ok(pujoService.marcarGanador(id, idItem, idPujo, request));
         }
 }

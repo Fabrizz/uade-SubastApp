@@ -29,6 +29,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -107,7 +108,7 @@ public class ClienteController {
         })
         @PatchMapping("/{id}/inhabilitar")
         public ResponseEntity<ClienteResponse> inhabilitar(@PathVariable Integer id) {
-                return null;
+                return ResponseEntity.ok(toResponse(clienteService.inhabilitar(id)));
         }
 
         @Operation(summary = "Habilitar cliente", description = "Habilita operativamente al cliente para participar en subastas")
@@ -119,7 +120,7 @@ public class ClienteController {
         })
         @PatchMapping("/{id}/habilitar")
         public ResponseEntity<ClienteResponse> habilitar(@PathVariable Integer id) {
-                return null;
+                return ResponseEntity.ok(toResponse(clienteService.habilitar(id)));
         }
 
         @Operation(summary = "Asignar multa", description = "Asigna una multa pendiente al cliente. Inhabilita al cliente hasta que sea saldada")
@@ -133,7 +134,19 @@ public class ClienteController {
         public ResponseEntity<ClienteResponse> asignarMulta(
                         @PathVariable Integer id,
                         @RequestParam BigDecimal monto) {
-                return null;
+                return ResponseEntity.ok(toResponse(clienteService.asignarMulta(id, monto)));
+        }
+
+        @Operation(summary = "Saldar multa", description = "Marca la multa pendiente como pagada y rehabilita al cliente si quedó habilitado")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Multa saldada"),
+                        @ApiResponse(responseCode = "401", description = R_401, content = @Content),
+                        @ApiResponse(responseCode = "403", description = R_403, content = @Content),
+                        @ApiResponse(responseCode = "404", description = R_404, content = @Content)
+        })
+        @PatchMapping("/{id}/multa/saldar")
+        public ResponseEntity<ClienteResponse> saldarMulta(@PathVariable Integer id) {
+                return ResponseEntity.ok(toResponse(clienteService.saldarMulta(id)));
         }
 
         /////////////////////////////////////////////// Medios de pago
@@ -176,7 +189,7 @@ public class ClienteController {
         @PostMapping("/{id}/medios-pago/cheque")
         public ResponseEntity<MedioPagoResponse> addCheque(
                         @PathVariable Integer id,
-                        @RequestBody MedioPagoChequeRequest request) {
+                        @Valid @RequestBody MedioPagoChequeRequest request) {
                 return ResponseEntity.status(HttpStatus.CREATED)
                                 .body(medioPagoService.agregarCheque(id, request));
         }
@@ -192,7 +205,7 @@ public class ClienteController {
         @PostMapping("/{id}/medios-pago/cuenta")
         public ResponseEntity<MedioPagoResponse> addCuenta(
                         @PathVariable Integer id,
-                        @RequestBody MedioPagoCuentaRequest request) {
+                        @Valid @RequestBody MedioPagoCuentaRequest request) {
                 return ResponseEntity.status(HttpStatus.CREATED)
                                 .body(medioPagoService.agregarCuenta(id, request));
         }
@@ -208,7 +221,7 @@ public class ClienteController {
         @PostMapping("/{id}/medios-pago/tarjeta")
         public ResponseEntity<MedioPagoResponse> addTarjeta(
                         @PathVariable Integer id,
-                        @RequestBody MedioPagoTarjetaRequest request) {
+                        @Valid @RequestBody MedioPagoTarjetaRequest request) {
                 return ResponseEntity.status(HttpStatus.CREATED)
                                 .body(medioPagoService.agregarTarjeta(id, request));
         }
@@ -225,6 +238,20 @@ public class ClienteController {
                         @PathVariable Integer id,
                         @PathVariable Integer mpId) {
                 return ResponseEntity.ok(medioPagoService.verificar(id, mpId));
+        }
+
+        @Operation(summary = "Rechazar medio de pago", description = "La empresa rechaza la verificación del medio de pago: queda verificado=false y activo=false")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Medio de pago rechazado"),
+                        @ApiResponse(responseCode = "401", description = R_401, content = @Content),
+                        @ApiResponse(responseCode = "403", description = R_403, content = @Content),
+                        @ApiResponse(responseCode = "404", description = R_404_MP, content = @Content)
+        })
+        @PatchMapping("/{id}/medios-pago/{mpId}/rechazar")
+        public ResponseEntity<MedioPagoResponse> rechazar(
+                        @PathVariable Integer id,
+                        @PathVariable Integer mpId) {
+                return ResponseEntity.ok(medioPagoService.rechazar(id, mpId));
         }
 
         @Operation(summary = "Desactivar medio de pago", description = "Desactiva un medio de pago, impidiendo su uso en futuras operaciones")

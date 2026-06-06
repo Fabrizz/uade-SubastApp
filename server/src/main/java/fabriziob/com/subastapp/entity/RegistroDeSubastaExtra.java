@@ -41,8 +41,12 @@ public class RegistroDeSubastaExtra {
     private RegistroDeSubasta registroSubasta;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cuenta_cobro_duenio", nullable = false)
+    @JoinColumn(name = "cuenta_cobro_duenio")
     private MedioPagoCuenta cuentaCobroDuenio;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "medio_pago_comprador")
+    private MedioPago medioPagoComprador;
 
     @Column(name = "direccion_envio", length = 350)
     private String direccionEnvio;

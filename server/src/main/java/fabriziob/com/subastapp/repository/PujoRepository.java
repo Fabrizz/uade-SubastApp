@@ -1,6 +1,8 @@
 package fabriziob.com.subastapp.repository;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -8,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import fabriziob.com.subastapp.entity.Pujo;
+import fabriziob.com.subastapp.entity.enums.Moneda;
 
 @Repository
 public interface PujoRepository extends JpaRepository<Pujo, Integer> {
@@ -48,4 +51,37 @@ public interface PujoRepository extends JpaRepository<Pujo, Integer> {
             ORDER BY p.importe DESC
             """)
     List<Pujo> findBySubastaIdWithAll(@Param("subastaId") Integer subastaId);
+
+    @Query("""
+            SELECT MAX(p.importe) FROM Pujo p
+            WHERE p.item.identificador = :itemId
+            """)
+    Optional<BigDecimal> findMaxImporteByItem(@Param("itemId") Integer itemId);
+
+    /**
+     * Suma de pujos ganadores del cliente cuya venta aún no está confirmada,
+     * en la moneda de las subastas correspondientes. Se usa para calcular la
+     * garantía consumida cuando el cliente sólo opera con cheques certificados.
+     *
+     * Un pujo se considera "consumiendo garantía" si:
+     *  - ganador = 'si', y
+     *  - no existe RegistroDeSubasta correspondiente (producto+subasta+cliente)
+     *    con estado_pago_duenio = confirmado.
+     */
+    @Query("""
+            SELECT COALESCE(SUM(p.importe), 0) FROM Pujo p
+            WHERE p.ganador = 'si'
+              AND p.asistente.cliente.identificador = :clienteId
+              AND p.item.catalogo.subasta.subastaExtra.moneda = :moneda
+              AND NOT EXISTS (
+                SELECT 1 FROM RegistroDeSubasta r
+                WHERE r.cliente.identificador = p.asistente.cliente.identificador
+                  AND r.producto.identificador = p.item.producto.identificador
+                  AND r.subasta.identificador = p.item.catalogo.subasta.identificador
+                  AND r.extra.estadoPagoDuenio = fabriziob.com.subastapp.entity.enums.EstadoPagoDuenio.confirmado
+              )
+            """)
+    BigDecimal sumImporteGanadorPendienteByCliente(
+            @Param("clienteId") Integer clienteId,
+            @Param("moneda") Moneda moneda);
 }

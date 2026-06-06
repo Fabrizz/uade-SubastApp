@@ -110,6 +110,16 @@ public class MedioPagoService {
         return toResponse(mp);
     }
 
+    public MedioPagoResponse rechazar(Integer clienteId, Integer mpId) {
+        MedioPago mp = getDelCliente(clienteId, mpId);
+        mp.setVerificado(false);
+        mp.setActivo(false);
+        medioPagoRepository.save(mp);
+        // Al perder un medio verificado puede recalcularse la categoría (nunca baja del piso).
+        categoriaService.recalcular(clienteId);
+        return toResponse(mp);
+    }
+
     public MedioPagoResponse desactivar(Integer clienteId, Integer mpId) {
         MedioPago mp = getDelCliente(clienteId, mpId);
         mp.setActivo(false);
