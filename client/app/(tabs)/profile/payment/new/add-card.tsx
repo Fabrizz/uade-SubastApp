@@ -1,15 +1,19 @@
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/auth";
+import { api } from "@/lib/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ArrowRight, Check, ChevronLeft, Square, Wifi } from "lucide-react-native";
+import { ArrowRight, Check, ChevronLeft, Square } from "lucide-react-native";
 import React, { useState } from "react";
-import { Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button } from "@/components/ui/Button";
 
 export default function AddCardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { hasPaymentMethod, completePaymentSetup, token, user } = useAuth();
+  const personaId = user?.id;
 
   const [cardNumber, setCardNumber] = useState("");
   const [cardName, setCardName] = useState("");
@@ -230,7 +234,86 @@ export default function AddCardScreen() {
 
             <Button
               label="Guardar Tarjeta"
-              onPress={() => router.back()}
+              onPress={async () => {
+                if (!personaId) {
+                  Alert.alert("Error", "No se encontró el identificador del cliente.");
+                  return;
+                }
+                if (!cardNumber.trim() || !cardName.trim() || !expiry.trim() || !cvv.trim()) {
+                  Alert.alert("Campos requeridos", "Completá todos los campos de la tarjeta.");
+                  return;
+                }
+
+                if (!/^\d{16}$/.test(cardNumber.trim())) {
+                  Alert.alert("Tarjeta inválida", "El número de tarjeta debe tener exactamente 16 dígitos.");
+                  return;
+                }
+
+                if (cardName.trim().length < 3) {
+                  Alert.alert("Nombre inválido", "El nombre del titular debe tener al menos 3 caracteres.");
+                  return;
+                }
+
+                if (!/^\d{4}$/.test(expiry)) {
+                  Alert.alert("Expiración inválida", "La fecha de expiración debe tener el formato MMAA (ej: 0528).");
+                  return;
+                }
+                const month = parseInt(expiry.substring(0, 2), 10);
+                const yearStr = expiry.substring(2, 4);
+                const year = parseInt(`20${yearStr}`, 10);
+
+                if (month < 1 || month > 12) {
+                  Alert.alert("Expiración inválida", "El mes de expiración debe estar entre 01 y 12.");
+                  return;
+                }
+
+                const currentDate = new Date();
+                const currentMonth = currentDate.getMonth() + 1;
+                const currentYear = currentDate.getFullYear();
+
+                if (year < currentYear || (year === currentYear && month < currentMonth)) {
+                  Alert.alert("Expiración inválida", "La fecha de vencimiento ya expiró.");
+                  return;
+                }
+
+                if (!/^\d{3,4}$/.test(cvv)) {
+                  Alert.alert("CVV inválido", "El CVV debe tener 3 o 4 dígitos.");
+                  return;
+                }
+
+                try {
+                  const monthPart = expiry.substring(0, 2);
+                  const yearPart = expiry.substring(2, 4);
+                  const formattedExpiry = `${monthPart}/20${yearPart}`;
+
+                  const { error } = await api.POST("/api/v1/clientes/{id}/medios-pago/tarjeta", {
+                    params: { path: { id: personaId } },
+                    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                    body: {
+                      moneda: "ARS",
+                      titular: cardName,
+                      ultimos4: cardNumber.slice(-4),
+                      marca: cardBrand,
+                      vencimiento: formattedExpiry,
+                      esInternacional: isExterior,
+                    },
+                  });
+
+                  if (error) {
+                    throw new Error("No se pudo registrar la tarjeta en el servidor.");
+                  }
+
+                  const wasForced = !hasPaymentMethod;
+                  await completePaymentSetup();
+                  if (wasForced) {
+                    router.replace("/profile");
+                  } else {
+                    router.back();
+                  }
+                } catch (e: any) {
+                  Alert.alert("Error", e?.message ?? "Error al guardar el medio de pago.");
+                }
+              }}
               colors={["#A14EBF", "#9102A2"]}
               className="mt-2 w-full rounded-full"
               textClassName="text-white text-lg"

@@ -3,6 +3,7 @@ import { BlurView } from "expo-blur";
 import { Bell, Gavel, House, User } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/context/auth";
 
 const TABS: Record<string, { label: string; Icon: typeof House }> = {
   index:         { label: "Inicio",          Icon: House  },
@@ -13,6 +14,11 @@ const TABS: Record<string, { label: string; Icon: typeof House }> = {
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { hasPaymentMethod } = useAuth();
+
+  if (hasPaymentMethod === false) {
+    return null;
+  }
 
   return (
     <BlurView

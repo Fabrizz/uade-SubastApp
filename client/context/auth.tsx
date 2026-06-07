@@ -113,6 +113,8 @@ interface AuthContextValue {
   preRegister: (body: PreRegisterBody) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   refreshUser: () => Promise<void>;
+  hasPaymentMethod: boolean;
+  completePaymentSetup: () => Promise<void>;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -125,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean>(true);
   const expirationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearSession = useCallback(async () => {
@@ -138,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ]);
     setToken(null);
     setUser(null);
+    setHasPaymentMethod(true);
   }, []);
 
   const scheduleExpiration = useCallback((tok: string) => {
@@ -237,6 +241,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh));
   }, [token, user]);
 
+  const completePaymentSetup = useCallback(async () => {
+    // FILL HERE
+  }, [user]);
+
   const tokenExpiration = useMemo(() => (token ? getTokenExpiration(token) : null), [token]);
 
   const value = useMemo<AuthContextValue>(() => ({
@@ -250,7 +258,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     preRegister,
     register,
     refreshUser,
-  }), [token, user, tokenExpiration, isLoading, login, logout, preRegister, register, refreshUser]);
+    hasPaymentMethod,
+    completePaymentSetup,
+  }), [token, user, tokenExpiration, isLoading, login, logout, preRegister, register, refreshUser, hasPaymentMethod, completePaymentSetup]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

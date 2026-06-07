@@ -1,21 +1,99 @@
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/auth";
+import { api } from "@/lib/api";
 import { LinearGradient } from "expo-linear-gradient";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ChevronLeft, CreditCard, Plus } from "lucide-react-native";
-import React from "react";
-import { Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useState } from "react";
+import { ActivityIndicator, Alert, Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button } from "@/components/ui/Button";
 
-const MOCK_METHODS = [
-  { id: "1", name: "Visa terminada en 4242", type: "visa" },
-  { id: "2", name: "MasterCard terminada en 1234", type: "mastercard" },
-  { id: "3", name: "Mercado Pago", type: "wallet" },
-];
+function getPaymentMethodLabel(method: any): string {
+  if (method.tipo === "tarjeta_credito" && method.tarjeta) {
+    const brand = method.tarjeta.marca || "Tarjeta";
+    const last4 = method.tarjeta.ultimos4 || "";
+    return `${brand} terminada en ${last4}`;
+  }
+  if (method.tipo === "cuenta_bancaria" && method.cuenta) {
+    const bankName = method.cuenta.banco || "Cuenta bancaria";
+    const cbu = method.cuenta.cbu || "";
+    const last4 = cbu.slice(-4);
+    return `${bankName} (CBU: ...${last4})`;
+  }
+  if (method.tipo === "cheque" && method.cheque) {
+    const bankName = method.cheque.banco || "Cheque";
+    const nro = method.cheque.nroCheque || "";
+    return `Cheque ${bankName} (${nro})`;
+  }
+  return "Medio de pago";
+}
 
 export default function PaymentMethodsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { token, user } = useAuth();
+  const personaId = user?.id;
+
+  const [methods, setMethods] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadPaymentMethods = useCallback(async () => {
+    if (!personaId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error } = await api.GET("/api/v1/clientes/{id}/medios-pago", {
+        params: { path: { id: personaId } },
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (data) {
+        setMethods(data);
+      }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [personaId, token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPaymentMethods();
+    }, [loadPaymentMethods])
+  );
+
+  const handleDelete = async (mpId: number) => {
+    if (!personaId) return;
+    Alert.alert(
+      "Eliminar medio de pago",
+      "¿Estás seguro de que querés eliminar este medio de pago?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const { error } = await api.DELETE("/api/v1/clientes/{id}/medios-pago/{mpId}", {
+                params: { path: { id: personaId, mpId } },
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+              });
+              if (!error) {
+                loadPaymentMethods();
+              } else {
+                Alert.alert("Error", "No se pudo eliminar el medio de pago.");
+              }
+            } catch (e: any) {
+              Alert.alert("Error", e?.message ?? "No se pudo eliminar el medio de pago.");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <LinearGradient
@@ -69,41 +147,64 @@ export default function PaymentMethodsScreen() {
           Métodos de pago
         </Text>
 
-        {/* Lista de métodos - Login Card Aesthetic */}
-        {MOCK_METHODS.map((method) => (
-          <View 
-            key={method.id} 
-            className="mb-5 p-6 rounded-2xl bg-neutral-900 w-full"
-          >
-            <View className="flex-row items-center mb-5">
-              <View className="w-10 h-10 rounded-xl bg-[#383838] border border-[#555555] items-center justify-center mr-4">
-                <CreditCard size={20} color="#00c9b1" />
-              </View>
-              <Text className="text-white font-bold text-lg flex-1">
-                {method.name}
-              </Text>
-            </View>
-
-            <View className="flex-row gap-3">
-              <Button
-                label="Eliminar"
-                onPress={() => {}}
-                activeOpacity={0.7}
-                className="flex-[0.4] bg-[#383838] border border-[#555555]"
-                textClassName="text-neutral-300"
-                innerClassName="px-4 py-3.5"
-              />
-              <Button
-                label="Modificar"
-                onPress={() => {}}
-                colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
-                className="flex-[0.6]"
-                textClassName="text-black"
-                innerClassName="px-4 py-3.5"
-              />
-            </View>
+        {loading ? (
+          <View className="py-10 items-center">
+            <ActivityIndicator size="large" color="#00c9b1" />
           </View>
-        ))}
+        ) : methods.length === 0 ? (
+          <View className="py-10 items-center bg-neutral-900 rounded-2xl p-6 border border-neutral-800">
+            <Text className="text-neutral-400 text-base text-center">
+              No tenés ningún método de pago registrado todavía.
+            </Text>
+          </View>
+        ) : (
+          methods.map((method) => {
+            return (
+              <View 
+                key={method.identificador} 
+                className="mb-5 p-6 rounded-2xl bg-neutral-900 w-full"
+              >
+                <View className="flex-row items-center justify-between mb-5">
+                  <View className="flex-row items-center flex-1 mr-3">
+                    <View className="w-10 h-10 rounded-xl bg-[#383838] border border-[#555555] items-center justify-center mr-4">
+                      <CreditCard size={20} color="#00c9b1" />
+                    </View>
+                    <Text className="text-white font-bold text-base flex-1" numberOfLines={1}>
+                      {getPaymentMethodLabel(method)}
+                    </Text>
+                  </View>
+
+                  {method.activo ? (
+                    method.verificado ? (
+                      <View className="bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+                        <Text className="text-emerald-400 text-[10px] font-bold uppercase">Verificado</Text>
+                      </View>
+                    ) : (
+                      <View className="bg-amber-500/20 border border-amber-500/30 px-2.5 py-1 rounded-full">
+                        <Text className="text-amber-400 text-[10px] font-bold uppercase">Pendiente</Text>
+                      </View>
+                    )
+                  ) : (
+                    <View className="bg-red-500/20 border border-red-500/30 px-2.5 py-1 rounded-full">
+                      <Text className="text-red-400 text-[10px] font-bold uppercase">Inactivo</Text>
+                    </View>
+                  )}
+                </View>
+
+                <View className="flex-row gap-3">
+                  <Button
+                    label="Eliminar"
+                    onPress={() => method.identificador && handleDelete(method.identificador)}
+                    activeOpacity={0.7}
+                    className="flex-1 bg-[#383838] border border-[#555555]"
+                    textClassName="text-neutral-300"
+                    innerClassName="px-4 py-3.5"
+                  />
+                </View>
+              </View>
+            );
+          })
+        )}
 
         <View className="h-6" />
 
