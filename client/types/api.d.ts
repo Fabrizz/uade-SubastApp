@@ -557,6 +557,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/recover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recuperar contraseña
+         * @description Genera una nueva contraseña temporal y la envía al mail del usuario
+         */
+        post: operations["recover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/pre-register": {
         parameters: {
             query?: never;
@@ -1995,6 +2015,9 @@ export interface components {
             categoria?: string;
             habilitado?: boolean;
         };
+        RecoverRequest: {
+            email?: string;
+        };
         PreRegisterRequest: {
             nombre?: string;
             documento?: string;
@@ -2127,10 +2150,10 @@ export interface components {
             pais?: string;
         };
         PageProductoResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ProductoResponse"][];
@@ -2140,20 +2163,20 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageableObject: {
             /** Format: int64 */
             offset?: number;
-            unpaged?: boolean;
-            sort?: components["schemas"]["SortObject"];
-            paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
             /** Format: int32 */
             pageNumber?: number;
+            unpaged?: boolean;
+            sort?: components["schemas"]["SortObject"];
+            paged?: boolean;
         };
         SortObject: {
             empty?: boolean;
@@ -2178,10 +2201,10 @@ export interface components {
             sort?: string[];
         };
         PageSubastaResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SubastaResponse"][];
@@ -2191,15 +2214,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageRegistroDeSubastaResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["RegistroDeSubastaResponse"][];
@@ -2209,15 +2232,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageItemCatalogoResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ItemCatalogoResponse"][];
@@ -2227,15 +2250,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageAsistenteResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["AsistenteResponse"][];
@@ -2245,15 +2268,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageSubastadorResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SubastadorResponse"][];
@@ -2263,15 +2286,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PagePersonaResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PersonaResponse"][];
@@ -2281,15 +2304,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PagePaisResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PaisResponse"][];
@@ -2299,8 +2322,8 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PaisResponse: {
@@ -2313,10 +2336,10 @@ export interface components {
             idiomas?: string;
         };
         PageNotificacionResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["NotificacionResponse"][];
@@ -2326,8 +2349,8 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         GlobalSubastasResponse: {
@@ -2376,10 +2399,10 @@ export interface components {
             subastasGanadas?: number;
         };
         PageSectorResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SectorResponse"][];
@@ -2389,15 +2412,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageEmpleadoResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["EmpleadoResponse"][];
@@ -2407,15 +2430,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageDuenioResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["DuenioResponse"][];
@@ -2425,15 +2448,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageClienteResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ClienteResponse"][];
@@ -2443,8 +2466,8 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         Link: {
@@ -4219,6 +4242,35 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["AuthenticationResponse"];
                 };
+            };
+        };
+    };
+    recover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecoverRequest"];
+            };
+        };
+        responses: {
+            /** @description Mail de recuperación enviado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Usuario no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

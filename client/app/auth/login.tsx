@@ -86,8 +86,8 @@ export default function Login() {
 
           <View style={{ flexDirection: 'row', marginBottom: 24 }}>
             <Text className="text-neutral-300 text-xs">¿Olvidaste tu contraseña? </Text>
-            <TouchableOpacity>
-              <Text className="text-teal-400 text-xs font-semibold">Enviar mail</Text>
+            <TouchableOpacity onPress={() => router.push('/auth/recover')}>
+              <Text className="text-teal-400 text-xs font-semibold">Recuperar</Text>
             </TouchableOpacity>
           </View>
 

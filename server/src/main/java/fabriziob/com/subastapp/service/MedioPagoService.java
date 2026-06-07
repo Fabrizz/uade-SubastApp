@@ -37,6 +37,7 @@ public class MedioPagoService {
     private final MedioPagoCuentaRepository cuentaRepository;
     private final MedioPagoTarjetaRepository tarjetaRepository;
     private final CategoriaService categoriaService;
+    private final WsNotificacionService wsNotificacionService;
 
     @Transactional(readOnly = true)
     public List<MedioPagoResponse> listar(Integer clienteId) {
@@ -107,6 +108,18 @@ public class MedioPagoService {
         medioPagoRepository.save(mp);
         // La verificación de un nuevo medio puede mejorar la categoría del cliente.
         categoriaService.recalcular(clienteId);
+
+        String tipoNombre = switch (mp.getTipo()) {
+            case cheque -> "cheque";
+            case cuenta_bancaria -> "cuenta bancaria";
+            case tarjeta_credito -> "tarjeta de crédito";
+        };
+        wsNotificacionService.enviarACliente(
+                clienteId,
+                WsNotificacionService.Tipo.success,
+                "Medio de pago habilitado",
+                "Tu " + tipoNombre + " fue verificado y habilitado.");
+
         return toResponse(mp);
     }
 

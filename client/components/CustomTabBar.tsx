@@ -4,6 +4,7 @@ import { Bell, Gavel, House, User } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/auth";
+import { useWebSocket } from "@/context/websocket";
 
 const TABS: Record<string, { label: string; Icon: typeof House }> = {
   index:         { label: "Inicio",          Icon: House  },
@@ -15,6 +16,8 @@ const TABS: Record<string, { label: string; Icon: typeof House }> = {
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { hasPaymentMethod } = useAuth();
+  const { notifications } = useWebSocket();
+  const notifCount = notifications.length;
 
   if (hasPaymentMethod === false) {
     return null;
@@ -65,6 +68,16 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             >
               <View className="items-center justify-center">
                 <Icon size={24} color={isActive ? "#F8B8FF" : "#FFFFFF"} />
+                {route.name === 'notifications' && notifCount > 0 && (
+                  <View
+                    className="absolute -top-1 -right-1 bg-rose-500 rounded-full items-center justify-center"
+                    style={{ minWidth: 16, height: 16, paddingHorizontal: 3 }}
+                  >
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>
+                      {notifCount > 99 ? '99+' : notifCount}
+                    </Text>
+                  </View>
+                )}
               </View>
               <Text
                 style={{

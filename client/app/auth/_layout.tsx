@@ -5,6 +5,7 @@ export default function AuthLayout() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000000' } }}>
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="register" options={{ headerShown: false }} />
+      <Stack.Screen name="recover" options={{ headerShown: false }} />
     </Stack>
   );
 }

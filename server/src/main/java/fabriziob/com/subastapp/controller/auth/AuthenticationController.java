@@ -76,7 +76,17 @@ public class AuthenticationController {
         @PostMapping("/check")
         public ResponseEntity<CheckResponse> check(@RequestBody CheckRequest request) {
                 boolean available = service.emailDisponible(request.getEmail());
-
                 return ResponseEntity.ok(new CheckResponse(available));
+        }
+
+        @Operation(summary = "Recuperar contraseña", description = "Genera una nueva contraseña temporal y la envía al mail del usuario")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Mail de recuperación enviado"),
+                        @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+        })
+        @PostMapping("/recover")
+        public ResponseEntity<Void> recover(@RequestBody RecoverRequest request) {
+                service.recover(request);
+                return ResponseEntity.ok().build();
         }
 }
