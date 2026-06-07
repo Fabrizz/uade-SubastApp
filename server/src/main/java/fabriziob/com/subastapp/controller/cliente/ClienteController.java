@@ -111,6 +111,19 @@ public class ClienteController {
                 return ResponseEntity.ok(toResponse(clienteService.inhabilitar(id)));
         }
 
+        @Operation(summary = "Inhabilitar cliente por mail (Rechazo)", description = "Envía un mail de rechazo al cliente indicando que no fue aceptado, sin modificar la base de datos")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "204", description = "Mail de rechazo enviado"),
+                        @ApiResponse(responseCode = "401", description = R_401, content = @Content),
+                        @ApiResponse(responseCode = "403", description = R_403, content = @Content),
+                        @ApiResponse(responseCode = "404", description = R_404, content = @Content)
+        })
+        @PostMapping("/{id}/inhabilitar-mail")
+        public ResponseEntity<Void> inhabilitarMail(@PathVariable Integer id) {
+                clienteService.enviarMailRechazo(id);
+                return ResponseEntity.noContent().build();
+        }
+
         @Operation(summary = "Habilitar cliente", description = "Habilita operativamente al cliente para participar en subastas")
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "Cliente habilitado"),
@@ -308,6 +321,7 @@ public class ClienteController {
                                 .estadoOperativo(extra != null ? extra.getEstadoOperativo() : null)
                                 .multaPendiente(extra != null ? extra.getMultaPendiente() : null)
                                 .pais(c.getPais() != null ? c.getPais().getNombre() : null)
+                                .inhabilitado(extra != null ? extra.getInhabilitado() : null)
                                 .build();
         }
 }

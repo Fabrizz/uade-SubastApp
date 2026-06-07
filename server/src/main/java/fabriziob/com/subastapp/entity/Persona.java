@@ -91,7 +91,7 @@ public class Persona implements UserDetails {
         boolean personaActiva = EstadoPersona.activo.equals(estado);
         boolean clienteHabilitado = cliente == null
                 || cliente.getClienteExtra() == null
-                || !"inhabilitado".equals(cliente.getClienteExtra().getEstadoOperativo());
+                || !Boolean.TRUE.equals(cliente.getClienteExtra().getInhabilitado());
         return personaActiva && clienteHabilitado;
     }
 
@@ -99,7 +99,7 @@ public class Persona implements UserDetails {
     public boolean isAccountNonLocked() {
         if (cliente == null || cliente.getClienteExtra() == null)
             return true;
-        return !"inhabilitado".equals(cliente.getClienteExtra().getEstadoOperativo());
+        return !Boolean.TRUE.equals(cliente.getClienteExtra().getInhabilitado());
     }
 
     @Override

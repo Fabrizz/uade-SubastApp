@@ -55,6 +55,17 @@ public class EmailService {
         enviar(email, asunto, html);
     }
 
+    /** Mail de rechazo: avisa que su registro no fue aceptado. */
+    public void enviarRechazo(String email) {
+        String asunto = "SubastApp · Su registro no fue aceptado";
+        String html = """
+                <h2>Registro no aprobado</h2>
+                <p>Lamentamos informarle que su solicitud de registro en SubastApp no fue aceptada.</p>
+                <p>Su identidad no pudo ser verificada o no cumple con los requisitos de la plataforma.</p>
+                """;
+        enviar(email, asunto, html);
+    }
+
     private void enviar(String to, String asunto, String html) {
         if (discordWebhookUrl != null && !discordWebhookUrl.isBlank()) {
             try {
