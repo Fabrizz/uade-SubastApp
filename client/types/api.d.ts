@@ -537,6 +537,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clientes/{id}/inhabilitar-mail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Inhabilitar cliente por mail (Rechazo)
+         * @description Envía un mail de rechazo al cliente indicando que no fue aceptado, sin modificar la base de datos
+         */
+        post: operations["inhabilitarMail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/register": {
         parameters: {
             query?: never;
@@ -2125,6 +2145,7 @@ export interface components {
             estadoOperativo?: string;
             multaPendiente?: number;
             pais?: string;
+            inhabilitado?: boolean;
         };
         PageProductoResponse: {
             /** Format: int64 */
@@ -2136,29 +2157,29 @@ export interface components {
             content?: components["schemas"]["ProductoResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageableObject: {
             /** Format: int64 */
             offset?: number;
-            unpaged?: boolean;
-            sort?: components["schemas"]["SortObject"];
             paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
             /** Format: int32 */
             pageNumber?: number;
+            unpaged?: boolean;
+            sort?: components["schemas"]["SortObject"];
         };
         SortObject: {
             empty?: boolean;
-            unsorted?: boolean;
             sorted?: boolean;
+            unsorted?: boolean;
         };
         ProductoSeguroResponse: {
             seguroObj?: components["schemas"]["Seguro"];
@@ -2187,12 +2208,12 @@ export interface components {
             content?: components["schemas"]["SubastaResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageRegistroDeSubastaResponse: {
@@ -2205,12 +2226,12 @@ export interface components {
             content?: components["schemas"]["RegistroDeSubastaResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageItemCatalogoResponse: {
@@ -2223,12 +2244,12 @@ export interface components {
             content?: components["schemas"]["ItemCatalogoResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageAsistenteResponse: {
@@ -2241,12 +2262,12 @@ export interface components {
             content?: components["schemas"]["AsistenteResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageSubastadorResponse: {
@@ -2259,12 +2280,12 @@ export interface components {
             content?: components["schemas"]["SubastadorResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PagePersonaResponse: {
@@ -2277,12 +2298,12 @@ export interface components {
             content?: components["schemas"]["PersonaResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PagePaisResponse: {
@@ -2295,12 +2316,12 @@ export interface components {
             content?: components["schemas"]["PaisResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PaisResponse: {
@@ -2322,12 +2343,12 @@ export interface components {
             content?: components["schemas"]["NotificacionResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         GlobalSubastasResponse: {
@@ -2385,12 +2406,12 @@ export interface components {
             content?: components["schemas"]["SectorResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageEmpleadoResponse: {
@@ -2403,12 +2424,12 @@ export interface components {
             content?: components["schemas"]["EmpleadoResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageDuenioResponse: {
@@ -2421,12 +2442,12 @@ export interface components {
             content?: components["schemas"]["DuenioResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageClienteResponse: {
@@ -2439,12 +2460,12 @@ export interface components {
             content?: components["schemas"]["ClienteResponse"][];
             /** Format: int32 */
             number?: number;
-            first?: boolean;
-            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
+            first?: boolean;
+            last?: boolean;
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         Link: {
@@ -4152,6 +4173,47 @@ export interface operations {
             };
             /** @description Datos inválidos */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin permisos para acceder a este recurso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Cliente no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inhabilitarMail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Mail de rechazo enviado */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

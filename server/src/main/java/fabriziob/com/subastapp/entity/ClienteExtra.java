@@ -47,4 +47,7 @@ public class ClienteExtra {
 
     @Column(name = "puntaje")
     private Integer puntaje;
+
+    @Column(name = "inhabilitado")
+    private Boolean inhabilitado = false;
 }

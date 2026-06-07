@@ -3,9 +3,9 @@ import { api } from '@/lib/api';
 import type { components } from '@/types/api';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, CheckCircle, Clock, UserCheck } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle, Clock, UserCheck, XCircle } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Cliente = components['schemas']['ClienteResponse'];
@@ -17,6 +17,7 @@ export default function AdminAdmitir() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [admitiendo, setAdmitiendo] = useState<number | null>(null);
+  const [rechazando, setRechazando] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
@@ -31,7 +32,7 @@ export default function AdminAdmitir() {
     if (err || !data) {
       setError('No se pudo cargar la lista de clientes.');
     } else {
-      setClientes(data.content ?? []);
+      setClientes((data.content ?? []).filter(c => !c.inhabilitado));
     }
     setIsLoading(false);
   }, [token]);
@@ -48,6 +49,21 @@ export default function AdminAdmitir() {
       setClientes(prev => prev.map(c => c.identificador === id ? { ...c, admitido: 'si' } : c));
     }
     setAdmitiendo(null);
+  };
+
+  const handleRechazar = async (id: number) => {
+    setRechazando(id);
+    const { error: err } = await api.POST('/api/v1/clientes/{id}/inhabilitar-mail', {
+      params: { path: { id } },
+      headers,
+    });
+    if (!err) {
+      Alert.alert('Éxito', 'El registro del cliente ha sido rechazado y se ha enviado el mail de notificación.');
+      setClientes(prev => prev.filter(c => c.identificador !== id));
+    } else {
+      Alert.alert('Error', 'No se pudo rechazar al cliente.');
+    }
+    setRechazando(null);
   };
 
   return (
@@ -135,21 +151,39 @@ export default function AdminAdmitir() {
                       <Text className="text-green-400 text-xs">Ya admitido</Text>
                     </View>
                   ) : (
-                    <TouchableOpacity
-                      onPress={() => item.identificador != null && handleAdmitir(item.identificador)}
-                      disabled={cargando}
-                      activeOpacity={0.8}
-                      className="flex-row items-center justify-center gap-2 mt-1 pt-3 border-t border-neutral-800"
-                    >
-                      {cargando ? (
-                        <ActivityIndicator size="small" color="#d8b4fe" />
-                      ) : (
-                        <>
-                          <Clock size={13} color="#d8b4fe" />
-                          <Text className="text-purple-300 text-xs font-semibold">Admitir cliente</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
+                    <View className="flex-row gap-3 mt-1 pt-3 border-t border-neutral-800">
+                      <TouchableOpacity
+                        onPress={() => item.identificador != null && handleRechazar(item.identificador)}
+                        disabled={cargando || rechazando === item.identificador}
+                        activeOpacity={0.8}
+                        className="flex-1 flex-row items-center justify-center gap-2 py-2.5 bg-red-950/30 border border-red-500/20 rounded-xl"
+                      >
+                        {rechazando === item.identificador ? (
+                          <ActivityIndicator size="small" color="#f87171" />
+                        ) : (
+                          <>
+                            <XCircle size={13} color="#f87171" />
+                            <Text className="text-red-400 text-xs font-semibold">Rechazar</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={() => item.identificador != null && handleAdmitir(item.identificador)}
+                        disabled={cargando || rechazando === item.identificador}
+                        activeOpacity={0.8}
+                        className="flex-1 flex-row items-center justify-center gap-2 py-2.5 bg-purple-950/30 border border-purple-500/20 rounded-xl"
+                      >
+                        {cargando && admitiendo === item.identificador ? (
+                          <ActivityIndicator size="small" color="#c084fc" />
+                        ) : (
+                          <>
+                            <Clock size={13} color="#c084fc" />
+                            <Text className="text-purple-300 text-xs font-semibold">Admitir</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
                   )}
                 </View>
               );

@@ -63,6 +63,19 @@ public class ClienteService {
         return cliente;
     }
 
+    public void enviarMailRechazo(Integer id) {
+        Cliente cliente = findById(id);
+        ClienteExtra extra = requireExtra(cliente);
+        extra.setInhabilitado(true);
+        extra.setEstadoOperativo("inhabilitado");
+        if (cliente.getPersona() != null && cliente.getPersona().getPersonaExtra() != null) {
+            String email = cliente.getPersona().getPersonaExtra().getEmail();
+            if (email != null && !email.isBlank()) {
+                emailService.enviarRechazo(email);
+            }
+        }
+    }
+
     /**
      * Override administrativo de la categoría. Pasa a ser el nuevo piso de la
      * mejora.
@@ -99,6 +112,7 @@ public class ClienteService {
         Cliente cliente = findById(id);
         ClienteExtra extra = requireExtra(cliente);
         extra.setEstadoOperativo("inhabilitado");
+        extra.setInhabilitado(true);
         return cliente;
     }
 
@@ -109,6 +123,7 @@ public class ClienteService {
             throw new IllegalStateException(
                     "El cliente tiene una multa pendiente; debe saldarla antes de habilitarlo");
         extra.setEstadoOperativo("habilitado");
+        extra.setInhabilitado(false);
         return cliente;
     }
 

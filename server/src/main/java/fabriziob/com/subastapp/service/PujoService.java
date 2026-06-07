@@ -222,6 +222,9 @@ public class PujoService {
         ClienteExtra extra = cliente.getClienteExtra();
         if (extra == null)
             throw new SecurityException("Cliente sin estado operativo");
+        if (Boolean.TRUE.equals(extra.getInhabilitado()))
+            throw new SecurityException(
+                    "Cliente no habilitado para pujar (estado: inhabilitado)");
         if (!"habilitado".equals(extra.getEstadoOperativo()))
             throw new SecurityException(
                     "Cliente no habilitado para pujar (estado: " + extra.getEstadoOperativo() + ")");

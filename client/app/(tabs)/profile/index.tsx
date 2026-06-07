@@ -5,9 +5,17 @@ import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
 import type { components } from "@/types/api";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { ArrowRight, BarChart2, IdCard, LogOut, Mail, MapPin } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useRouter, useFocusEffect } from "expo-router";
+import {
+  ArrowRight,
+  BarChart2,
+  IdCard,
+  LogOut,
+  Mail,
+  MapPin,
+  Shield,
+} from "lucide-react-native";
+import React, { useCallback, useState } from "react";
 import {
   Image,
   Platform,
@@ -20,7 +28,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type PersonaProfile = components["schemas"]["PersonaResponse"];
 
-
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -29,23 +36,35 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<PersonaProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const personaId = user?.id ?? null;
-    if (!personaId) {
+  const loadProfile = useCallback(() => {
+    const userId = user?.id ?? null;
+    if (!userId) {
       setLoading(false);
       return;
     }
+    setLoading(true);
     api
       .GET("/api/v1/personas/{id}", {
-        params: { path: { id: personaId } },
+        params: { path: { id: userId } },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
-      .then(({ data }) => { if (data) setProfile(data); })
+      .then(({ data }) => {
+        if (data) setProfile(data);
+      })
+      .catch((err) => {
+        console.error("Error loading profile:", err);
+      })
       .finally(() => setLoading(false));
   }, [user?.id, token]);
 
-  const nombre    = profile?.nombre    ?? user?.name ?? "—";
-  const email     = profile?.email     ?? user?.email ?? "—";
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile])
+  );
+
+  const nombre = profile?.nombre ?? user?.name ?? user?.email?.split("@")[0] ?? "—";
+  const email = profile?.email ?? user?.email ?? "—";
   const documento = profile?.documento ?? "—";
   const direccion = profile?.direccion ?? "—";
   const categoria = profile?.categoria ?? user?.category ?? null;
@@ -62,7 +81,7 @@ export default function ProfileScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* Header Logo */}
         <View className="flex-row items-center mb-8 mt-2 gap-3">
           <View
             style={{
@@ -84,13 +103,18 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        {/* Avatar + nombre + pill */}
+        {/* Redesigned Profile Header Area */}
         <View className="flex-row items-center gap-5 mb-6">
-          <AvatarInitials
-            name={nombre === '—' ? (user?.email ?? '?') : nombre}
-            size={96}
-            loading={loading}
-          />
+          <View className="relative">
+            <View className="border-2 border-purple-500/30 p-1.5 rounded-full">
+              <AvatarInitials
+                name={nombre}
+                size={96}
+                loading={loading}
+              />
+            </View>
+            <View className="absolute bottom-1 right-1 bg-emerald-500 w-4 h-4 rounded-full border-2 border-neutral-900" />
+          </View>
           <View className="flex-1 gap-2">
             <Text className="text-white text-2xl font-bold" numberOfLines={2}>
               {loading ? "..." : nombre}
@@ -99,7 +123,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Datos */}
+        {/* Original-styled Personal Info Card */}
         <View className="bg-neutral-900 border border-neutral-800 rounded-2xl mb-6 overflow-hidden">
           <Text className="text-white font-bold text-lg px-4 pt-3 pb-3 border-b border-neutral-800">
             Información personal
@@ -124,34 +148,48 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        <Button
-          label="Cerrar sesión"
-          onPress={logout}
-          className="bg-red-800 mb-6"
-          textClassName="text-neutral-300"
-          icon={<LogOut size={16} color="#d4d4d4" />}
-          innerClassName="px-6 py-4"
-        />
+        {/* Action Buttons */}
+        {categoria === "admin" && (
+          <Button
+            label="Panel de control"
+            onPress={() => router.push("/admin")}
+            colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
+            textClassName="text-black font-semibold"
+            rightIcon={<Shield size={18} color="#000" strokeWidth={2} />}
+            className="mb-3"
+            innerClassName="px-6 py-3"
+          />
+        )}
 
-        {/* Acciones */}
-        <Button
-          label="Estadísticas"
-          onPress={() => router.push("/profile/stats")}
-          colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
-          textClassName="text-black tracking-wide"
-          rightIcon={<BarChart2 size={18} color="#000" strokeWidth={2} />}
-          className="mb-3"
-          innerClassName="px-6 py-4"
-        />
         <Button
           label="Medios de pago"
           onPress={() => router.push("/profile/payment")}
           colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
-          textClassName="text-black"
+          textClassName="text-black font-semibold"
           rightIcon={<ArrowRight size={18} color="#000" strokeWidth={2.5} />}
           className="mb-3"
-          innerClassName="px-6 py-4"
+          innerClassName="px-6 py-3"
         />
+
+        <Button
+          label="Estadísticas"
+          onPress={() => router.push("/profile/stats")}
+          colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
+          textClassName="text-black font-semibold tracking-wide"
+          rightIcon={<BarChart2 size={18} color="#000" strokeWidth={2} />}
+          className="mb-6"
+          innerClassName="px-6 py-3"
+        />
+
+        <Button
+          label="Cerrar sesión"
+          onPress={logout}
+          className="bg-red-950/40 border border-red-500/30 mb-3"
+          textClassName="text-red-300 font-semibold"
+          icon={<LogOut size={16} color="#f87171" />}
+          innerClassName="px-6 py-3"
+        />
+
       </ScrollView>
     </LinearGradient>
   );
