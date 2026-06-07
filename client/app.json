@@ -22,7 +22,8 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.INTERNET",
-        "android.permission.ACCESS_NETWORK_STATE"
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -42,6 +43,7 @@
         }
       ],
       "expo-secure-store",
+      "expo-notifications",
       "@react-native-community/datetimepicker"
     ],
     "experiments": {

@@ -25,6 +25,7 @@ public class ClienteService {
     private final ClienteRepository clienteRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final WsNotificacionService wsNotificacionService;
 
     @Transactional(readOnly = true)
     public Cliente findById(Integer id) {
@@ -73,6 +74,14 @@ public class ClienteService {
         ClienteExtra extra = cliente.getClienteExtra();
         if (extra != null)
             extra.setCategoriaBase(nueva);
+
+        String email = cliente.getPersona().getPersonaExtra().getEmail();
+        wsNotificacionService.enviar(
+                email,
+                WsNotificacionService.Tipo.category_update,
+                "Categoría actualizada",
+                "Tu categoría fue actualizada a " + nueva.name());
+
         return cliente;
     }
 
