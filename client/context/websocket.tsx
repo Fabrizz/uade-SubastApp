@@ -1,28 +1,18 @@
 import { API_BASE } from '@/lib/api';
 import { Client, IMessage } from '@stomp/stompjs';
-import * as Notifications from 'expo-notifications';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useAuth } from './auth';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export const WsNotificationType = {
+export const WsNotificationTypeObj = {
   warning: 'warning',
   success: 'success',
   info: 'info',
   category_update: 'category_update',
 } as const;
-export type WsNotificationType = typeof WsNotificationType[keyof typeof WsNotificationType];
+
+export type WsNotificationType = typeof WsNotificationTypeObj[keyof typeof WsNotificationTypeObj];
 
 // Field names must match the Spring Boot notification DTO
 export type WsNotification = {
@@ -66,7 +56,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    console.log('[WS] Activando cliente →', WS_URL);
     setIsConnecting(true);
     setConnectionError(null);
 
@@ -81,7 +70,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       forceBinaryWSFrames: true,
       onConnect: () => {
         clearTimeout(connectionTimeout);
-        console.log('[WS] Conectado');
         setIsConnected(true);
         setIsConnecting(false);
         setConnectionError(null);
@@ -89,11 +77,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           try {
             const notif: WsNotification = JSON.parse(msg.body);
             setNotifications((prev) => [notif, ...prev]);
-            Notifications.scheduleNotificationAsync({
-              content: { title: notif.title, body: notif.description },
-              trigger: null,
-            });
-            if (notif.type === WsNotificationType.category_update) {
+            if (notif.type === WsNotificationTypeObj.category_update) {
               refreshUser();
             }
           } catch {
@@ -102,24 +86,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         });
       },
       onDisconnect: () => {
-        console.log('[WS] Desconectado');
         setIsConnected(false);
         setIsConnecting(false);
       },
       onStompError: (frame) => {
         clearTimeout(connectionTimeout);
         const msg = frame.headers?.message ?? 'Error de conexión STOMP';
-        console.error('[WS] STOMP error:', msg, frame);
         setIsConnected(false);
         setIsConnecting(false);
         setConnectionError(msg);
       },
       onWebSocketError: (evt) => {
         clearTimeout(connectionTimeout);
-        const msg = evt instanceof ErrorEvent
-          ? evt.message
-          : (evt as CloseEvent).reason || `WebSocket cerrado (código ${(evt as CloseEvent).code ?? '?'})`;
-        console.error('[WS] WebSocket error:', msg, evt);
+        const e = evt as any;
+        const msg = e.reason || e.message || `WebSocket cerrado (código ${e.code ?? '?'})`;
         setIsConnected(false);
         setIsConnecting(false);
         setConnectionError(msg || 'No se pudo conectar al servidor');
@@ -131,7 +111,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     connectionTimeout = setTimeout(() => {
       if (!clientRef.current?.connected) {
-        console.warn('[WS] Timeout de conexión');
         setIsConnecting(false);
         setConnectionError('Timeout: el servidor no respondió');
         client.deactivate();

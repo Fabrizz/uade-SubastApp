@@ -1,14 +1,12 @@
 import { LinearGradient } from "expo-linear-gradient";
-import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { AlertTriangle, ArrowLeft, Bell, BellOff, Trophy, WifiOff, WifiSync, X } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Linking, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { AlertTriangle, ArrowLeft, Bell, Trophy, WifiOff, WifiSync, X } from "lucide-react-native";
+import React from "react";
+import { ActivityIndicator, Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useWebSocket, WsNotification } from "@/context/websocket";
-
 
 function formatDate(iso: string): string {
   const date = new Date(iso);
@@ -41,17 +39,6 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { notifications, removeNotification, isConnected, isConnecting, connectionError } = useWebSocket();
-
-  const [permStatus, setPermStatus] = useState<string | null>(null);
-
-  useEffect(() => {
-    Notifications.getPermissionsAsync().then(({ status }) => setPermStatus(status));
-  }, []);
-
-  const requestPermission = async () => {
-    const { status } = await Notifications.requestPermissionsAsync();
-    setPermStatus(status);
-  };
 
   return (
     <LinearGradient
@@ -128,26 +115,6 @@ export default function NotificationsScreen() {
             </View>
           )}
         </View>
-
-        {permStatus !== null && permStatus !== "granted" && (
-          <TouchableOpacity
-            onPress={permStatus === "denied" ? () => Linking.openSettings() : requestPermission}
-            activeOpacity={0.7}
-            className="flex-row items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-3 mb-4"
-          >
-            <BellOff size={18} color="#f59e0b" strokeWidth={2} />
-            <View className="flex-1">
-              <Text className="text-amber-400 text-sm font-semibold">
-                Notificaciones desactivadas
-              </Text>
-              <Text className="text-amber-400/60 text-xs mt-0.5">
-                {permStatus === "denied"
-                  ? "Habilitá los permisos desde Configuración"
-                  : "Tocá para recibir alertas en tiempo real"}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        )}
 
         {notifications.length === 0 ? (
           <View className="items-center justify-center py-20 gap-3">

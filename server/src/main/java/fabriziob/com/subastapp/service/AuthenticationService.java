@@ -15,6 +15,7 @@ import fabriziob.com.subastapp.controller.auth.AuthenticationRequest;
 import fabriziob.com.subastapp.controller.auth.AuthenticationResponse;
 import fabriziob.com.subastapp.controller.auth.PreRegisterRequest;
 import fabriziob.com.subastapp.controller.auth.PreRegisterResponse;
+import fabriziob.com.subastapp.controller.auth.RecoverRequest;
 import fabriziob.com.subastapp.controller.auth.RegisterRequest;
 import fabriziob.com.subastapp.entity.Cliente;
 import fabriziob.com.subastapp.entity.ClienteExtra;
@@ -43,6 +44,7 @@ public class AuthenticationService {
         private final PaisRepository paisRepository;
 
         private final ClienteService clienteService;
+        private final EmailService emailService;
 
         private final PasswordEncoder passwordEncoder;
         private final JwtService jwtService;
@@ -186,6 +188,21 @@ public class AuthenticationService {
                                                 ? persona.getCliente().getCategoria().name()
                                                 : null)
                                 .build();
+        }
+
+        // ─── RECOVER ─────────────────────────────────────────────────────────
+
+        public void recover(RecoverRequest request) {
+                PersonaExtra personaExtra = personaExtraRepository
+                                .findByEmail(request.getEmail())
+                                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+                String tempPassword = PasswordUtil.generateTemporary();
+                personaExtra.setPasswordHash(passwordEncoder.encode(tempPassword));
+                personaExtra.setPasswordTemporal(true);
+                personaExtraRepository.save(personaExtra);
+
+                emailService.enviarRecuperacion(request.getEmail(), tempPassword);
         }
 
         // ─── HELPERS ─────────────────────────────────────────────────────────
