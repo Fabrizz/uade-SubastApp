@@ -76,7 +76,7 @@ export default function PaymentMethodsScreen() {
             className="mb-5 p-6 rounded-2xl bg-neutral-900 w-full"
           >
             <View className="flex-row items-center mb-5">
-              <View className="w-10 h-10 rounded-xl bg-[#262626] border border-[#404040] items-center justify-center mr-4">
+              <View className="w-10 h-10 rounded-xl bg-[#383838] border border-[#555555] items-center justify-center mr-4">
                 <CreditCard size={20} color="#00c9b1" />
               </View>
               <Text className="text-white font-bold text-lg flex-1">
@@ -89,7 +89,7 @@ export default function PaymentMethodsScreen() {
                 label="Eliminar"
                 onPress={() => {}}
                 activeOpacity={0.7}
-                className="flex-[0.4] bg-[#262626] border border-[#404040]"
+                className="flex-[0.4] bg-[#383838] border border-[#555555]"
                 textClassName="text-neutral-300"
                 innerClassName="px-4 py-3.5"
               />

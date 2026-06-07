@@ -95,10 +95,10 @@ export default function Start() {
 
             {/* CARD */}
             <View className="w-full bg-neutral-900 rounded-2xl p-6">
-              <Text className="text-teal-400 text-xl font-bold mb-1">
+              <Text className="text-white text-xl font-bold mb-1">
                 Verificá tu mail
               </Text>
-              <Text className="text-neutral-400 text-sm mb-5 leading-5">
+              <Text className="text-neutral-200 text-sm mb-5 leading-5">
                 {emailParam
                   ? <>Te enviamos una contraseña temporal a <Text className="text-white font-semibold">{email}</Text>. Ingresala y elegí tu contraseña definitiva.</>
                   : "Ingresá tu email, la contraseña temporal que recibiste y elegí una nueva contraseña."}
@@ -106,13 +106,13 @@ export default function Start() {
 
               {!emailParam && (
                 <>
-                  <Text className="text-neutral-300 text-xs font-semibold mb-1">
+                  <Text className="text-neutral-100 text-xs font-semibold mb-1">
                     Email
                   </Text>
                   <TextInput
-                    style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
+                    style={{ height: 50, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
                     placeholder="nombre@email.com"
-                    placeholderTextColor="#555"
+                    placeholderTextColor="#a3a3a3"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -122,7 +122,7 @@ export default function Start() {
                 </>
               )}
 
-              <Text className="text-neutral-300 text-xs font-semibold mb-1">
+              <Text className="text-neutral-100 text-xs font-semibold mb-1">
                 Contraseña temporal
               </Text>
               <PasswordInput
@@ -132,7 +132,7 @@ export default function Start() {
                 onChangeText={setTempPassword}
               />
 
-              <Text className="text-neutral-300 text-xs font-semibold mb-1">
+              <Text className="text-neutral-100 text-xs font-semibold mb-1">
                 Nueva contraseña
               </Text>
               <PasswordInput
@@ -142,7 +142,7 @@ export default function Start() {
                 onChangeText={setNewPassword}
               />
 
-              <Text className="text-neutral-300 text-xs font-semibold mb-1">
+              <Text className="text-neutral-100 text-xs font-semibold mb-1">
                 Confirmar contraseña
               </Text>
               <PasswordInput
@@ -180,7 +180,7 @@ export default function Start() {
                 style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
               >
                 <ChevronLeft size={14} color="#737373" />
-                <Text className="text-neutral-500 text-xs">Volver a editar datos</Text>
+                <Text className="text-neutral-300 text-xs">Volver a editar datos</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

@@ -66,7 +66,7 @@ export default function AddBankAccountScreen() {
             <Text className="text-white text-3xl font-bold mb-3 tracking-wide">
               Vincular Cuenta Bancaria
             </Text>
-            <Text className="text-neutral-400 text-sm leading-5 pr-2">
+            <Text className="text-neutral-200 text-sm leading-5 pr-2">
               Completa los datos de tu cuenta para realizar transferencias y pagos directos.
             </Text>
           </View>
@@ -79,14 +79,14 @@ export default function AddBankAccountScreen() {
                 Nombre del Banco
               </Text>
               <View 
-                className="flex-row items-center h-[50px] bg-[#262626] border border-[#404040] px-4"
+                className="flex-row items-center h-[50px] bg-[#383838] border border-[#555555] px-4"
                 style={{ borderRadius: 12 }}
               >
                 <Landmark size={20} color="#737373" strokeWidth={2} style={{ marginRight: 12 }} />
                 <TextInput
                   className="flex-1 text-white text-base h-full"
                   placeholder="Ej: Banco Central"
-                  placeholderTextColor="#737373"
+                  placeholderTextColor="#a3a3a3"
                   value={bankName}
                   onChangeText={setBankName}
                 />
@@ -99,14 +99,14 @@ export default function AddBankAccountScreen() {
                 Nombre del Titular
               </Text>
               <View 
-                className="flex-row items-center h-[50px] bg-[#262626] border border-[#404040] px-4"
+                className="flex-row items-center h-[50px] bg-[#383838] border border-[#555555] px-4"
                 style={{ borderRadius: 12 }}
               >
                 <User size={20} color="#737373" strokeWidth={2} style={{ marginRight: 12 }} />
                 <TextInput
                   className="flex-1 text-white text-base h-full"
                   placeholder="Como figura en tu DNI"
-                  placeholderTextColor="#737373"
+                  placeholderTextColor="#a3a3a3"
                   value={accountName}
                   onChangeText={setAccountName}
                 />
@@ -119,21 +119,21 @@ export default function AddBankAccountScreen() {
                 Número de Cuenta (CBU/CVU)
               </Text>
               <View 
-                className="flex-row items-center h-[50px] bg-[#262626] border border-[#404040] px-4"
+                className="flex-row items-center h-[50px] bg-[#383838] border border-[#555555] px-4"
                 style={{ borderRadius: 12 }}
               >
                 <Grip size={20} color="#737373" strokeWidth={2} style={{ marginRight: 12 }} />
                 <TextInput
                   className="flex-1 text-white text-base h-full"
                   placeholder="22 dígitos"
-                  placeholderTextColor="#737373"
+                  placeholderTextColor="#a3a3a3"
                   keyboardType="numeric"
                   maxLength={22}
                   value={cbu}
                   onChangeText={setCbu}
                 />
               </View>
-              <Text className="text-neutral-500 text-[10px] mt-1.5 ml-1">
+              <Text className="text-neutral-350 text-[10px] mt-1.5 ml-1">
                 Ingresa el código de 22 dígitos de tu cuenta bancaria o billetera virtual.
               </Text>
             </View>
@@ -150,7 +150,7 @@ export default function AddBankAccountScreen() {
                   className={`flex-1 items-center justify-center py-3.5 rounded-xl border ${
                     accountType === "ahorro" 
                       ? "bg-white border-white" 
-                      : "bg-[#262626] border-[#404040]"
+                      : "bg-[#383838] border-[#555555]"
                   }`}
                 >
                   <Text 
@@ -168,7 +168,7 @@ export default function AddBankAccountScreen() {
                   className={`flex-1 items-center justify-center py-3.5 rounded-xl border ${
                     accountType === "corriente" 
                       ? "bg-white border-white" 
-                      : "bg-[#262626] border-[#404040]"
+                      : "bg-[#383838] border-[#555555]"
                   }`}
                 >
                   <Text 

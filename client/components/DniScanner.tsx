@@ -46,7 +46,7 @@ export default function DniScanner({ onScan }: Props) {
       <TouchableOpacity
         onPress={requestPermission}
         activeOpacity={0.8}
-        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 }}
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 }}
       >
         <ScanLine size={18} color="#2dd4bf" />
         <Text style={{ color: '#2dd4bf', fontSize: 14, fontWeight: '600' }}>
@@ -75,7 +75,7 @@ export default function DniScanner({ onScan }: Props) {
           <TouchableOpacity
             onPress={handleRescan}
             activeOpacity={0.8}
-            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 10, paddingVertical: 10 }}
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 10, paddingVertical: 10 }}
           >
             <RefreshCw size={14} color="#a3a3a3" />
             <Text style={{ color: '#a3a3a3', fontSize: 13, fontWeight: '600' }}>Volver a escanear</Text>
@@ -101,7 +101,7 @@ export default function DniScanner({ onScan }: Props) {
         <TouchableOpacity
           onPress={handleClose}
           activeOpacity={0.8}
-          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 }}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 }}
         >
           <X size={18} color="#f87171" />
           <Text style={{ color: '#f87171', fontSize: 14, fontWeight: '600' }}>Cerrar cámara</Text>
@@ -131,7 +131,7 @@ export default function DniScanner({ onScan }: Props) {
     <TouchableOpacity
       onPress={() => setScanState('scanning')}
       activeOpacity={0.8}
-      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 }}
+      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 }}
     >
       <ScanLine size={18} color="#2dd4bf" />
       <Text style={{ color: '#2dd4bf', fontSize: 14, fontWeight: '600' }}>Escanear DNI (opcional)</Text>

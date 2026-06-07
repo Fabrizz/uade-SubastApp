@@ -114,7 +114,7 @@ export default function AddCheckScreen() {
             <Text className="text-white text-3xl font-bold mb-3 tracking-wide">
               Cargar Cheque Certificado
             </Text>
-            <Text className="text-neutral-400 text-sm leading-5 pr-2">
+            <Text className="text-neutral-200 text-sm leading-5 pr-2">
               Complete los detalles a continuación para registrar su cheque como método de pago válido.
             </Text>
           </View>
@@ -151,7 +151,7 @@ export default function AddCheckScreen() {
               <Text className="text-white font-bold text-lg mb-1">
                 Subir foto del cheque
               </Text>
-              <Text className="text-neutral-500 text-xs">
+              <Text className="text-neutral-300 text-xs">
                 Formatos aceptados: JPG, PNG, PDF (Máx. 5MB)
               </Text>
             </TouchableOpacity>
@@ -165,10 +165,10 @@ export default function AddCheckScreen() {
                 Fecha de Vencimiento
               </Text>
               <TextInput
-                className="h-[50px] bg-[#262626] border border-[#404040] px-4 text-white text-base"
+                className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
                 style={{ borderRadius: 12 }}
                 placeholder="Ej. 10/4/2026"
-                placeholderTextColor="#737373"
+                placeholderTextColor="#a3a3a3"
                 value={date}
                 onChangeText={setDate}
               />
@@ -180,10 +180,10 @@ export default function AddCheckScreen() {
                 Número de Cheque
               </Text>
               <TextInput
-                className="h-[50px] bg-[#262626] border border-[#404040] px-4 text-white text-base"
+                className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
                 style={{ borderRadius: 12 }}
                 placeholder="Ej. 00012345"
-                placeholderTextColor="#737373"
+                placeholderTextColor="#a3a3a3"
                 keyboardType="numeric"
                 value={checkNumber}
                 onChangeText={setCheckNumber}
@@ -196,10 +196,10 @@ export default function AddCheckScreen() {
                 Banco Emisor
               </Text>
               <TextInput
-                className="h-[50px] bg-[#262626] border border-[#404040] px-4 text-white text-base"
+                className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
                 style={{ borderRadius: 12 }}
                 placeholder="Nombre del banco"
-                placeholderTextColor="#737373"
+                placeholderTextColor="#a3a3a3"
                 value={bank}
                 onChangeText={setBank}
               />
@@ -217,7 +217,7 @@ export default function AddCheckScreen() {
               <TextInput
                 className="flex-1 text-white text-5xl font-bold h-16"
                 placeholder="0.00"
-                placeholderTextColor="#737373"
+                placeholderTextColor="#a3a3a3"
                 keyboardType="decimal-pad"
                 value={amount}
                 onChangeText={setAmount}

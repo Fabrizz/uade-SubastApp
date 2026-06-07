@@ -29,8 +29,8 @@ export function LoginRequired({ message = "Necesitás iniciar sesión para ver e
 
         {/* Card */}
         <View className="w-full bg-neutral-900 rounded-2xl p-6">
-          <Text className="text-teal-400 text-xl font-bold mb-1">Acceso restringido</Text>
-          <Text className="text-neutral-400 text-sm mb-6 leading-5">{message}</Text>
+          <Text className="text-white text-xl font-bold mb-1">Acceso restringido</Text>
+          <Text className="text-neutral-200 text-sm mb-6 leading-5">{message}</Text>
 
           {/* Botón principal */}
           <TouchableOpacity
@@ -51,7 +51,7 @@ export function LoginRequired({ message = "Necesitás iniciar sesión para ver e
 
           {/* Registro */}
           <View style={{ flexDirection: "row", justifyContent: "center" }}>
-            <Text className="text-neutral-500 text-xs">¿No tenés cuenta? </Text>
+            <Text className="text-neutral-300 text-xs">¿No tenés cuenta? </Text>
             <TouchableOpacity onPress={() => router.push("/auth/register")}>
               <Text className="text-teal-400 text-xs font-bold">Registrarse</Text>
             </TouchableOpacity>

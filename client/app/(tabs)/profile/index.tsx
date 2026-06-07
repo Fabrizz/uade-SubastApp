@@ -50,9 +50,9 @@ function InfoField({ label, value, flex }: { label: string; value: string; flex?
       <View
         style={{
           height: 48,
-          backgroundColor: "#262626",
+          backgroundColor: "#383838",
           borderWidth: 1,
-          borderColor: "#404040",
+          borderColor: "#555555",
           borderRadius: 12,
           paddingHorizontal: 16,
           justifyContent: "center",
