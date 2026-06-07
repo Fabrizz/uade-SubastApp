@@ -70,6 +70,7 @@ public class SecurityConfig {
                                 "/docs")
                         .permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/api/v1/ws/**").permitAll()
                         .requestMatchers("/api/v1/paises").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))

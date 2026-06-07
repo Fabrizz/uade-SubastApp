@@ -4,6 +4,7 @@ import { SplashScreen, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import { Platform } from 'react-native';
 
 import "@/global.css";
 
@@ -33,11 +34,19 @@ export default function RootLayout() {
          <SplashScreenController />
         <WebSocketProvider>
           <ThemeProvider value={CustomDarkTheme}>
-            <Stack screenOptions={{ contentStyle: { backgroundColor: '#000000' } }}>
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000000' } }}>
               <Stack.Screen name="auth" options={{ headerShown: false }} />
               <Stack.Screen name="admin" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="dev-menu" options={{ presentation: 'modal', headerShown: false }} />
+              <Stack.Screen
+                name="dev-menu"
+                options={{
+                  presentation: 'modal',
+                  headerShown: false,
+                  contentStyle: { backgroundColor: '#1c1c1c' },
+                  animation: Platform.OS === 'android' ? 'slide_from_bottom' : 'default',
+                }}
+              />
             </Stack>
             <StatusBar style="auto" />
             <PortalHost />

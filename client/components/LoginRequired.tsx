@@ -34,7 +34,7 @@ export function LoginRequired({ message = "Necesitás iniciar sesión para ver e
 
           {/* Botón principal */}
           <TouchableOpacity
-            onPress={() => router.push("/auth/login")}
+            onPress={() => router.replace("/auth/login")}
             activeOpacity={0.85}
             style={{ borderRadius: 16, overflow: "hidden", marginBottom: 16 }}
           >
@@ -52,7 +52,7 @@ export function LoginRequired({ message = "Necesitás iniciar sesión para ver e
           {/* Registro */}
           <View style={{ flexDirection: "row", justifyContent: "center" }}>
             <Text className="text-neutral-300 text-xs">¿No tenés cuenta? </Text>
-            <TouchableOpacity onPress={() => router.push("/auth/register")}>
+            <TouchableOpacity onPress={() => router.replace("/auth/register")}>
               <Text className="text-teal-400 text-xs font-bold">Registrarse</Text>
             </TouchableOpacity>
           </View>
