@@ -44,15 +44,11 @@ public class ClienteService {
      */
     public Cliente admitir(Integer id) {
         Cliente cliente = findById(id);
-
-        ClienteCategoria categoria = ClienteCategoria.randomPonderada();
         cliente.setAdmitido("si");
-        cliente.setCategoria(categoria);
 
         ClienteExtra extra = cliente.getClienteExtra();
         if (extra != null) {
-            extra.setCategoriaBase(categoria);
-            extra.setEstadoOperativo("habilitado");
+            extra.setCategoriaBase(cliente.getCategoria());
         }
 
         // Clave temporal: se genera al admitir y se envía por mail.
