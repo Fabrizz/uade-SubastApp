@@ -141,7 +141,7 @@ export default function RequestAuctionScreen() {
                     <TouchableOpacity 
                       activeOpacity={0.7}
                       onPress={handleAddPhotos}
-                      className="w-32 h-44 bg-[#262626] border-2 border-dashed border-[#A14EBF]/60 rounded-2xl items-center justify-center mr-3"
+                      className="w-32 h-44 bg-[#383838] border-2 border-dashed border-[#A14EBF]/60 rounded-2xl items-center justify-center mr-3"
                     >
                       <View className="w-12 h-12 bg-[#A14EBF]/20 rounded-full items-center justify-center mb-3">
                         <Camera size={24} color="#A14EBF" strokeWidth={2.5} />
@@ -154,8 +154,8 @@ export default function RequestAuctionScreen() {
                 )}
                 ListEmptyComponent={() => (
                   <View className="w-32 h-44 bg-[#1a1a1a] rounded-2xl items-center justify-center border border-neutral-800">
-                    <ImageIcon size={32} color="#404040" strokeWidth={1.5} />
-                    <Text className="text-neutral-500 text-[10px] mt-2 text-center px-4">
+                    <ImageIcon size={32} color="#737373" strokeWidth={1.5} />
+                    <Text className="text-neutral-300 text-[10px] mt-2 text-center px-4">
                       Tus fotos aparecerán aquí
                     </Text>
                   </View>
@@ -196,7 +196,7 @@ export default function RequestAuctionScreen() {
               />
             </View>
             
-            <Text className="text-neutral-500 text-[11px] italic mt-2 ml-1">
+            <Text className="text-neutral-300 text-[11px] italic mt-2 ml-1">
               Mantén presionada una foto y arrástrala para cambiar el orden.
             </Text>
           </View>
@@ -209,7 +209,7 @@ export default function RequestAuctionScreen() {
             <TouchableOpacity 
               activeOpacity={0.8}
               onPress={handleAddDocument}
-              className="h-[50px] bg-[#262626] border border-[#A14EBF]/40 border-dashed rounded-xl flex-row items-center justify-center px-4 mb-3"
+              className="h-[50px] bg-[#383838] border border-[#A14EBF]/40 border-dashed rounded-xl flex-row items-center justify-center px-4 mb-3"
             >
               <FileText size={20} color="#A14EBF" strokeWidth={2} style={{ marginRight: 10 }} />
               <Text className="text-[#A14EBF] font-bold text-sm">
@@ -246,10 +246,10 @@ export default function RequestAuctionScreen() {
                 Nombre del articulo
               </Text>
               <TextInput
-                className="h-[50px] bg-[#262626] border border-[#404040] px-4 text-white text-base"
+                className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
                 style={{ borderRadius: 12 }}
                 placeholder="Ej. Reloj Vintage de Colección 1950"
-                placeholderTextColor="#737373"
+                placeholderTextColor="#a3a3a3"
                 value={name}
                 onChangeText={setName}
               />
@@ -261,10 +261,10 @@ export default function RequestAuctionScreen() {
                 Descripción breve
               </Text>
               <TextInput
-                className="h-[50px] bg-[#262626] border border-[#404040] px-4 text-white text-base"
+                className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
                 style={{ borderRadius: 12 }}
                 placeholder="Un resumen corto del producto..."
-                placeholderTextColor="#737373"
+                placeholderTextColor="#a3a3a3"
                 value={shortDesc}
                 onChangeText={setShortDesc}
               />
@@ -276,10 +276,10 @@ export default function RequestAuctionScreen() {
                 Descripción detallada
               </Text>
               <TextInput
-                className="bg-[#262626] border border-[#404040] p-4 text-white text-base"
+                className="bg-[#383838] border border-[#555555] p-4 text-white text-base"
                 style={{ borderRadius: 16, minHeight: 120, textAlignVertical: "top" }}
                 placeholder="Describe el estado, historia y detalles técnicos..."
-                placeholderTextColor="#737373"
+                placeholderTextColor="#a3a3a3"
                 multiline
                 numberOfLines={5}
                 value={longDesc}

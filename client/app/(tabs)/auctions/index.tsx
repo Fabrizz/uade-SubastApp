@@ -93,7 +93,7 @@ export default function AuctionsScreen() {
           
           <View className="flex-row items-center mb-3">
             <Info size={20} color="#2dd4bf" strokeWidth={2.5} style={{ marginRight: 8 }} />
-            <Text className="text-teal-400 text-xl font-bold tracking-wide">
+            <Text className="text-white text-xl font-bold tracking-wide">
               Condiciones / Aclaraciones
             </Text>
           </View>
@@ -122,7 +122,7 @@ export default function AuctionsScreen() {
 
         {/* Mis Subastas Section */}
         <View className="mb-6">
-          <Text className="text-teal-400 text-2xl font-bold tracking-wide mb-4">
+          <Text className="text-white text-2xl font-bold tracking-wide mb-4">
             Mis subastas
           </Text>
 

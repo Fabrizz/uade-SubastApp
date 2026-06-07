@@ -254,10 +254,10 @@ export default function Register() {
 
           {/* CARD */}
           <View className="w-full bg-neutral-900 rounded-2xl p-6">
-            <Text className="text-teal-400 text-xl font-bold mb-1">
+            <Text className="text-white text-xl font-bold mb-1">
               Bienvenido
             </Text>
-            <Text className="text-neutral-400 text-sm mb-5 leading-5">
+            <Text className="text-neutral-200 text-sm mb-5 leading-5">
               Crea tu cuenta para participar en subastas exclusivas.
             </Text>
 
@@ -266,32 +266,32 @@ export default function Register() {
 
             <View className="flex-row items-center gap-3 my-4">
               <View className="flex-1 h-px bg-neutral-700" />
-              <Text className="text-neutral-600 text-xs">o completá manualmente</Text>
+              <Text className="text-neutral-400 text-xs">o completá manualmente</Text>
               <View className="flex-1 h-px bg-neutral-700" />
             </View>
 
             {/* NOMBRE */}
-            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+            <Text className="text-neutral-100 text-xs font-semibold mb-1">
               Nombre completo
             </Text>
             <TextInput
-              style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
+              style={{ height: 50, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
               placeholder="Tu nombre completo"
-              placeholderTextColor="#555"
+              placeholderTextColor="#a3a3a3"
               autoCapitalize="words"
               value={nombreCompleto}
               onChangeText={setNombreCompleto}
             />
 
             {/* EMAIL */}
-            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+            <Text className="text-neutral-100 text-xs font-semibold mb-1">
               Email
             </Text>
             <View style={{ position: 'relative', marginBottom: 4 }}>
               <TextInput
-                style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: emailAvailable === 'taken' || emailAvailable === 'error' ? '#ef4444' : emailAvailable === 'available' ? '#22c55e' : '#404040', borderRadius: 12, paddingHorizontal: 16, paddingRight: 44, color: 'white', fontSize: 16 }}
+                style={{ height: 50, backgroundColor: '#383838', borderWidth: 1, borderColor: emailAvailable === 'taken' || emailAvailable === 'error' ? '#ef4444' : emailAvailable === 'available' ? '#22c55e' : '#555555', borderRadius: 12, paddingHorizontal: 16, paddingRight: 44, color: 'white', fontSize: 16 }}
                 placeholder="nombre@email.com"
-                placeholderTextColor="#555"
+                placeholderTextColor="#a3a3a3"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -326,13 +326,13 @@ export default function Register() {
             {emailAvailable === null && <View style={{ marginBottom: 16 }} />}
 
             {/* PAIS */}
-            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+            <Text className="text-neutral-100 text-xs font-semibold mb-1">
               País de origen
             </Text>
             <TouchableOpacity
               onPress={() => { setSearchPais(""); setShowPaisesPicker(true); }}
               activeOpacity={0.8}
-              style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+              style={{ height: 50, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 12, paddingHorizontal: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
             >
               <Text style={{ color: paisOrigen ? 'white' : '#555', fontSize: 16 }}>
                 {paisOrigen || "País"}
@@ -348,12 +348,12 @@ export default function Register() {
                     <Text style={{ color: '#2dd4bf', fontSize: 14 }}>Cerrar</Text>
                   </TouchableOpacity>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 10, paddingHorizontal: 12, marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 10, paddingHorizontal: 12, marginBottom: 12 }}>
                   <Search size={16} color="#555" />
                   <TextInput
                     style={{ flex: 1, height: 40, color: 'white', fontSize: 14, marginLeft: 8 }}
                     placeholder="Buscar país..."
-                    placeholderTextColor="#555"
+                    placeholderTextColor="#a3a3a3"
                     value={searchPais}
                     onChangeText={setSearchPais}
                     autoCorrect={false}
@@ -369,7 +369,7 @@ export default function Register() {
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       onPress={() => { setPaisOrigen(item.nombre); setPaisNumero(item.numero); setShowPaisesPicker(false); }}
-                      style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#262626', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                      style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#383838', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
                     >
                       <Text style={{ color: item.nombre === paisOrigen ? '#2dd4bf' : 'white', fontSize: 15, flex: 1 }}>{item.nombre}</Text>
                       <Text style={{ color: item.nombre === paisOrigen ? '#2dd4bf' : '#737373', fontSize: 12, fontFamily: 'monospace', marginLeft: 12 }}>{item.nombreCorto}</Text>
@@ -380,26 +380,26 @@ export default function Register() {
             </GenericModal>
 
             {/* DNI */}
-            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+            <Text className="text-neutral-100 text-xs font-semibold mb-1">
               DNI
             </Text>
             <TextInput
-              style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
+              style={{ height: 50, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
               placeholder="Número de DNI"
-              placeholderTextColor="#555"
+              placeholderTextColor="#a3a3a3"
               keyboardType="numeric"
               value={dni}
               onChangeText={setDni}
             />
 
             {/* FECHA DE NACIMIENTO */}
-            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+            <Text className="text-neutral-100 text-xs font-semibold mb-1">
               Fecha de nacimiento
             </Text>
             <TouchableOpacity
               onPress={() => setShowDatePicker(true)}
               activeOpacity={0.8}
-              style={{ height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+              style={{ height: 50, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 12, paddingHorizontal: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
             >
               <Text style={{ color: fechaNacimiento ? 'white' : '#555', fontSize: 16 }}>
                 {fechaNacimiento || 'DD/MM/AAAA'}
@@ -471,7 +471,7 @@ export default function Register() {
                           <User size={16} color="#9ca3af" />
                         </View>
                       </View>
-                      <Text className="text-neutral-400 text-xs font-semibold">{label}</Text>
+                      <Text className="text-neutral-200 text-xs font-semibold">{label}</Text>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -479,14 +479,14 @@ export default function Register() {
             </View>
 
             {/* DOMICILIO */}
-            <Text className="text-neutral-300 text-xs font-semibold mb-1">
+            <Text className="text-neutral-100 text-xs font-semibold mb-1">
               Domicilio
             </Text>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
               <TextInput
-                style={{ flex: 1, height: 50, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16 }}
+                style={{ flex: 1, height: 50, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16 }}
                 placeholder="Ej: Av. Corrientes 1234, CABA"
-                placeholderTextColor="#555"
+                placeholderTextColor="#a3a3a3"
                 value={domicilio}
                 onChangeText={setDomicilio}
                 onSubmitEditing={handleBuscarDomicilio}
@@ -497,7 +497,7 @@ export default function Register() {
                 onPress={handleBuscarDomicilio}
                 disabled={geocoding}
                 activeOpacity={0.8}
-                style={{ width: 48, backgroundColor: '#262626', borderWidth: 1, borderColor: '#404040', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: 48, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
               >
                 {geocoding
                   ? <ActivityIndicator size="small" color="#2dd4bf" />
@@ -513,7 +513,7 @@ export default function Register() {
               </MapView>
             </View>
 
-            <Text className="text-neutral-600 text-xs text-center mb-5">
+            <Text className="text-neutral-400 text-xs text-center mb-5">
               Los datos serán verificados por la empresa.
             </Text>
 
@@ -540,14 +540,14 @@ export default function Register() {
             </TouchableOpacity>
 
             <View className="flex-row justify-center mb-3">
-              <Text className="text-neutral-500 text-xs">¿Ya tenés una cuenta? </Text>
+              <Text className="text-neutral-300 text-xs">¿Ya tenés una cuenta? </Text>
               <TouchableOpacity onPress={() => router.push("/auth/login")}>
                 <Text className="text-teal-400 text-xs font-bold">Iniciar sesión</Text>
               </TouchableOpacity>
             </View>
 
             <View className="flex-row justify-center">
-              <Text className="text-neutral-500 text-xs">¿Tenés una contraseña temporal? </Text>
+              <Text className="text-neutral-300 text-xs">¿Tenés una contraseña temporal? </Text>
               <TouchableOpacity onPress={() => router.push("/auth/start")}>
                 <Text className="text-teal-400 text-xs font-bold">Activar cuenta</Text>
               </TouchableOpacity>

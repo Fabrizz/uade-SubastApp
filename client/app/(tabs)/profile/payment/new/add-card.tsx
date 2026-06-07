@@ -85,7 +85,7 @@ export default function AddCardScreen() {
           <Text className="text-white text-2xl font-bold mb-2">
             Metodo de pago
           </Text>
-          <Text className="text-neutral-400 text-sm mb-8 leading-5 pr-4">
+          <Text className="text-neutral-200 text-sm mb-8 leading-5 pr-4">
             Agregue una tarjeta para participar en subastas activas.
           </Text>
 
@@ -148,10 +148,10 @@ export default function AddCardScreen() {
                 Numero de Tarjeta
               </Text>
               <TextInput
-                className="h-[50px] bg-[#262626] border border-[#404040] px-4 text-white text-base"
+                className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
                 style={{ borderRadius: 16 }}
                 placeholder="0000 0000 0000 0000"
-                placeholderTextColor="#737373"
+                placeholderTextColor="#a3a3a3"
                 keyboardType="numeric"
                 maxLength={16}
                 value={cardNumber}
@@ -165,10 +165,10 @@ export default function AddCardScreen() {
                 Titular de la tarjeta
               </Text>
               <TextInput
-                className="h-[50px] bg-[#262626] border border-[#404040] px-4 text-white text-base"
+                className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
                 style={{ borderRadius: 16 }}
                 placeholder="••••••••"
-                placeholderTextColor="#737373"
+                placeholderTextColor="#a3a3a3"
                 autoCapitalize="characters"
                 value={cardName}
                 onChangeText={setCardName}
@@ -182,10 +182,10 @@ export default function AddCardScreen() {
                   Expiracion
                 </Text>
                 <TextInput
-                  className="h-[50px] bg-[#262626] border border-[#404040] px-4 text-white text-base"
+                  className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
                   style={{ borderRadius: 16 }}
                   placeholder="MM/AA"
-                  placeholderTextColor="#737373"
+                  placeholderTextColor="#a3a3a3"
                   keyboardType="numeric"
                   maxLength={4}
                   value={expiry}
@@ -197,10 +197,10 @@ export default function AddCardScreen() {
                   CVV
                 </Text>
                 <TextInput
-                  className="h-[50px] bg-[#262626] border border-[#404040] px-4 text-white text-base"
+                  className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
                   style={{ borderRadius: 16 }}
                   placeholder="•••"
-                  placeholderTextColor="#737373"
+                  placeholderTextColor="#a3a3a3"
                   keyboardType="numeric"
                   maxLength={4}
                   secureTextEntry

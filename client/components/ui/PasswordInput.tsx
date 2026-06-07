@@ -13,15 +13,15 @@ export default function PasswordInput({ containerStyle, style, ...props }: Props
     <View style={[{ position: 'relative' }, containerStyle]}>
       <TextInput
         placeholder="••••••••"
-        placeholderTextColor="#555"
+        placeholderTextColor="#a3a3a3"
         autoCapitalize="none"
         {...props}
         secureTextEntry={!visible}
         style={[{
           height: 50,
-          backgroundColor: '#262626',
+          backgroundColor: '#383838',
           borderWidth: 1,
-          borderColor: '#404040',
+          borderColor: '#555555',
           borderRadius: 12,
           paddingHorizontal: 16,
           paddingRight: 48,
