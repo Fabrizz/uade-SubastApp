@@ -53,7 +53,6 @@ const ROUTES = [
   { name: "Auth: Login", path: "/auth/login", icon: "log-in-outline" },
   { name: "Auth: Register", path: "/auth/register", icon: "person-add-outline" },
   { name: "Auth: Activar Cuenta", path: "/auth/start", icon: "key-outline" },
-  { name: "Admin: Panel", path: "/admin", icon: "shield-outline" },
   { name: "Tabs: Inicio", path: "/(tabs)", icon: "home-outline" },
   { name: "Tabs: Notificaciones", path: "/(tabs)/notifications", icon: "notifications-outline" },
   { name: "Tabs: Subastas", path: "/(tabs)/auctions", icon: "hammer-outline" },
@@ -158,9 +157,20 @@ export default function DevMenu() {
           <ChevronRight size={20} color="#3b82f6" />
         </TouchableOpacity>
 
-        <Text className="text-neutral-400 text-sm mb-6">
-          Navega rápidamente a cualquier pantalla de la aplicación durante el desarrollo.
-        </Text>
+        <TouchableOpacity
+          onPress={() => { router.dismiss(); router.push("/admin"); }}
+          className="flex-row items-center bg-purple-950 border border-purple-800 p-4 rounded-xl mb-6"
+          activeOpacity={0.8}
+        >
+          <View className="bg-purple-900 p-2 rounded-lg mr-4">
+            <BookOpen size={20} color="#a855f7" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-purple-200 font-semibold text-base">Panel de administración</Text>
+            <Text className="text-purple-500 text-xs mt-0.5">/admin/(...)</Text>
+          </View>
+          <ChevronRight size={20} color="#a855f7" />
+        </TouchableOpacity>
 
         {ROUTES.map((route, index) => (
           <TouchableOpacity

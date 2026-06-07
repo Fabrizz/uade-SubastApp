@@ -2,7 +2,7 @@ import { UserCategory } from "@/context/auth";
 import { Crown, Gem, Settings2, Shield, Star, User } from "lucide-react-native";
 import { Text, View } from "react-native";
 
-type Category = UserCategory | "admin";
+type Category = UserCategory;
 
 type Config = {
   label: string;

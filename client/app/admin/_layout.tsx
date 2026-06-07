@@ -16,7 +16,7 @@ export default function AdminLayout() {
     return <LoginRequired message="Necesitás iniciar sesión para acceder al panel de administración." />;
   }
 
-  if (user?.category !== 'admin') {
+  if (user?.category !== "admin") {
     return (
       <LinearGradient colors={['#000000', '#3f0146', '#9102A2']} style={{ flex: 1 }}>
         <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>

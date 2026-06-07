@@ -6,6 +6,7 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SECTIONS = [
+  { label: 'Admitir', description: 'Admitir nuevos usuarios', Icon: Shield, path: '/admin/admitir' },
   { label: 'Usuarios',  description: 'Gestionar cuentas y categorías', Icon: Users,    path: '/admin/users'    },
   { label: 'Subastas',  description: 'Moderar y administrar subastas',  Icon: Gavel,   path: '/admin/auctions' },
   { label: 'Reportes',  description: 'Ver estadísticas y métricas',     Icon: BarChart2, path: '/admin/reports' },
