@@ -24,6 +24,27 @@ export interface RegisterRequest {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function getPaymentKey(email: string): string {
+  return `has_payment_method_${email.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+}
+
+function extractPersonaId(token: string | null): number | null {
+  if (!token) return null;
+  try {
+    const payload = token.split(".")[1];
+    const claims = JSON.parse(base64Decode(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    const raw = claims.personaId ?? claims.clienteId ?? claims.userId ?? claims.id;
+    if (typeof raw === "number") return raw;
+    if (typeof raw === "string") {
+      const n = parseInt(raw, 10);
+      return isNaN(n) ? null : n;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function base64Decode(str: string): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   let padded = str;
@@ -71,13 +92,16 @@ function isTokenExpired(token: string): boolean {
 interface AuthContextValue {
   token: string | null;
   user: User | null;
+  personaId: number | null;
   tokenExpiration: Date | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  hasPaymentMethod: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   preRegister: (body: PreRegisterBody) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
+  completePaymentSetup: () => Promise<void>;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -90,7 +114,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasPaymentMethod, setHasPaymentMethod] = useState<boolean>(true);
   const expirationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const personaId = useMemo(() => extractPersonaId(token), [token]);
 
   const clearSession = useCallback(async () => {
     if (expirationTimer.current) {
@@ -103,6 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ]);
     setToken(null);
     setUser(null);
+    setHasPaymentMethod(true);
   }, []);
 
   const scheduleExpiration = useCallback((tok: string) => {
@@ -127,7 +155,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ]);
         if (storedToken && !isTokenExpired(storedToken)) {
           setToken(storedToken);
-          setUser(storedUser ? JSON.parse(storedUser) : null);
+          const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+          setUser(parsedUser);
+          if (parsedUser?.email) {
+            const hasPayment = await SecureStore.getItemAsync(getPaymentKey(parsedUser.email));
+            setHasPaymentMethod(hasPayment !== 'false');
+          } else {
+            setHasPaymentMethod(true);
+          }
           scheduleExpiration(storedToken);
         } else if (storedToken) {
           await Promise.all([
@@ -164,6 +199,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data?.accessToken) {
       throw new Error('Credenciales incorrectas.');
     }
+    const hasPayment = await SecureStore.getItemAsync(getPaymentKey(email));
+    setHasPaymentMethod(hasPayment !== 'false');
+
     await persistSession(data.accessToken, { email, category: data.categoria as UserCategory ?? undefined });
   }, [persistSession]);
 
@@ -183,22 +221,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data?.accessToken) {
       throw new Error('No se pudo completar el registro.');
     }
+    await SecureStore.setItemAsync(getPaymentKey(body.email), 'false');
+    setHasPaymentMethod(false);
+
     await persistSession(data.accessToken, { email: body.email, category: data.categoria as UserCategory ?? undefined });
   }, [persistSession]);
+
+  const completePaymentSetup = useCallback(async () => {
+    if (user?.email) {
+      await SecureStore.setItemAsync(getPaymentKey(user.email), 'true');
+      setHasPaymentMethod(true);
+    }
+  }, [user]);
 
   const tokenExpiration = useMemo(() => (token ? getTokenExpiration(token) : null), [token]);
 
   const value = useMemo<AuthContextValue>(() => ({
     token,
     user,
+    personaId,
     tokenExpiration,
     isAuthenticated: !!token,
     isLoading,
+    hasPaymentMethod,
     login,
     logout,
     preRegister,
     register,
-  }), [token, user, tokenExpiration, isLoading, login, logout, preRegister, register]);
+    completePaymentSetup,
+  }), [token, user, personaId, tokenExpiration, isLoading, hasPaymentMethod, login, logout, preRegister, register, completePaymentSetup]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

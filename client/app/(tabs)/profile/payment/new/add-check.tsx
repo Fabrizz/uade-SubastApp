@@ -7,10 +7,26 @@ import React, { useState } from "react";
 import { Alert, Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/auth";
+import { api } from "@/lib/api";
+
+function parseDateToYYYYMMDD(dateStr: string): string {
+  try {
+    const parts = dateStr.split("/");
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2];
+      return `${year}-${month}-${day}`;
+    }
+  } catch {}
+  return dateStr;
+}
 
 export default function AddCheckScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { hasPaymentMethod, completePaymentSetup, token, personaId } = useAuth();
 
   const [date, setDate] = useState("");
   const [checkNumber, setCheckNumber] = useState("");
@@ -226,7 +242,83 @@ export default function AddCheckScreen() {
 
             <Button
               label="Confirmar Depósito"
-              onPress={() => router.back()}
+              onPress={async () => {
+                if (!personaId) {
+                  Alert.alert("Error", "No se encontró el identificador del cliente.");
+                  return;
+                }
+                if (!checkNumber.trim() || !bank.trim() || !amount.trim() || !date.trim()) {
+                  Alert.alert("Campos requeridos", "Completá todos los campos del cheque.");
+                  return;
+                }
+
+                if (bank.trim().length < 3) {
+                  Alert.alert("Banco inválido", "El nombre del banco debe tener al menos 3 caracteres.");
+                  return;
+                }
+
+                if (!/^\d{4,12}$/.test(checkNumber.trim())) {
+                  Alert.alert("Número de cheque inválido", "El número de cheque debe ser numérico y tener entre 4 y 12 dígitos.");
+                  return;
+                }
+
+                const numericAmount = parseFloat(amount);
+                if (isNaN(numericAmount) || numericAmount <= 0) {
+                  Alert.alert("Monto inválido", "El monto del cheque debe ser un número mayor a 0.");
+                  return;
+                }
+
+                const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+                const match = date.trim().match(dateRegex);
+                if (!match) {
+                  Alert.alert("Fecha inválida", "La fecha de vencimiento debe tener el formato DD/MM/AAAA.");
+                  return;
+                }
+                const day = parseInt(match[1], 10);
+                const month = parseInt(match[2], 10);
+                const year = parseInt(match[3], 10);
+
+                const checkDate = new Date(year, month - 1, day);
+                if (checkDate.getFullYear() !== year || checkDate.getMonth() !== month - 1 || checkDate.getDate() !== day) {
+                  Alert.alert("Fecha inválida", "La fecha ingresada no existe en el calendario.");
+                  return;
+                }
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (checkDate <= today) {
+                  Alert.alert("Fecha inválida", "La fecha de vencimiento debe ser una fecha futura.");
+                  return;
+                }
+
+                try {
+                  const { error } = await api.POST("/api/v1/clientes/{id}/medios-pago/cheque", {
+                    params: { path: { id: personaId } },
+                    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                    body: {
+                      moneda: "ARS",
+                      nroCheque: checkNumber,
+                      banco: bank,
+                      montoCertificado: parseFloat(amount),
+                      fechaVencimiento: parseDateToYYYYMMDD(date),
+                    },
+                  });
+
+                  if (error) {
+                    throw new Error("No se pudo registrar el cheque en el servidor.");
+                  }
+
+                  const wasForced = !hasPaymentMethod;
+                  await completePaymentSetup();
+                  if (wasForced) {
+                    router.replace("/profile");
+                  } else {
+                    router.back();
+                  }
+                } catch (e: any) {
+                  Alert.alert("Error", e?.message ?? "Error al guardar el medio de pago.");
+                }
+              }}
               colors={["#A14EBF", "#9102A2"]}
               className="w-full rounded-full"
               textClassName="text-white text-lg"

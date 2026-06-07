@@ -3,19 +3,99 @@ import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Check, ChevronLeft, Grip, Landmark, Square, User } from "lucide-react-native";
 import React, { useState } from "react";
-import { Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/auth";
+import { api } from "@/lib/api";
+
+function isValidCBU(cbu: string): boolean {
+  if (!/^\d{22}$/.test(cbu)) return false;
+
+  // Bloque 1: primeros 8 dígitos (0 al 7)
+  // El dígito verificador está en el índice 7
+  const b = cbu.substring(0, 7).split("").map(Number);
+  const d1 = parseInt(cbu.charAt(7), 10);
+  const sum1 = b[0] * 7 + b[1] * 1 + b[2] * 3 + b[3] * 9 + b[4] * 7 + b[5] * 1 + b[6] * 3;
+  const diff1 = 10 - (sum1 % 10);
+  const expectedD1 = diff1 === 10 ? 0 : diff1;
+  if (d1 !== expectedD1) return false;
+
+  // Bloque 2: siguientes 14 dígitos (8 al 21)
+  // El dígito verificador está en el índice 21
+  const c = cbu.substring(8, 21).split("").map(Number);
+  const d2 = parseInt(cbu.charAt(21), 10);
+  const sum2 = c[0] * 3 + c[1] * 9 + c[2] * 7 + c[3] * 1 + c[4] * 3 + c[5] * 9 + c[6] * 7 + c[7] * 1 + c[8] * 3 + c[9] * 9 + c[10] * 7 + c[11] * 1 + c[12] * 3;
+  const diff2 = 10 - (sum2 % 10);
+  const expectedD2 = diff2 === 10 ? 0 : diff2;
+  if (d2 !== expectedD2) return false;
+
+  return true;
+}
+
+const BANK_CODES: Record<string, string> = {
+  "005": "Banco Nación",
+  "007": "Banco Galicia",
+  "011": "Banco Nación",
+  "014": "Banco Provincia",
+  "015": "ICBC",
+  "016": "Citibank",
+  "017": "BBVA",
+  "020": "Banco de Córdoba",
+  "027": "Banco Supervielle",
+  "029": "Banco Ciudad",
+  "034": "Banco Patagonia",
+  "044": "Banco Hipotecario",
+  "072": "Banco Santander",
+  "150": "HSBC",
+  "191": "Banco Credicoop",
+  "259": "Banco Itaú",
+  "285": "Banco Macro",
+  "389": "Brubank",
+  "311": "Banco del Sol",
+  "384": "WiloBank",
+};
+
+const CVU_CODES: Record<string, string> = {
+  "00000017": "Mercado Pago",
+  "00000031": "Ualá",
+  "00000079": "Naranja X",
+  "00000501": "Lemon Cash",
+  "00000020": "Prex",
+  "00000067": "Belo",
+  "00000130": "Fiwind",
+};
 
 export default function AddBankAccountScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { hasPaymentMethod, completePaymentSetup, token, personaId } = useAuth();
 
   const [bankName, setBankName] = useState("");
   const [accountName, setAccountName] = useState("");
   const [cbu, setCbu] = useState("");
   const [accountType, setAccountType] = useState<"ahorro" | "corriente">("corriente");
   const [isExterior, setIsExterior] = useState(false);
+
+  const handleCbuChange = (text: string) => {
+    setCbu(text);
+    const cleanCbu = text.trim();
+    if (cleanCbu.startsWith("000")) {
+      if (cleanCbu.length >= 8) {
+        const prefix = cleanCbu.substring(0, 8);
+        if (CVU_CODES[prefix]) {
+          setBankName(CVU_CODES[prefix]);
+        }
+      }
+    } else {
+      if (cleanCbu.length >= 3) {
+        const code = cleanCbu.substring(0, 3);
+        if (BANK_CODES[code]) {
+          setBankName(BANK_CODES[code]);
+        }
+      }
+    }
+  };
 
   return (
     <LinearGradient
@@ -130,7 +210,7 @@ export default function AddBankAccountScreen() {
                   keyboardType="numeric"
                   maxLength={22}
                   value={cbu}
-                  onChangeText={setCbu}
+                  onChangeText={handleCbuChange}
                 />
               </View>
               <Text className="text-neutral-350 text-[10px] mt-1.5 ml-1">
@@ -202,7 +282,63 @@ export default function AddBankAccountScreen() {
 
             <Button
               label="Vincular Cuenta"
-              onPress={() => router.back()}
+              onPress={async () => {
+                if (!personaId) {
+                  Alert.alert("Error", "No se encontró el identificador del cliente.");
+                  return;
+                }
+                if (!bankName.trim() || !accountName.trim() || !cbu.trim()) {
+                  Alert.alert("Campos requeridos", "Completá todos los campos de la cuenta.");
+                  return;
+                }
+
+                if (bankName.trim().length < 3) {
+                  Alert.alert("Banco inválido", "El nombre del banco debe tener al menos 3 caracteres.");
+                  return;
+                }
+
+                if (accountName.trim().length < 3) {
+                  Alert.alert("Nombre inválido", "El nombre del titular debe tener al menos 3 caracteres.");
+                  return;
+                }
+
+                if (!isValidCBU(cbu.trim())) {
+                  Alert.alert("CBU/CVU inválido", "El CBU/CVU ingresado no pasa la validación de dígitos verificadores.");
+                  return;
+                }
+
+                try {
+                  const { error } = await api.POST("/api/v1/clientes/{id}/medios-pago/cuenta", {
+                    params: { path: { id: personaId } },
+                    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                    body: {
+                      moneda: "ARS",
+                      titular: accountName,
+                      banco: bankName,
+                      cbu: cbu,
+                      alias: "",
+                      esExterior: isExterior,
+                      iban: "",
+                      pais: 1, // Argentina or default
+                      tipoDeCuenta: accountType === "ahorro" ? "caja_ahorro" : "cuenta_corriente",
+                    },
+                  });
+
+                  if (error) {
+                    throw new Error("No se pudo vincular la cuenta bancaria en el servidor.");
+                  }
+
+                  const wasForced = !hasPaymentMethod;
+                  await completePaymentSetup();
+                  if (wasForced) {
+                    router.replace("/profile");
+                  } else {
+                    router.back();
+                  }
+                } catch (e: any) {
+                  Alert.alert("Error", e?.message ?? "Error al guardar el medio de pago.");
+                }
+              }}
               colors={["#A14EBF", "#9102A2"]}
               className="mt-2 w-full rounded-full"
               textClassName="text-white text-lg"

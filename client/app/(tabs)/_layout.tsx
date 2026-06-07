@@ -1,8 +1,23 @@
 import { CustomTabBar } from '@/components/CustomTabBar';
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { useAuth } from '@/context/auth';
+import { Tabs, useRouter, useSegments } from 'expo-router';
+import React, { useEffect } from 'react';
 
 export default function TabLayout() {
+  const { isAuthenticated, hasPaymentMethod, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  const isInsidePaymentNew = (segments as string[]).includes('payment') && (segments as string[]).includes('new');
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && hasPaymentMethod === false && !isInsidePaymentNew) {
+      router.replace('/profile/payment/new');
+    }
+  }, [isLoading, isAuthenticated, hasPaymentMethod, isInsidePaymentNew]);
+
+  if (isLoading) return null;
+
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}

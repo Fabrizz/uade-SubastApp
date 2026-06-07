@@ -304,7 +304,7 @@ public class ClienteController {
                                                 ? c.getPersona().getPersonaExtra().getEmail()
                                                 : null)
                                 .admitido(c.getAdmitido())
-                                .categoria(c.getCategoria().name())
+                                .categoria(c.getCategoria() != null ? c.getCategoria().name() : null)
                                 .estadoOperativo(extra != null ? extra.getEstadoOperativo() : null)
                                 .multaPendiente(extra != null ? extra.getMultaPendiente() : null)
                                 .pais(c.getPais() != null ? c.getPais().getNombre() : null)

@@ -906,6 +906,26 @@ export interface paths {
         patch: operations["asignarMulta"];
         trace?: never;
     };
+    "/api/v1/clientes/{id}/multa/saldar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Saldar multa
+         * @description Marca la multa pendiente como pagada y rehabilita al cliente si quedó habilitado
+         */
+        patch: operations["saldarMulta"];
+        trace?: never;
+    };
     "/api/v1/clientes/{id}/medios-pago/{mpId}/verificar": {
         parameters: {
             query?: never;
@@ -924,6 +944,26 @@ export interface paths {
          * @description Marca un medio de pago como verificado por la empresa
          */
         patch: operations["verificar"];
+        trace?: never;
+    };
+    "/api/v1/clientes/{id}/medios-pago/{mpId}/rechazar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rechazar medio de pago
+         * @description La empresa rechaza la verificación del medio de pago: queda verificado=false y activo=false
+         */
+        patch: operations["rechazar"];
         trace?: never;
     };
     "/api/v1/clientes/{id}/medios-pago/{mpId}/desactivar": {
@@ -1759,8 +1799,8 @@ export interface components {
         };
         PujoRequest: {
             /** Format: int32 */
-            asistenteId?: number;
-            importe?: number;
+            asistenteId: number;
+            importe: number;
         };
         PujoResponse: {
             /** Format: int32 */
@@ -1878,11 +1918,11 @@ export interface components {
             verificadorNombre?: string;
         };
         MedioPagoTarjetaRequest: {
-            moneda?: components["schemas"]["Moneda"];
-            titular?: string;
-            ultimos4?: string;
-            marca?: string;
-            vencimiento?: string;
+            moneda: components["schemas"]["Moneda"];
+            titular: string;
+            ultimos4: string;
+            marca: string;
+            vencimiento: string;
             esInternacional?: boolean;
         };
         /** @enum {string} */
@@ -1926,24 +1966,24 @@ export interface components {
         /** @enum {string} */
         TipoMedioPago: "cheque" | "cuenta_bancaria" | "tarjeta_credito";
         MedioPagoCuentaRequest: {
-            moneda?: components["schemas"]["Moneda"];
-            titular?: string;
-            banco?: string;
+            moneda: components["schemas"]["Moneda"];
+            titular: string;
+            banco: string;
             cbu?: string;
             alias?: string;
             esExterior?: boolean;
             iban?: string;
             /** Format: int32 */
             pais?: number;
-            tipoDeCuenta?: components["schemas"]["CajaAhorroTipoCuenta"];
+            tipoDeCuenta: components["schemas"]["CajaAhorroTipoCuenta"];
         };
         MedioPagoChequeRequest: {
-            moneda?: components["schemas"]["Moneda"];
-            nroCheque?: string;
-            banco?: string;
-            montoCertificado?: number;
+            moneda: components["schemas"]["Moneda"];
+            nroCheque: string;
+            banco: string;
+            montoCertificado: number;
             /** Format: date */
-            fechaVencimiento?: string;
+            fechaVencimiento: string;
         };
         RegisterRequest: {
             email?: string;
@@ -2041,6 +2081,10 @@ export interface components {
             subastado?: string;
             estadoAceptacion?: components["schemas"]["EstadoAceptacionItem"];
         };
+        MarcarGanadorRequest: {
+            /** Format: int32 */
+            medioPagoCompradorId: number;
+        };
         NotificacionResponse: {
             /** Format: int32 */
             identificador?: number;
@@ -2083,10 +2127,10 @@ export interface components {
             pais?: string;
         };
         PageProductoResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ProductoResponse"][];
@@ -2105,16 +2149,16 @@ export interface components {
             offset?: number;
             unpaged?: boolean;
             /** Format: int32 */
-            pageNumber?: number;
-            /** Format: int32 */
             pageSize?: number;
+            /** Format: int32 */
+            pageNumber?: number;
             paged?: boolean;
             sort?: components["schemas"]["SortObject"];
         };
         SortObject: {
             empty?: boolean;
-            unsorted?: boolean;
             sorted?: boolean;
+            unsorted?: boolean;
         };
         ProductoSeguroResponse: {
             seguroObj?: components["schemas"]["Seguro"];
@@ -2134,10 +2178,10 @@ export interface components {
             sort?: string[];
         };
         PageSubastaResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SubastaResponse"][];
@@ -2152,10 +2196,10 @@ export interface components {
             empty?: boolean;
         };
         PageRegistroDeSubastaResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["RegistroDeSubastaResponse"][];
@@ -2170,10 +2214,10 @@ export interface components {
             empty?: boolean;
         };
         PageItemCatalogoResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ItemCatalogoResponse"][];
@@ -2188,10 +2232,10 @@ export interface components {
             empty?: boolean;
         };
         PageAsistenteResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["AsistenteResponse"][];
@@ -2206,10 +2250,10 @@ export interface components {
             empty?: boolean;
         };
         PageSubastadorResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SubastadorResponse"][];
@@ -2224,10 +2268,10 @@ export interface components {
             empty?: boolean;
         };
         PagePersonaResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PersonaResponse"][];
@@ -2242,10 +2286,10 @@ export interface components {
             empty?: boolean;
         };
         PagePaisResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PaisResponse"][];
@@ -2269,10 +2313,10 @@ export interface components {
             idiomas?: string;
         };
         PageNotificacionResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["NotificacionResponse"][];
@@ -2308,7 +2352,7 @@ export interface components {
             promedioRecaudadoPorSubasta?: number;
         };
         /** @enum {string} */
-        ClienteCategoria: "comun" | "especial" | "plata" | "oro" | "platino";
+        ClienteCategoria: "comun" | "especial" | "plata" | "oro" | "platino" | "admin";
         PujoDetalle: {
             /** Format: int32 */
             subastaId?: number;
@@ -2332,10 +2376,10 @@ export interface components {
             subastasGanadas?: number;
         };
         PageSectorResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SectorResponse"][];
@@ -2350,10 +2394,10 @@ export interface components {
             empty?: boolean;
         };
         PageEmpleadoResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["EmpleadoResponse"][];
@@ -2368,10 +2412,10 @@ export interface components {
             empty?: boolean;
         };
         PageDuenioResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["DuenioResponse"][];
@@ -2386,10 +2430,10 @@ export interface components {
             empty?: boolean;
         };
         PageClienteResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ClienteResponse"][];
@@ -4944,7 +4988,12 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        /** @description Medio de pago elegido por el comprador para la venta */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarcarGanadorRequest"];
+            };
+        };
         responses: {
             /** @description Pujo marcado como ganador */
             200: {
@@ -5530,6 +5579,49 @@ export interface operations {
             };
         };
     };
+    saldarMulta: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Multa saldada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClienteResponse"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin permisos para acceder a este recurso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Cliente no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     verificar: {
         parameters: {
             query?: never;
@@ -5543,6 +5635,50 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Medio de pago verificado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MedioPagoResponse"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin permisos para acceder a este recurso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Cliente o medio de pago no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    rechazar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                mpId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Medio de pago rechazado */
             200: {
                 headers: {
                     [name: string]: unknown;

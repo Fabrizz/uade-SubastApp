@@ -45,6 +45,7 @@ export default function AdminLayout() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000000' } }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="admitir" />
+      <Stack.Screen name="payment" />
     </Stack>
   );
 }

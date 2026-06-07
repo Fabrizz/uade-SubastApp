@@ -6,10 +6,12 @@ import React from "react";
 import { Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/auth";
 
 export default function AddPaymentMethodScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { hasPaymentMethod } = useAuth();
 
   return (
     <LinearGradient
@@ -30,12 +32,16 @@ export default function AddPaymentMethodScreen() {
       >
         {/* Header */}
         <View className="flex-row items-center justify-between mb-10 px-2">
-          <TouchableOpacity 
-            onPress={() => router.back()} 
-            className="w-10 h-10 items-center justify-center"
-          >
-            <ChevronLeft size={28} color="white" strokeWidth={2.5} />
-          </TouchableOpacity>
+          {hasPaymentMethod !== false ? (
+            <TouchableOpacity 
+              onPress={() => router.back()} 
+              className="w-10 h-10 items-center justify-center"
+            >
+              <ChevronLeft size={28} color="white" strokeWidth={2.5} />
+            </TouchableOpacity>
+          ) : (
+            <View className="w-10" />
+          )}
           <View className="flex-row items-center gap-3">
             <View
               className="items-center justify-center rounded-full"
