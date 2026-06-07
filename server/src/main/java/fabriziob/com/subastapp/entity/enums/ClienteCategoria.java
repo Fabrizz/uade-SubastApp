@@ -3,16 +3,17 @@ package fabriziob.com.subastapp.entity.enums;
 import java.util.concurrent.ThreadLocalRandom;
 
 public enum ClienteCategoria {
-    // ('comun', 'especial', 'plata', 'oro', 'platino')
     // El orden de declaración es el ranking: comun (menor) → platino (mayor).
+    // admin es una categoría interna; nunca se asigna aleatoriamente (peso 0).
     comun,
     especial,
     plata,
     oro,
-    platino;
+    platino,
+    admin;
 
-    // Pesos de la asignación simulada por investigación (suman 100).
-    private static final int[] PESOS = { 35, 30, 20, 10, 5 };
+    // Pesos de la asignación simulada por investigación (suman 100). admin = 0.
+    private static final int[] PESOS = { 35, 30, 20, 10, 5, 0 };
 
     public static ClienteCategoria randomPonderada() {
         int roll = ThreadLocalRandom.current().nextInt(100);
@@ -26,7 +27,9 @@ public enum ClienteCategoria {
         return comun;
     }
 
-    /** Devuelve la categoría de mayor ranking entre las dos (la mejora nunca baja). */
+    /**
+     * Devuelve la categoría de mayor ranking entre las dos (la mejora nunca baja).
+     */
     public static ClienteCategoria mejorEntre(ClienteCategoria a, ClienteCategoria b) {
         if (a == null)
             return b;

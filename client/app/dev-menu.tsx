@@ -71,7 +71,7 @@ const ROUTES = [
 
 export default function DevMenu() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, user, token, logout } = useAuth();
+  const { isAuthenticated, isLoading, user, token, tokenExpiration, logout } = useAuth();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#1c1c1c" }}>
@@ -81,7 +81,7 @@ export default function DevMenu() {
         <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
           <X size={28} color="white" />
         </TouchableOpacity>
-        <Text className="text-white text-lg font-bold">Dev Menu / Sitemap</Text>
+        <Text className="text-white text-lg font-bold">DEV MENU</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -120,6 +120,12 @@ export default function DevMenu() {
               <Text className="text-neutral-500 text-xs w-20">Token</Text>
               <Text className="text-neutral-300 text-xs flex-1" numberOfLines={1}>
                 {token ? `${token.slice(0, 24)}…` : "—"}
+              </Text>
+            </View>
+            <View className="flex-row">
+              <Text className="text-neutral-500 text-xs w-20">Expira</Text>
+              <Text className="text-neutral-300 text-xs flex-1">
+                {tokenExpiration ? tokenExpiration.toLocaleString() : "—"}
               </Text>
             </View>
           </View>
