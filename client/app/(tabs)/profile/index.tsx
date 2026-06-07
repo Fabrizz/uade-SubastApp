@@ -21,10 +21,38 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type PersonaProfile = components["schemas"]["PersonaResponse"];
 
+function base64Decode(str: string): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  let padded = str;
+  while (padded.length % 4 !== 0) {
+    padded += "=";
+  }
+  let result = "";
+  for (let i = 0; i < padded.length; i += 4) {
+    const code1 = chars.indexOf(padded.charAt(i));
+    const code2 = chars.indexOf(padded.charAt(i + 1));
+    const code3 = chars.indexOf(padded.charAt(i + 2));
+    const code4 = chars.indexOf(padded.charAt(i + 3));
+
+    const byte1 = (code1 << 2) | (code2 >> 4);
+    const byte2 = ((code2 & 15) << 4) | (code3 >> 2);
+    const byte3 = ((code3 & 3) << 6) | code4;
+
+    result += String.fromCharCode(byte1);
+    if (padded.charAt(i + 2) !== "=") {
+      result += String.fromCharCode(byte2);
+    }
+    if (padded.charAt(i + 3) !== "=") {
+      result += String.fromCharCode(byte3);
+    }
+  }
+  return result;
+}
+
 function decodeJWTPayload(token: string): Record<string, unknown> {
   try {
     const payload = token.split(".")[1];
-    return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    return JSON.parse(base64Decode(payload.replace(/-/g, "+").replace(/_/g, "/")));
   } catch {
     return {};
   }
@@ -76,6 +104,12 @@ export default function ProfileScreen() {
 
   const [profile, setProfile] = useState<PersonaProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [region, setRegion] = useState({
+    latitude: -34.6037,
+    longitude: -58.3816,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  });
 
   useEffect(() => {
     const personaId = extractPersonaId(token);
@@ -84,15 +118,51 @@ export default function ProfileScreen() {
       return;
     }
     api
-      .GET("/api/v1/personas/{id}", { params: { path: { id: personaId } } })
+      .GET("/api/v1/personas/{id}", {
+        params: { path: { id: personaId } },
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      })
       .then(({ data }) => { if (data) setProfile(data); })
       .finally(() => setLoading(false));
   }, [token]);
 
+  useEffect(() => {
+    const dir = profile?.direccion;
+    if (!dir || dir === "—" || !dir.trim()) return;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(async () => {
+      try {
+        const q = encodeURIComponent(dir.trim());
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=ar&limit=1`;
+        const res = await fetch(url, { 
+          headers: { 'User-Agent': 'SubastApp/1.0' },
+          signal: controller.signal 
+        });
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const { lat, lon } = data[0];
+          setRegion({
+            latitude: parseFloat(lat),
+            longitude: parseFloat(lon),
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          });
+        }
+      } catch {
+        // Ignorar errores de geocodificación silenciosamente en el perfil
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [profile?.direccion]);
+
   const nombre    = profile?.nombre    ?? "—";
   const email     = profile?.email     ?? user?.email ?? "—";
   const documento = profile?.documento ?? "—";
-  const telefono  = profile?.telefono  ?? "—";
   const direccion = profile?.direccion ?? "—";
   const categoria = profile?.categoria ?? user?.category ?? null;
 
@@ -160,10 +230,7 @@ export default function ProfileScreen() {
         {/* Datos */}
         <View className="gap-4 mb-6">
           <InfoField label="Mail" value={email} />
-          <View className="flex-row gap-4">
-            <InfoField label="DNI" value={documento} flex />
-            <InfoField label="Teléfono" value={telefono} flex />
-          </View>
+          <InfoField label="DNI" value={documento} />
           <InfoField label="Domicilio" value={direccion} />
         </View>
 
@@ -171,16 +238,11 @@ export default function ProfileScreen() {
         <View className="mb-8 rounded-xl overflow-hidden h-36 border border-neutral-700">
           <MapView
             style={{ flex: 1 }}
-            initialRegion={{
-              latitude: -34.6037,
-              longitude: -58.3816,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
+            region={region}
             scrollEnabled={false}
             zoomEnabled={false}
           >
-            <Marker coordinate={{ latitude: -34.6037, longitude: -58.3816 }} />
+            <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
           </MapView>
         </View>
 

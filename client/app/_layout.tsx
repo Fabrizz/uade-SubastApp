@@ -18,14 +18,22 @@ export const unstable_settings = {
 
 SplashScreen.preventAutoHideAsync();
 
+const CustomDarkTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: '#000000',
+  },
+};
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
          <SplashScreenController />
         <WebSocketProvider>
-          <ThemeProvider value={DarkTheme}>
-            <Stack>
+          <ThemeProvider value={CustomDarkTheme}>
+            <Stack screenOptions={{ contentStyle: { backgroundColor: '#000000' } }}>
               <Stack.Screen name="auth" options={{ headerShown: false }} />
               <Stack.Screen name="admin" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

@@ -14,7 +14,7 @@ export default function AuctionsLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#000000' } }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="[id]" />
       <Stack.Screen name="item/[itemId]" />

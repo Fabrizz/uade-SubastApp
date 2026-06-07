@@ -4,15 +4,14 @@ import * as SecureStore from 'expo-secure-store';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-export type UserCategory = 'comun' | 'especial' | 'plata' | 'oro' | 'platino';
+export type UserCategory = 'comun' | 'especial' | 'plata' | 'oro' | 'platino' | 'admin';
 
 const TOKEN_KEY = 'auth_token';
-const USER_KEY  = 'auth_user';
+const USER_KEY = 'auth_user';
 
 export interface User {
   email: string;
-  category?: string;
+  category?: UserCategory;
 }
 
 export type PreRegisterBody = components['schemas']['PreRegisterRequest'];
@@ -25,9 +24,37 @@ export interface RegisterRequest {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function base64Decode(str: string): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  let padded = str;
+  while (padded.length % 4 !== 0) {
+    padded += "=";
+  }
+  let result = "";
+  for (let i = 0; i < padded.length; i += 4) {
+    const code1 = chars.indexOf(padded.charAt(i));
+    const code2 = chars.indexOf(padded.charAt(i + 1));
+    const code3 = chars.indexOf(padded.charAt(i + 2));
+    const code4 = chars.indexOf(padded.charAt(i + 3));
+
+    const byte1 = (code1 << 2) | (code2 >> 4);
+    const byte2 = ((code2 & 15) << 4) | (code3 >> 2);
+    const byte3 = ((code3 & 3) << 6) | code4;
+
+    result += String.fromCharCode(byte1);
+    if (padded.charAt(i + 2) !== "=") {
+      result += String.fromCharCode(byte2);
+    }
+    if (padded.charAt(i + 3) !== "=") {
+      result += String.fromCharCode(byte3);
+    }
+  }
+  return result;
+}
+
 function getTokenExpiration(token: string): Date | null {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const payload = JSON.parse(base64Decode(token.split('.')[1]));
     return payload.exp ? new Date(payload.exp * 1000) : null;
   } catch {
     return null;
@@ -60,8 +87,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token,     setToken]     = useState<string | null>(null);
-  const [user,      setUser]      = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const expirationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -137,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data?.accessToken) {
       throw new Error('Credenciales incorrectas.');
     }
-    await persistSession(data.accessToken, { email, category: data.categoria ?? undefined });
+    await persistSession(data.accessToken, { email, category: data.categoria as UserCategory ?? undefined });
   }, [persistSession]);
 
   const logout = useCallback(async () => {
@@ -156,7 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data?.accessToken) {
       throw new Error('No se pudo completar el registro.');
     }
-    await persistSession(data.accessToken, { email: body.email, category: data.categoria ?? undefined });
+    await persistSession(data.accessToken, { email: body.email, category: data.categoria as UserCategory ?? undefined });
   }, [persistSession]);
 
   const tokenExpiration = useMemo(() => (token ? getTokenExpiration(token) : null), [token]);
