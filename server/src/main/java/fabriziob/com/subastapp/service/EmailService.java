@@ -30,6 +30,19 @@ public class EmailService {
         this.restClient = RestClient.create();
     }
 
+    /** Mail de recuperación de contraseña: nueva clave temporal de un solo uso. */
+    public void enviarRecuperacion(String email, String claveTemporal) {
+        String asunto = "SubastApp · Recuperación de contraseña";
+        String html = """
+                <h2>Recuperación de contraseña</h2>
+                <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta.</p>
+                <p>Tu contraseña temporal es: <strong>%s</strong></p>
+                <p>Ingresá a la app y usá esta clave para establecer una nueva contraseña.</p>
+                <p>Si no solicitaste este cambio, podés ignorar este mensaje.</p>
+                """.formatted(claveTemporal);
+        enviar(email, asunto, html);
+    }
+
     /** Mail de la etapa 1: avisa que fue aprobado y comparte la clave temporal. */
     public void enviarBienvenida(String email, String claveTemporal) {
         String asunto = "SubastApp · Su registro fue aprobado";

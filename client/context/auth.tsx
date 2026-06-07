@@ -80,6 +80,18 @@ function getTokenId(token: string): number | null {
   }
 }
 
+async function fetchHasPaymentMethod(tok: string, id: number): Promise<boolean> {
+  try {
+    const { data } = await api.GET('/api/v1/clientes/{id}/medios-pago', {
+      params: { path: { id } },
+      headers: { Authorization: `Bearer ${tok}` },
+    });
+    return Array.isArray(data) && data.length > 0;
+  } catch {
+    return true;
+  }
+}
+
 async function syncPersona(tok: string, base: User): Promise<User> {
   const id = base.id ?? getTokenId(tok);
   if (!id) return base;
@@ -92,7 +104,7 @@ async function syncPersona(tok: string, base: User): Promise<User> {
     return {
       ...base,
       id,
-      name:     data.nombre   ?? base.name,
+      name: data.nombre ?? base.name,
       category: (data.categoria as UserCategory) ?? base.category,
     };
   } catch {
@@ -112,6 +124,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   preRegister: (body: PreRegisterBody) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
+  recover: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
   hasPaymentMethod: boolean;
   completePaymentSetup: () => Promise<void>;
@@ -175,6 +188,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (fresh.name !== parsed?.name || fresh.category !== parsed?.category)
             await SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh));
           scheduleExpiration(storedToken);
+          if (fresh.category !== 'admin' && fresh.id) {
+            setHasPaymentMethod(await fetchHasPaymentMethod(storedToken, fresh.id));
+          }
         } else if (storedToken) {
           await Promise.all([
             SecureStore.deleteItemAsync(TOKEN_KEY),
@@ -211,7 +227,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Credenciales incorrectas.');
     }
     const base: User = { email, category: data.categoria as UserCategory ?? undefined, id: getTokenId(data.accessToken) ?? undefined };
-    await persistSession(data.accessToken, await syncPersona(data.accessToken, base));
+    const fresh = await syncPersona(data.accessToken, base);
+    await persistSession(data.accessToken, fresh);
+    if (fresh.category !== 'admin' && fresh.id) {
+      setHasPaymentMethod(await fetchHasPaymentMethod(data.accessToken, fresh.id));
+    }
   }, [persistSession]);
 
   const logout = useCallback(async () => {
@@ -231,7 +251,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('No se pudo completar el registro.');
     }
     const base: User = { email: body.email, category: data.categoria as UserCategory ?? undefined, id: getTokenId(data.accessToken) ?? undefined };
-    await persistSession(data.accessToken, await syncPersona(data.accessToken, base));
+    const fresh = await syncPersona(data.accessToken, base);
+    await persistSession(data.accessToken, fresh);
+    if (fresh.category !== 'admin' && fresh.id) {
+      setHasPaymentMethod(await fetchHasPaymentMethod(data.accessToken, fresh.id));
+    }
   }, [persistSession]);
 
   const refreshUser = useCallback(async () => {
@@ -241,9 +265,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh));
   }, [token, user]);
 
+  const recover = useCallback(async (email: string) => {
+    const { error } = await api.POST('/api/v1/auth/recover', { body: { email } });
+    if (error) throw new Error('No se encontró una cuenta con ese email.');
+  }, []);
+
   const completePaymentSetup = useCallback(async () => {
-    // FILL HERE
-  }, [user]);
+    setHasPaymentMethod(true);
+  }, []);
 
   const tokenExpiration = useMemo(() => (token ? getTokenExpiration(token) : null), [token]);
 
@@ -257,10 +286,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     preRegister,
     register,
+    recover,
     refreshUser,
     hasPaymentMethod,
     completePaymentSetup,
-  }), [token, user, tokenExpiration, isLoading, login, logout, preRegister, register, refreshUser, hasPaymentMethod, completePaymentSetup]);
+  }), [token, user, tokenExpiration, isLoading, login, logout, preRegister, register, recover, refreshUser, hasPaymentMethod, completePaymentSetup]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

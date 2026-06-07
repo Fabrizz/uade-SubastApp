@@ -100,8 +100,8 @@ export default function Start() {
               </Text>
               <Text className="text-neutral-200 text-sm mb-5 leading-5">
                 {emailParam
-                  ? "Estamos verificando tu cuenta, te llegará un correo con una contraseña temporal cuando terminemos. ¡Muchas gracias!"
-                  : "Ingresá tu email, la contraseña temporal que recibiste y elegí una nueva contraseña."}
+                  ? 'Estamos verificando tu cuenta, te llegará un correo con una contraseña temporal cuando terminemos. ¡Muchas gracias!'
+                  : 'Ingresá tu email, la contraseña temporal que recibiste y elegí una nueva contraseña.'}
               </Text>
 
               {!emailParam && (
