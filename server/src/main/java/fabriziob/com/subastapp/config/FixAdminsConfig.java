@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.transaction.annotation.Transactional;
 
+import fabriziob.com.subastapp.entity.enums.ClienteCategoria;
 import fabriziob.com.subastapp.repository.PersonaExtraRepository;
 import fabriziob.com.subastapp.service.ClienteService;
 import lombok.RequiredArgsConstructor;
@@ -46,11 +47,21 @@ public class FixAdminsConfig {
                 var cliente = pe.getPersona().getCliente();
                 if (cliente == null) {
                     log.warn("[FixAdmins] {} > sin Cliente asociado, se omite.", email);
-                } else if ("si".equals(cliente.getAdmitido())) {
-                    log.info("[FixAdmins] {} > ya admitido, sin cambios.", email);
-                } else {
+                    return;
+                }
+
+                if (!"si".equals(cliente.getAdmitido())) {
                     clienteService.admitir(cliente.getIdentificador());
                     log.info("[FixAdmins] {} > admitido correctamente.", email);
+                } else {
+                    log.info("[FixAdmins] {} > ya admitido, sin cambios.", email);
+                }
+
+                if (cliente.getCategoria() != ClienteCategoria.admin) {
+                    clienteService.actualizarCategoria(cliente.getIdentificador(), "admin");
+                    log.info("[FixAdmins] {} > categoría actualizada a admin.", email);
+                } else {
+                    log.info("[FixAdmins] {} > categoría ya es admin, sin cambios.", email);
                 }
             }, () -> log.info("[FixAdmins] {} > aún no registrado, se omite.", email));
         }

@@ -4,15 +4,14 @@ import * as SecureStore from 'expo-secure-store';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-export type UserCategory = 'comun' | 'especial' | 'plata' | 'oro' | 'platino';
+export type UserCategory = 'comun' | 'especial' | 'plata' | 'oro' | 'platino' | 'admin';
 
 const TOKEN_KEY = 'auth_token';
-const USER_KEY  = 'auth_user';
+const USER_KEY = 'auth_user';
 
 export interface User {
   email: string;
-  category?: string;
+  category?: UserCategory;
 }
 
 export type PreRegisterBody = components['schemas']['PreRegisterRequest'];
@@ -88,8 +87,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token,     setToken]     = useState<string | null>(null);
-  const [user,      setUser]      = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const expirationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -165,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data?.accessToken) {
       throw new Error('Credenciales incorrectas.');
     }
-    await persistSession(data.accessToken, { email, category: data.categoria ?? undefined });
+    await persistSession(data.accessToken, { email, category: data.categoria as UserCategory ?? undefined });
   }, [persistSession]);
 
   const logout = useCallback(async () => {
@@ -184,7 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data?.accessToken) {
       throw new Error('No se pudo completar el registro.');
     }
-    await persistSession(data.accessToken, { email: body.email, category: data.categoria ?? undefined });
+    await persistSession(data.accessToken, { email: body.email, category: data.categoria as UserCategory ?? undefined });
   }, [persistSession]);
 
   const tokenExpiration = useMemo(() => (token ? getTokenExpiration(token) : null), [token]);
