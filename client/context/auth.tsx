@@ -25,9 +25,37 @@ export interface RegisterRequest {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function base64Decode(str: string): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  let padded = str;
+  while (padded.length % 4 !== 0) {
+    padded += "=";
+  }
+  let result = "";
+  for (let i = 0; i < padded.length; i += 4) {
+    const code1 = chars.indexOf(padded.charAt(i));
+    const code2 = chars.indexOf(padded.charAt(i + 1));
+    const code3 = chars.indexOf(padded.charAt(i + 2));
+    const code4 = chars.indexOf(padded.charAt(i + 3));
+
+    const byte1 = (code1 << 2) | (code2 >> 4);
+    const byte2 = ((code2 & 15) << 4) | (code3 >> 2);
+    const byte3 = ((code3 & 3) << 6) | code4;
+
+    result += String.fromCharCode(byte1);
+    if (padded.charAt(i + 2) !== "=") {
+      result += String.fromCharCode(byte2);
+    }
+    if (padded.charAt(i + 3) !== "=") {
+      result += String.fromCharCode(byte3);
+    }
+  }
+  return result;
+}
+
 function getTokenExpiration(token: string): Date | null {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const payload = JSON.parse(base64Decode(token.split('.')[1]));
     return payload.exp ? new Date(payload.exp * 1000) : null;
   } catch {
     return null;
