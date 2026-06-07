@@ -1,18 +1,19 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { Stack, useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { ArrowRight, Check, ChevronLeft, Square, Wifi } from "lucide-react-native";
-import React, { useState } from "react";
-import { Alert, Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
+import { LinearGradient } from "expo-linear-gradient";
+import { Stack, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { ArrowRight, Check, ChevronLeft, Square } from "lucide-react-native";
+import React, { useState } from "react";
+import { Alert, Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function AddCardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { hasPaymentMethod, completePaymentSetup, token, personaId } = useAuth();
+  const { hasPaymentMethod, completePaymentSetup, token, user } = useAuth();
+  const personaId = user?.id;
 
   const [cardNumber, setCardNumber] = useState("");
   const [cardName, setCardName] = useState("");

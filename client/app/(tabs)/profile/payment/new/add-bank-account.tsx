@@ -1,3 +1,6 @@
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/auth";
+import { api } from "@/lib/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -5,9 +8,6 @@ import { Check, ChevronLeft, Grip, Landmark, Square, User } from "lucide-react-n
 import React, { useState } from "react";
 import { Alert, Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button } from "@/components/ui/Button";
-import { useAuth } from "@/context/auth";
-import { api } from "@/lib/api";
 
 function isValidCBU(cbu: string): boolean {
   if (!/^\d{22}$/.test(cbu)) return false;
@@ -69,7 +69,8 @@ const CVU_CODES: Record<string, string> = {
 export default function AddBankAccountScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { hasPaymentMethod, completePaymentSetup, token, personaId } = useAuth();
+  const { hasPaymentMethod, completePaymentSetup, token, user } = useAuth();
+  const personaId = user?.id;
 
   const [bankName, setBankName] = useState("");
   const [accountName, setAccountName] = useState("");

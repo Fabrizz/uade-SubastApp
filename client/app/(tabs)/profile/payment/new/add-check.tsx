@@ -1,14 +1,14 @@
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/auth";
+import { api } from "@/lib/api";
+import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Camera, ChevronLeft, Plus } from "lucide-react-native";
-import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import { Alert, Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button } from "@/components/ui/Button";
-import { useAuth } from "@/context/auth";
-import { api } from "@/lib/api";
 
 function parseDateToYYYYMMDD(dateStr: string): string {
   try {
@@ -26,7 +26,8 @@ function parseDateToYYYYMMDD(dateStr: string): string {
 export default function AddCheckScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { hasPaymentMethod, completePaymentSetup, token, personaId } = useAuth();
+  const { hasPaymentMethod, completePaymentSetup, token, user } = useAuth();
+  const personaId = user?.id;
 
   const [date, setDate] = useState("");
   const [checkNumber, setCheckNumber] = useState("");

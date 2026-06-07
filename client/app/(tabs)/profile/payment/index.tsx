@@ -1,13 +1,13 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { Stack, useRouter, useFocusEffect } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { ChevronLeft, CreditCard, Plus } from "lucide-react-native";
-import React, { useState, useEffect, useCallback } from "react";
-import { Alert, ActivityIndicator, Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
+import { LinearGradient } from "expo-linear-gradient";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { ChevronLeft, CreditCard, Plus } from "lucide-react-native";
+import React, { useCallback, useState } from "react";
+import { ActivityIndicator, Alert, Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function getPaymentMethodLabel(method: any): string {
   if (method.tipo === "tarjeta_credito" && method.tarjeta) {
@@ -32,8 +32,9 @@ function getPaymentMethodLabel(method: any): string {
 export default function PaymentMethodsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { token, personaId } = useAuth();
-  
+  const { token, user } = useAuth();
+  const personaId = user?.id;
+
   const [methods, setMethods] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
