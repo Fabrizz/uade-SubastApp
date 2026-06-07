@@ -42,6 +42,8 @@ public class AuthenticationService {
         private final ClienteExtraRepository clienteExtraRepository;
         private final PaisRepository paisRepository;
 
+        private final ClienteService clienteService;
+
         private final PasswordEncoder passwordEncoder;
         private final JwtService jwtService;
         private final AuthenticationManager authenticationManager;
@@ -60,9 +62,9 @@ public class AuthenticationService {
                         throw new RuntimeException("Email ya registrado: " + request.getEmail());
 
                 boolean esAdmin = !adminsEmails.isBlank() &&
-                        Arrays.stream(adminsEmails.split(","))
-                                .map(String::trim)
-                                .anyMatch(request.getEmail()::equalsIgnoreCase);
+                                Arrays.stream(adminsEmails.split(","))
+                                                .map(String::trim)
+                                                .anyMatch(request.getEmail()::equalsIgnoreCase);
 
                 // 1. Persona base — estado inactivo hasta que complete el paso 2
                 Persona persona = Persona.builder()
@@ -91,7 +93,7 @@ public class AuthenticationService {
                 Cliente cliente = Cliente.builder()
                                 .persona(persona)
                                 .pais(pais)
-                                .admitido(esAdmin ? "si" : "no")
+                                .admitido("no")
                                 .categoria(esAdmin ? ClienteCategoria.admin : ClienteCategoria.comun)
                                 .verificador(empleadoSistemaId)
                                 .build();
@@ -99,7 +101,8 @@ public class AuthenticationService {
                 cliente = clienteRepository.save(cliente);
                 persona.setCliente(cliente);
 
-                // 4. ClienteExtra — inhabilitado y con fotos del documento hasta que la empresa apruebe
+                // 4. ClienteExtra — inhabilitado y con fotos del documento hasta que la empresa
+                // apruebe
                 ClienteExtra clienteExtra = new ClienteExtra();
                 clienteExtra.setCliente(cliente);
                 clienteExtra.setEstadoOperativo(esAdmin ? "habilitado" : "inhabilitado");
@@ -107,6 +110,9 @@ public class AuthenticationService {
                 clienteExtra.setFotoDocumentoFrente(decodeBase64(request.getFotoFrenteDocumento()));
                 clienteExtra.setFotoDocumentoDorso(decodeBase64(request.getFotoDorsoDocumento()));
                 clienteExtraRepository.save(clienteExtra);
+
+                if (esAdmin)
+                        clienteService.admitir(cliente.getIdentificador());
 
                 return PreRegisterResponse.builder()
                                 .email(request.getEmail())
