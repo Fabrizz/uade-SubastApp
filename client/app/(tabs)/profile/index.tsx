@@ -1,3 +1,4 @@
+import { AvatarInitials } from "@/components/ui/AvatarInitials";
 import { Button } from "@/components/ui/Button";
 import { CategoryPill } from "@/components/ui/CategoryPill";
 import { useAuth } from "@/context/auth";
@@ -5,10 +6,9 @@ import { api } from "@/lib/api";
 import type { components } from "@/types/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ArrowRight, LogOut, User } from "lucide-react-native";
+import { ArrowRight, BarChart2, IdCard, LogOut, Mail, MapPin } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Image,
   Platform,
   ScrollView,
@@ -16,86 +16,10 @@ import {
   Text,
   View,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type PersonaProfile = components["schemas"]["PersonaResponse"];
 
-function base64Decode(str: string): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-  let padded = str;
-  while (padded.length % 4 !== 0) {
-    padded += "=";
-  }
-  let result = "";
-  for (let i = 0; i < padded.length; i += 4) {
-    const code1 = chars.indexOf(padded.charAt(i));
-    const code2 = chars.indexOf(padded.charAt(i + 1));
-    const code3 = chars.indexOf(padded.charAt(i + 2));
-    const code4 = chars.indexOf(padded.charAt(i + 3));
-
-    const byte1 = (code1 << 2) | (code2 >> 4);
-    const byte2 = ((code2 & 15) << 4) | (code3 >> 2);
-    const byte3 = ((code3 & 3) << 6) | code4;
-
-    result += String.fromCharCode(byte1);
-    if (padded.charAt(i + 2) !== "=") {
-      result += String.fromCharCode(byte2);
-    }
-    if (padded.charAt(i + 3) !== "=") {
-      result += String.fromCharCode(byte3);
-    }
-  }
-  return result;
-}
-
-function decodeJWTPayload(token: string): Record<string, unknown> {
-  try {
-    const payload = token.split(".")[1];
-    return JSON.parse(base64Decode(payload.replace(/-/g, "+").replace(/_/g, "/")));
-  } catch {
-    return {};
-  }
-}
-
-function extractPersonaId(token: string | null): number | null {
-  if (!token) return null;
-  const claims = decodeJWTPayload(token);
-  // Try common Spring Boot custom claims for the persona/user ID
-  const raw = claims.personaId ?? claims.clienteId ?? claims.userId ?? claims.id;
-  if (typeof raw === "number") return raw;
-  if (typeof raw === "string") {
-    const n = parseInt(raw, 10);
-    return isNaN(n) ? null : n;
-  }
-  return null;
-}
-
-function InfoField({ label, value, flex }: { label: string; value: string; flex?: boolean }) {
-  return (
-    <View style={flex ? { flex: 1 } : undefined}>
-      <Text className="text-white text-sm font-semibold mb-1">{label}</Text>
-      <View
-        style={{
-          height: 48,
-          backgroundColor: "#383838",
-          borderWidth: 1,
-          borderColor: "#555555",
-          borderRadius: 12,
-          paddingHorizontal: 16,
-          justifyContent: "center",
-        }}
-      >
-        <Text
-          numberOfLines={1}
-          style={{ color: value === "—" ? "#555" : "white", fontSize: 16 }}
-        >
-          {value}
-        </Text>
-      </View>
-    </View>
-  );
-}
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -104,15 +28,9 @@ export default function ProfileScreen() {
 
   const [profile, setProfile] = useState<PersonaProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [region, setRegion] = useState({
-    latitude: -34.6037,
-    longitude: -58.3816,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  });
 
   useEffect(() => {
-    const personaId = extractPersonaId(token);
+    const personaId = user?.id ?? null;
     if (!personaId) {
       setLoading(false);
       return;
@@ -124,43 +42,9 @@ export default function ProfileScreen() {
       })
       .then(({ data }) => { if (data) setProfile(data); })
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [user?.id, token]);
 
-  useEffect(() => {
-    const dir = profile?.direccion;
-    if (!dir || dir === "—" || !dir.trim()) return;
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(async () => {
-      try {
-        const q = encodeURIComponent(dir.trim());
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=ar&limit=1`;
-        const res = await fetch(url, { 
-          headers: { 'User-Agent': 'SubastApp/1.0' },
-          signal: controller.signal 
-        });
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const { lat, lon } = data[0];
-          setRegion({
-            latitude: parseFloat(lat),
-            longitude: parseFloat(lon),
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          });
-        }
-      } catch {
-        // Ignorar errores de geocodificación silenciosamente en el perfil
-      }
-    }, 500);
-
-    return () => {
-      clearTimeout(timeoutId);
-      controller.abort();
-    };
-  }, [profile?.direccion]);
-
-  const nombre    = profile?.nombre    ?? "—";
+  const nombre    = profile?.nombre    ?? user?.name ?? "—";
   const email     = profile?.email     ?? user?.email ?? "—";
   const documento = profile?.documento ?? "—";
   const direccion = profile?.direccion ?? "—";
@@ -179,46 +63,34 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View className="flex-row justify-between items-center mb-8 mt-2">
-          <View className="flex-row items-center gap-3">
-            <View
-              style={{
-                shadowColor: "#d946ef",
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.8,
-                shadowRadius: 15,
-                elevation: 10,
-              }}
-            >
-              <Image
-                source={require("@/assets/images/logo.png")}
-                style={{ width: 32, height: 32 }}
-                resizeMode="contain"
-              />
-            </View>
-            <Text className="text-white text-2xl font-bold tracking-wide">
-              SubastApp
-            </Text>
+        <View className="flex-row items-center mb-8 mt-2 gap-3">
+          <View
+            style={{
+              shadowColor: "#d946ef",
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0.8,
+              shadowRadius: 15,
+              elevation: 10,
+            }}
+          >
+            <Image
+              source={require("@/assets/images/logo.png")}
+              style={{ width: 32, height: 32 }}
+              resizeMode="contain"
+            />
           </View>
-
-          <Button
-            label="Stats"
-            onPress={() => router.push("/profile/stats")}
-            className="bg-[#9102A2]"
-            textClassName="text-white tracking-widest"
-            innerClassName="px-5 py-2.5"
-          />
+          <Text className="text-white text-2xl font-bold tracking-wide">
+            SubastApp
+          </Text>
         </View>
 
         {/* Avatar + nombre + pill */}
         <View className="flex-row items-center gap-5 mb-6">
-          <View className="bg-white w-24 h-24 rounded-full items-center justify-center border-4 border-black/20 shrink-0">
-            {loading ? (
-              <ActivityIndicator color="#1c1c1c" />
-            ) : (
-              <User size={52} color="#1c1c1c" strokeWidth={1.5} />
-            )}
-          </View>
+          <AvatarInitials
+            name={nombre === '—' ? (user?.email ?? '?') : nombre}
+            size={96}
+            loading={loading}
+          />
           <View className="flex-1 gap-2">
             <Text className="text-white text-2xl font-bold" numberOfLines={2}>
               {loading ? "..." : nombre}
@@ -228,25 +100,49 @@ export default function ProfileScreen() {
         </View>
 
         {/* Datos */}
-        <View className="gap-4 mb-6">
-          <InfoField label="Mail" value={email} />
-          <InfoField label="DNI" value={documento} />
-          <InfoField label="Domicilio" value={direccion} />
+        <View className="bg-neutral-900 border border-neutral-800 rounded-2xl mb-6 overflow-hidden">
+          <Text className="text-white font-bold text-lg px-4 pt-3 pb-3 border-b border-neutral-800">
+            Información personal
+          </Text>
+          {[
+            { icon: <Mail size={16} color="#a855f7" />, label: "Mail",      value: email     },
+            { icon: <IdCard size={16} color="#a855f7" />, label: "DNI",     value: documento },
+            { icon: <MapPin size={16} color="#a855f7" />, label: "Domicilio", value: direccion },
+          ].map(({ icon, label, value }, i, arr) => (
+            <View
+              key={label}
+              className={`flex-row items-center px-4 py-3 gap-3${i < arr.length - 1 ? " border-b border-neutral-800" : ""}`}
+            >
+              {icon}
+              <View className="flex-1">
+                <Text className="text-neutral-500 text-xs mb-0.5">{label}</Text>
+                <Text className="text-white text-sm" numberOfLines={1} style={{ color: value === "—" ? "#555" : "#fff" }}>
+                  {value}
+                </Text>
+              </View>
+            </View>
+          ))}
         </View>
 
-        {/* Mapa */}
-        <View className="mb-8 rounded-xl overflow-hidden h-36 border border-neutral-700">
-          <MapView
-            style={{ flex: 1 }}
-            region={region}
-            scrollEnabled={false}
-            zoomEnabled={false}
-          >
-            <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
-          </MapView>
-        </View>
+        <Button
+          label="Cerrar sesión"
+          onPress={logout}
+          className="bg-red-800 mb-6"
+          textClassName="text-neutral-300"
+          icon={<LogOut size={16} color="#d4d4d4" />}
+          innerClassName="px-6 py-4"
+        />
 
         {/* Acciones */}
+        <Button
+          label="Estadísticas"
+          onPress={() => router.push("/profile/stats")}
+          colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
+          textClassName="text-black tracking-wide"
+          rightIcon={<BarChart2 size={18} color="#000" strokeWidth={2} />}
+          className="mb-3"
+          innerClassName="px-6 py-4"
+        />
         <Button
           label="Medios de pago"
           onPress={() => router.push("/profile/payment")}
@@ -254,14 +150,6 @@ export default function ProfileScreen() {
           textClassName="text-black"
           rightIcon={<ArrowRight size={18} color="#000" strokeWidth={2.5} />}
           className="mb-3"
-          innerClassName="px-6 py-4"
-        />
-        <Button
-          label="Cerrar sesión"
-          onPress={logout}
-          className="bg-neutral-800 border border-neutral-700"
-          textClassName="text-neutral-300"
-          icon={<LogOut size={16} color="#d4d4d4" />}
           innerClassName="px-6 py-4"
         />
       </ScrollView>

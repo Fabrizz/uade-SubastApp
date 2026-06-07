@@ -6,7 +6,6 @@ import {
   Image,
   Platform,
   ScrollView,
-  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
@@ -121,8 +120,6 @@ export default function AuctionDetailScreen() {
 
   return (
     <View className="flex-1 bg-[#1c1c1c]">
-      <StatusBar barStyle="light-content" />
-
       <ScrollView
         contentContainerStyle={{
           paddingTop: Math.max(insets.top, Platform.OS === "ios" ? 50 : 20),
@@ -386,6 +383,7 @@ export default function AuctionDetailScreen() {
         visible={showPaymentModal}
         transparent={true}
         animationType="fade"
+        statusBarTranslucent={true}
         onRequestClose={() => setShowPaymentModal(false)}
       >
         <Pressable

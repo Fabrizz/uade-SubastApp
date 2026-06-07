@@ -3,7 +3,7 @@ import { useAuth } from '@/context/auth';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ArrowRight, Terminal } from 'lucide-react-native';
+import { ArrowRight } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator, Alert,
@@ -44,14 +44,6 @@ export default function Login() {
       <StatusBar style="light" />
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
-        
-        {/* Subtle Dev Menu Button */}
-        <TouchableOpacity 
-          onPress={() => router.push('/dev-menu')}
-          style={{ position: 'absolute', top: 20, right: 24, opacity: 0.3 }}
-        >
-          <Terminal size={20} color="white" />
-        </TouchableOpacity>
 
         {/* Logo */}
         <View style={{ alignItems: 'center', marginBottom: 56 }}>

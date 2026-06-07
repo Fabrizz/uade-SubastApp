@@ -130,6 +130,7 @@ public class PersonaController {
                 .estado(p.getEstado() != null ? p.getEstado().name() : null)
                 .email(p.getPersonaExtra() != null ? p.getPersonaExtra().getEmail() : null)
                 .telefono(p.getPersonaExtra() != null ? p.getPersonaExtra().getTelefono() : null)
+                .categoria(p.getCliente() != null ? p.getCliente().getCategoria().name() : null)
                 .build();
     }
 }

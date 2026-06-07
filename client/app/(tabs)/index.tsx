@@ -1,3 +1,4 @@
+import { AvatarInitials } from "@/components/ui/AvatarInitials";
 import { CategoryPill } from "@/components/ui/CategoryPill";
 import { useAuth } from "@/context/auth";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,7 +9,6 @@ import {
   Image,
   Platform,
   ScrollView,
-  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
@@ -176,8 +176,6 @@ export default function Home() {
 
   return (
     <View className="flex-1 bg-black">
-      <StatusBar barStyle="light-content" />
-
       {/* ── HEADER ── */}
       <View
         className="bg-black px-4 pb-3"
@@ -204,8 +202,18 @@ export default function Home() {
               SubastApp
             </Text>
           </TouchableOpacity>
-          {user?.category && (
-            <CategoryPill category={user.category as any} size="sm" />
+          {user && (
+            <View className="flex-row items-center gap-2.5">
+              <AvatarInitials name={user.name ?? user.email} size={36} />
+              <View className="items-end">
+                <Text className="text-white text-sm font-montserrat-bold" numberOfLines={1}>
+                  {user.name ?? user.email}
+                </Text>
+                {user.category && (
+                  <CategoryPill category={user.category as any} size="xs" />
+                )}
+              </View>
+            </View>
           )}
         </View>
 

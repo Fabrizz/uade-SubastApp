@@ -60,10 +60,11 @@ const CATEGORY_CONFIG: Record<Category, Config> = {
 type Props = {
   category: Category;
   /** Icon + text size scale. Defaults to "md". */
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 };
 
 const SIZE = {
+  xs: { icon: 9,  text: 8,  px: 6,  py: 2,  gap: 3 },
   sm: { icon: 11, text: 10, px: 8,  py: 3,  gap: 4 },
   md: { icon: 13, text: 12, px: 10, py: 4,  gap: 5 },
   lg: { icon: 15, text: 14, px: 12, py: 6,  gap: 6 },

@@ -11,7 +11,9 @@ const USER_KEY = 'auth_user';
 
 export interface User {
   email: string;
+  name?: string;
   category?: UserCategory;
+  id?: number;
 }
 
 export type PreRegisterBody = components['schemas']['PreRegisterRequest'];
@@ -66,6 +68,38 @@ function isTokenExpired(token: string): boolean {
   return exp ? exp <= new Date() : true;
 }
 
+function getTokenId(token: string): number | null {
+  try {
+    const payload = JSON.parse(base64Decode(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const raw = payload.id;
+    if (typeof raw === 'number') return raw;
+    if (typeof raw === 'string') { const n = parseInt(raw, 10); return isNaN(n) ? null : n; }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function syncPersona(tok: string, base: User): Promise<User> {
+  const id = base.id ?? getTokenId(tok);
+  if (!id) return base;
+  try {
+    const { data } = await api.GET('/api/v1/personas/{id}', {
+      params: { path: { id } },
+      headers: { Authorization: `Bearer ${tok}` },
+    });
+    if (!data) return base;
+    return {
+      ...base,
+      id,
+      name:     data.nombre   ?? base.name,
+      category: (data.categoria as UserCategory) ?? base.category,
+    };
+  } catch {
+    return base;
+  }
+}
+
 // ─── Context shape ────────────────────────────────────────────────────────────
 
 interface AuthContextValue {
@@ -78,6 +112,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   preRegister: (body: PreRegisterBody) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -126,8 +161,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           SecureStore.getItemAsync(USER_KEY),
         ]);
         if (storedToken && !isTokenExpired(storedToken)) {
+          const parsed: User | null = storedUser ? JSON.parse(storedUser) : null;
+          const base: User = parsed
+            ? { ...parsed, id: parsed.id ?? getTokenId(storedToken) ?? undefined }
+            : { email: '', id: getTokenId(storedToken) ?? undefined };
+          const fresh = await syncPersona(storedToken, base);
           setToken(storedToken);
-          setUser(storedUser ? JSON.parse(storedUser) : null);
+          setUser(fresh);
+          if (fresh.name !== parsed?.name || fresh.category !== parsed?.category)
+            await SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh));
           scheduleExpiration(storedToken);
         } else if (storedToken) {
           await Promise.all([
@@ -164,7 +206,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data?.accessToken) {
       throw new Error('Credenciales incorrectas.');
     }
-    await persistSession(data.accessToken, { email, category: data.categoria as UserCategory ?? undefined });
+    const base: User = { email, category: data.categoria as UserCategory ?? undefined, id: getTokenId(data.accessToken) ?? undefined };
+    await persistSession(data.accessToken, await syncPersona(data.accessToken, base));
   }, [persistSession]);
 
   const logout = useCallback(async () => {
@@ -183,8 +226,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error || !data?.accessToken) {
       throw new Error('No se pudo completar el registro.');
     }
-    await persistSession(data.accessToken, { email: body.email, category: data.categoria as UserCategory ?? undefined });
+    const base: User = { email: body.email, category: data.categoria as UserCategory ?? undefined, id: getTokenId(data.accessToken) ?? undefined };
+    await persistSession(data.accessToken, await syncPersona(data.accessToken, base));
   }, [persistSession]);
+
+  const refreshUser = useCallback(async () => {
+    if (!token || !user) return;
+    const fresh = await syncPersona(token, user);
+    setUser(fresh);
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh));
+  }, [token, user]);
 
   const tokenExpiration = useMemo(() => (token ? getTokenExpiration(token) : null), [token]);
 
@@ -198,7 +249,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     preRegister,
     register,
-  }), [token, user, tokenExpiration, isLoading, login, logout, preRegister, register]);
+    refreshUser,
+  }), [token, user, tokenExpiration, isLoading, login, logout, preRegister, register, refreshUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
