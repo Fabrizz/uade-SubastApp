@@ -158,7 +158,7 @@ export default function DevMenu() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => { router.dismiss(); router.push("/admin"); }}
+          onPress={() => { router.dismiss(); router.replace("/admin"); }}
           className="flex-row items-center bg-purple-950 border border-purple-800 p-4 rounded-xl mb-6"
           activeOpacity={0.8}
         >
@@ -175,7 +175,7 @@ export default function DevMenu() {
         {ROUTES.map((route, index) => (
           <TouchableOpacity
             key={index}
-            onPress={() => { router.dismiss(); router.push(route.path as any); }}
+            onPress={() => { router.dismiss(); router.replace(route.path as any); }}
             className="flex-row items-center bg-neutral-900 p-4 rounded-xl mb-3 border border-neutral-800"
           >
             <View className="bg-neutral-800 p-2 rounded-lg mr-4">

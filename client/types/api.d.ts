@@ -2180,6 +2180,8 @@ export interface components {
             content?: components["schemas"]["ProductoResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2189,13 +2191,13 @@ export interface components {
         PageableObject: {
             /** Format: int64 */
             offset?: number;
+            unpaged?: boolean;
             /** Format: int32 */
             pageSize?: number;
             /** Format: int32 */
             pageNumber?: number;
-            unpaged?: boolean;
-            sort?: components["schemas"]["SortObject"];
             paged?: boolean;
+            sort?: components["schemas"]["SortObject"];
         };
         SortObject: {
             empty?: boolean;
@@ -2229,6 +2231,8 @@ export interface components {
             content?: components["schemas"]["SubastaResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2245,6 +2249,8 @@ export interface components {
             content?: components["schemas"]["RegistroDeSubastaResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2261,6 +2267,8 @@ export interface components {
             content?: components["schemas"]["ItemCatalogoResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2277,6 +2285,8 @@ export interface components {
             content?: components["schemas"]["AsistenteResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2293,6 +2303,8 @@ export interface components {
             content?: components["schemas"]["SubastadorResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2309,6 +2321,8 @@ export interface components {
             content?: components["schemas"]["PersonaResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2325,6 +2339,8 @@ export interface components {
             content?: components["schemas"]["PaisResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2350,6 +2366,8 @@ export interface components {
             content?: components["schemas"]["NotificacionResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2411,6 +2429,8 @@ export interface components {
             content?: components["schemas"]["SectorResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2427,6 +2447,8 @@ export interface components {
             content?: components["schemas"]["EmpleadoResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2443,6 +2465,8 @@ export interface components {
             content?: components["schemas"]["DuenioResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];
@@ -2459,6 +2483,8 @@ export interface components {
             content?: components["schemas"]["ClienteResponse"][];
             /** Format: int32 */
             number?: number;
+            first?: boolean;
+            last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             pageable?: components["schemas"]["PageableObject"];

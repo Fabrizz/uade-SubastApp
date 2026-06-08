@@ -43,94 +43,104 @@ export default function Login() {
     >
       <StatusBar style="light" />
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+        <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
 
-        {/* Logo */}
-        <View style={{ alignItems: 'center', marginBottom: 56 }}>
-          <Image
-            source={require('@/assets/images/logo.png')}
-            style={{ width: 80, height: 80, marginBottom: 12 }}
-            resizeMode="contain"
-          />
-          <Text style={{ fontFamily: 'Montserrat-Bold', color: 'white', fontSize: 40, letterSpacing: 1 }}>
-            SubastApp
-          </Text>
-        </View>
-
-        {/* Card */}
-        <View className="w-full bg-neutral-900 rounded-2xl p-6">
-
-          <Text className="text-white text-xl font-bold mb-1">Bienvenido</Text>
-          <Text className="text-neutral-200 text-sm mb-5 leading-5">
-            Inicia sesión para participar en las subastas exclusivas.
-          </Text>
-
-          <Text className="text-neutral-100 text-xs font-semibold mb-1">Email</Text>
-          <TextInput
-            style={{ height: 50, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
-            placeholder="nombre@email.com"
-            placeholderTextColor="#a3a3a3"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            value={email}
-            onChangeText={setEmail}
-          />
-
-          <Text className="text-neutral-100 text-xs font-semibold mb-1">Contraseña</Text>
-          <PasswordInput
-            containerStyle={{ marginBottom: 12 }}
-            value={password}
-            onChangeText={setPassword}
-          />
-
-          <View style={{ flexDirection: 'row', marginBottom: 24 }}>
-            <Text className="text-neutral-300 text-xs">¿Olvidaste tu contraseña? </Text>
-            <TouchableOpacity onPress={() => router.push('/auth/recover')}>
-              <Text className="text-teal-400 text-xs font-semibold">Recuperar</Text>
-            </TouchableOpacity>
+          {/* Logo */}
+          <View style={{ alignItems: 'center', marginBottom: 56 }}>
+            <Image
+              source={require('@/assets/images/logo.png')}
+              style={{ width: 80, height: 80, marginBottom: 12 }}
+              resizeMode="contain"
+            />
+            <Text style={{ fontFamily: 'Montserrat-Bold', color: 'white', fontSize: 40, letterSpacing: 1 }}>
+              SubastApp
+            </Text>
           </View>
 
-          {/* Botón Login */}
-          <TouchableOpacity
-            onPress={handleLogin}
-            disabled={loading}
-            activeOpacity={0.85}
-            style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}
-          >
-            <LinearGradient
-              colors={['#00c9b1', '#00e5c0', '#4dffd6']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16 }}
+          {/* Card */}
+          <View className="w-full bg-neutral-900 rounded-2xl p-6">
+
+            <Text className="text-white text-xl font-bold mb-1">Bienvenido</Text>
+            <Text className="text-neutral-200 text-sm mb-5 leading-5">
+              Inicia sesión para participar en las subastas exclusivas.
+            </Text>
+
+            <Text className="text-neutral-100 text-xs font-semibold mb-1">Email</Text>
+            <TextInput
+              style={{ height: 50, backgroundColor: '#383838', borderWidth: 1, borderColor: '#555555', borderRadius: 12, paddingHorizontal: 16, color: 'white', fontSize: 16, marginBottom: 16 }}
+              placeholder="nombre@email.com"
+              placeholderTextColor="#a3a3a3"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={email}
+              onChangeText={setEmail}
+            />
+
+            <Text className="text-neutral-100 text-xs font-semibold mb-1">Contraseña</Text>
+            <PasswordInput
+              containerStyle={{ marginBottom: 12 }}
+              value={password}
+              onChangeText={setPassword}
+            />
+
+            <View style={{ flexDirection: 'row', marginBottom: 24 }}>
+              <Text className="text-neutral-300 text-xs">¿Olvidaste tu contraseña? </Text>
+              <TouchableOpacity onPress={() => router.push('/auth/recover')}>
+                <Text className="text-teal-400 text-xs font-semibold">Recuperar</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Botón Login */}
+            <TouchableOpacity
+              onPress={handleLogin}
+              disabled={loading}
+              activeOpacity={0.85}
+              style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 10 }}
             >
-              {loading ? (
-                <ActivityIndicator color="#000" />
-              ) : (
-                <>
-                  <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Log In</Text>
-                  <ArrowRight size={20} color="#000" strokeWidth={2.5} />
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 12 }}>
-            <Text className="text-neutral-300 text-xs">¿No tiene una cuenta? </Text>
-            <TouchableOpacity onPress={() => router.push('/auth/register')}>
-              <Text className="text-teal-400 text-xs font-bold">Registrarse</Text>
+              <LinearGradient
+                colors={['#00c9b1', '#00e5c0', '#4dffd6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16 }}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#000" />
+                ) : (
+                  <>
+                    <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Log In</Text>
+                    <ArrowRight size={20} color="#000" strokeWidth={2.5} />
+                  </>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
-          </View>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-            <Text className="text-neutral-300 text-xs">¿Tenés una contraseña temporal? </Text>
-            <TouchableOpacity onPress={() => router.push('/auth/start')}>
-              <Text className="text-teal-400 text-xs font-bold">Activar cuenta</Text>
+            <TouchableOpacity
+              onPress={() => router.replace('/')}
+              activeOpacity={0.85}
+              className="flex-row gap-2 items-center justify-center flex py-2 px-3 mb-6 border border-neutral-600"
+              style={{ borderRadius: 16, overflow: 'hidden' }}
+            >
+              <Text style={{ fontWeight: 'bold', fontSize: 14 }} className='text-neutral-400'>Continuar como invitado</Text>
+              <ArrowRight size={16} color="#a3a3a3" strokeWidth={2.5} />
             </TouchableOpacity>
-          </View>
 
-        </View >
-      </SafeAreaView>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 12 }}>
+              <Text className="text-neutral-300 text-xs">¿No tiene una cuenta? </Text>
+              <TouchableOpacity onPress={() => router.push('/auth/register')}>
+                <Text className="text-teal-400 text-xs font-bold">Registrarse</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+              <Text className="text-neutral-300 text-xs">¿Tenés una contraseña temporal? </Text>
+              <TouchableOpacity onPress={() => router.push('/auth/start')}>
+                <Text className="text-teal-400 text-xs font-bold">Activar cuenta</Text>
+              </TouchableOpacity>
+            </View>
+
+          </View >
+        </SafeAreaView>
       </TouchableWithoutFeedback>
     </LinearGradient>
   );

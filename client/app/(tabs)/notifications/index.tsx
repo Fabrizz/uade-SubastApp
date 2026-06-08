@@ -1,11 +1,11 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { AlertTriangle, ArrowLeft, Bell, Trophy, WifiOff, WifiSync, X } from "lucide-react-native";
+import { AlertTriangle, Bell, Trophy, WifiOff, WifiSync, X } from "lucide-react-native";
 import React from "react";
-import { ActivityIndicator, Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
+import HeaderComp from "@/components/HeaderComp";
+import ScrollViewPad from "@/components/ui/ScrollViewPad";
 import { useWebSocket, WsNotification } from "@/context/websocket";
 
 function formatDate(iso: string): string {
@@ -36,8 +36,6 @@ function getIconBg(type: WsNotification["type"]) {
 }
 
 export default function NotificationsScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { notifications, removeNotification, isConnected, isConnecting, connectionError } = useWebSocket();
 
   return (
@@ -46,74 +44,30 @@ export default function NotificationsScreen() {
       style={{ flex: 1 }}
     >
       <StatusBar style="light" />
+      <HeaderComp />
 
       <ScrollView
+        className="flex-1"
         contentContainerStyle={{
-          paddingTop: Math.max(insets.top, Platform.OS === "ios" ? 50 : 30),
-          paddingBottom: insets.bottom + 120,
-          paddingHorizontal: 20,
+          paddingHorizontal: 16,
+          paddingTop: 20,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View className="flex-row items-center justify-between mb-8">
-          <TouchableOpacity
-            onPress={() => router.canGoBack() ? router.back() : null}
-            className="w-10 h-10 items-center justify-center bg-black/20 rounded-full"
-          >
-            <ArrowLeft size={24} color="white" strokeWidth={2.5} />
-          </TouchableOpacity>
-
-          <View className="flex-row items-center gap-3">
-            <View
-              className="items-center justify-center rounded-full"
-              style={{
-                shadowColor: "#d946ef",
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.8,
-                shadowRadius: 20,
-                elevation: 15,
-                backgroundColor: "transparent",
-              }}
-            >
-              <Image
-                source={require("@/assets/images/logo.png")}
-                style={{ width: 36, height: 36, tintColor: "white" }}
-                resizeMode="contain"
-              />
-            </View>
-            <Text className="text-white text-3xl font-extrabold tracking-wide">
-              SubastApp
+        <View className="flex flex-row items-center justify-between mb-4">
+          <Text className="text-white text-lg font-montserrat-bold">
+            Notificaciones
+          </Text>
+          <View className={`flex-row items-center gap-1.5 px-3 py-1 rounded-full ${isConnected ? "bg-emerald-500/15" : isConnecting ? "bg-neutral-800" : "bg-neutral-800"}`}>
+            {isConnected
+              ? <WifiSync size={13} color="#2dd4bf" strokeWidth={2.5} />
+              : isConnecting
+                ? <ActivityIndicator size={13} color="#34d399" />
+                : <WifiOff size={13} color="#525252" strokeWidth={2.5} />}
+            <Text className={`text-xs font-semibold ${isConnected ? "text-emerald-400" : "text-neutral-500"}`}>
+              {isConnected ? "Conectado" : isConnecting ? "Conectando..." : "Sin conexión"}
             </Text>
           </View>
-
-          <View className="w-10" />
-        </View>
-
-        <View className="mb-6 px-2 gap-2">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-white text-3xl font-bold tracking-wide">
-              Notificaciones
-            </Text>
-            <View className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full ${isConnected ? "bg-teal-500/15" : isConnecting ? "bg-neutral-800" : "bg-neutral-800"}`}>
-              {isConnected
-                ? <WifiSync size={13} color="#2dd4bf" strokeWidth={2.5} />
-                : isConnecting
-                  ? <ActivityIndicator size={13} color="#525252" />
-                  : <WifiOff size={13} color="#525252" strokeWidth={2.5} />}
-              <Text className={`text-xs font-semibold ${isConnected ? "text-teal-400" : "text-neutral-500"}`}>
-                {isConnected ? "Conectado" : isConnecting ? "Conectando..." : "Sin conexión"}
-              </Text>
-            </View>
-          </View>
-          {connectionError && (
-            <View className="flex-row items-center gap-1.5">
-              <WifiOff size={11} color="#525252" strokeWidth={2} />
-              <Text className="text-neutral-500 text-xs flex-1" numberOfLines={2}>
-                {connectionError}
-              </Text>
-            </View>
-          )}
         </View>
 
         {notifications.length === 0 ? (
@@ -161,6 +115,8 @@ export default function NotificationsScreen() {
             ))}
           </View>
         )}
+
+        <ScrollViewPad />
       </ScrollView>
     </LinearGradient>
   );
