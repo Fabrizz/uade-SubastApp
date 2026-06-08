@@ -2,8 +2,9 @@ import { AvatarInitials } from "@/components/ui/AvatarInitials";
 import { CategoryPill } from "@/components/ui/CategoryPill";
 import { useAuth } from "@/context/auth";
 import { router } from "expo-router";
-import { Image, Platform, Text, TouchableOpacity, View } from "react-native";
+import { Platform, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import SubastappLogo from "./logos/SubastappLogo";
 
 
 export default function HeaderComp({
@@ -48,13 +49,7 @@ export default function HeaderComp({
               elevation: 10,
             }}
           >
-            <Image
-              source={require("@/assets/images/logo.png")}
-              resizeMode="contain"
-              style={{
-                width: 32, height: 32,
-              }}
-            />
+            <SubastappLogo width={32} height={32} />
           </View>
           <Text className="text-white text-lg tracking-wide font-montserrat-bold">
             SubastApp

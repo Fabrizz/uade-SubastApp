@@ -32,7 +32,7 @@ export default function AdminAdmitir() {
     if (err || !data) {
       setError('No se pudo cargar la lista de clientes.');
     } else {
-      setClientes((data.content ?? []).filter(c => !c.inhabilitado));
+      setClientes((data.content ?? []).filter(c => !c.inadmitido));
     }
     setIsLoading(false);
   }, [token]);
@@ -53,7 +53,7 @@ export default function AdminAdmitir() {
 
   const handleRechazar = async (id: number) => {
     setRechazando(id);
-    const { error: err } = await api.POST('/api/v1/clientes/{id}/inhabilitar-mail', {
+    const { error: err } = await api.POST('/api/v1/clientes/{id}/inadmitir', {
       params: { path: { id } },
       headers,
     });

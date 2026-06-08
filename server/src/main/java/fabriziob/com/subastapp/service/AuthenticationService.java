@@ -108,7 +108,7 @@ public class AuthenticationService {
                 ClienteExtra clienteExtra = new ClienteExtra();
                 clienteExtra.setCliente(cliente);
                 clienteExtra.setEstadoOperativo(esAdmin ? "habilitado" : "inhabilitado");
-                clienteExtra.setInhabilitado(false);
+                clienteExtra.setInadmitido(false);
                 clienteExtra.setMultaPendiente(null);
                 clienteExtra.setFotoDocumentoFrente(decodeBase64(request.getFotoFrenteDocumento()));
                 clienteExtra.setFotoDocumentoDorso(decodeBase64(request.getFotoDorsoDocumento()));

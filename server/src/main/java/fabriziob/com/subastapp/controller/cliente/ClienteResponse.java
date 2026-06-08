@@ -16,5 +16,5 @@ public class ClienteResponse {
     private String estadoOperativo;
     private BigDecimal multaPendiente;
     private String pais;
-    private Boolean inhabilitado;
+    private Boolean inadmitido;
 }

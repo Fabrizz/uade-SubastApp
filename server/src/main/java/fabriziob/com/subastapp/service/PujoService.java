@@ -44,283 +44,286 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class PujoService {
 
-    private final PujoRepository pujoRepository;
-    private final AsistenteRepository asistenteRepository;
-    private final ItemCatalogoRepository itemRepository;
-    private final MedioPagoRepository medioPagoRepository;
-    private final MedioPagoChequeRepository chequeRepository;
-    private final MedioPagoCuentaRepository cuentaRepository;
-    private final MedioPagoTarjetaRepository tarjetaRepository;
-    private final RegistroDeSubastaRepository registroRepository;
-    private final RegistroDeSubastaExtraRepository registroExtraRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+        private final PujoRepository pujoRepository;
+        private final AsistenteRepository asistenteRepository;
+        private final ItemCatalogoRepository itemRepository;
+        private final MedioPagoRepository medioPagoRepository;
+        private final MedioPagoChequeRepository chequeRepository;
+        private final MedioPagoCuentaRepository cuentaRepository;
+        private final MedioPagoTarjetaRepository tarjetaRepository;
+        private final RegistroDeSubastaRepository registroRepository;
+        private final RegistroDeSubastaExtraRepository registroExtraRepository;
+        private final SimpMessagingTemplate messagingTemplate;
 
-    // ─── crear pujo ─────────────────────────────────────────────────────────
+        // ─── crear pujo ─────────────────────────────────────────────────────────
 
-    public PujoResponse crearPujo(Integer subastaId, Integer itemId, PujoRequest req) {
-        Asistente asistente = asistenteRepository.findById(req.getAsistenteId())
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Asistente no encontrado: " + req.getAsistenteId()));
+        public PujoResponse crearPujo(Integer subastaId, Integer itemId, PujoRequest req) {
+                Asistente asistente = asistenteRepository.findById(req.getAsistenteId())
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Asistente no encontrado: " + req.getAsistenteId()));
 
-        Subasta subasta = asistente.getSubasta();
-        if (subasta == null || !subasta.getIdentificador().equals(subastaId))
-            throw new IllegalArgumentException(
-                    "El asistente no pertenece a la subasta " + subastaId);
+                Subasta subasta = asistente.getSubasta();
+                if (subasta == null || !subasta.getIdentificador().equals(subastaId))
+                        throw new IllegalArgumentException(
+                                        "El asistente no pertenece a la subasta " + subastaId);
 
-        if (subasta.getEstado() != EstadoSubasta.abierta)
-            throw new IllegalStateException("La subasta no está abierta");
+                if (subasta.getEstado() != EstadoSubasta.abierta)
+                        throw new IllegalStateException("La subasta no está abierta");
 
-        ItemCatalogo item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new EntityNotFoundException("Item no encontrado: " + itemId));
+                ItemCatalogo item = itemRepository.findById(itemId)
+                                .orElseThrow(() -> new EntityNotFoundException("Item no encontrado: " + itemId));
 
-        Catalogo catalogo = item.getCatalogo();
-        if (catalogo == null || catalogo.getSubasta() == null
-                || !catalogo.getSubasta().getIdentificador().equals(subastaId))
-            throw new IllegalArgumentException(
-                    "El item " + itemId + " no pertenece a la subasta " + subastaId);
+                Catalogo catalogo = item.getCatalogo();
+                if (catalogo == null || catalogo.getSubasta() == null
+                                || !catalogo.getSubasta().getIdentificador().equals(subastaId))
+                        throw new IllegalArgumentException(
+                                        "El item " + itemId + " no pertenece a la subasta " + subastaId);
 
-        if (!pujoRepository.findByItem_IdentificadorAndGanador(itemId, "si").isEmpty())
-            throw new IllegalStateException("El item ya tiene un ganador");
+                if (!pujoRepository.findByItem_IdentificadorAndGanador(itemId, "si").isEmpty())
+                        throw new IllegalStateException("El item ya tiene un ganador");
 
-        Cliente cliente = asistente.getCliente();
+                Cliente cliente = asistente.getCliente();
 
-        // (#11) Guard cliente operativo
-        validarClienteOperativo(cliente);
+                // (#11) Guard cliente operativo
+                validarClienteOperativo(cliente);
 
-        Moneda monedaSubasta = subasta.getSubastaExtra() != null
-                ? subasta.getSubastaExtra().getMoneda()
-                : Moneda.ARS;
+                Moneda monedaSubasta = subasta.getSubastaExtra() != null
+                                ? subasta.getSubastaExtra().getMoneda()
+                                : Moneda.ARS;
 
-        // (#1 + #2 + #5) Guard medio de pago válido
-        List<MedioPago> mediosValidos = mediosValidosParaPujar(cliente.getIdentificador(),
-                monedaSubasta, subasta.getFecha());
-        if (mediosValidos.isEmpty())
-            throw new SecurityException(
-                    "No tiene un medio de pago verificado y compatible con la moneda de la subasta");
+                // (#1 + #2 + #5) Guard medio de pago válido
+                List<MedioPago> mediosValidos = mediosValidosParaPujar(cliente.getIdentificador(),
+                                monedaSubasta, subasta.getFecha());
+                if (mediosValidos.isEmpty())
+                        throw new SecurityException(
+                                        "No tiene un medio de pago verificado y compatible con la moneda de la subasta");
 
-        // (#3) Guard garantía solo-cheque
-        boolean soloCheques = mediosValidos.stream()
-                .allMatch(mp -> mp.getTipo() == TipoMedioPago.cheque);
-        if (soloCheques) {
-            validarGarantiaCheque(cliente.getIdentificador(), monedaSubasta,
-                    subasta.getFecha(), req.getImporte());
+                // (#3) Guard garantía solo-cheque
+                boolean soloCheques = mediosValidos.stream()
+                                .allMatch(mp -> mp.getTipo() == TipoMedioPago.cheque);
+                if (soloCheques) {
+                        validarGarantiaCheque(cliente.getIdentificador(), monedaSubasta,
+                                        subasta.getFecha(), req.getImporte());
+                }
+
+                // Regla +1% / +20% sobre precio base (no aplica a oro/platino)
+                validarRangoPuje(req.getImporte(), item, subasta);
+
+                // El nuevo importe debe ser mayor al mejor pujo actual
+                BigDecimal mejorActual = pujoRepository.findMaxImporteByItem(itemId)
+                                .orElse(BigDecimal.ZERO);
+                if (req.getImporte().compareTo(mejorActual) <= 0)
+                        throw new IllegalArgumentException(
+                                        "El importe debe ser mayor al mejor pujo actual: " + mejorActual);
+
+                Pujo nuevo = Pujo.builder()
+                                .asistente(asistente)
+                                .item(item)
+                                .importe(req.getImporte())
+                                .ganador("no")
+                                .build();
+                nuevo = pujoRepository.save(nuevo);
+
+                PujoResponse response = toResponse(nuevo);
+                messagingTemplate.convertAndSend("/topic/subastas/" + subastaId + "/pujas", response);
+                return response;
         }
 
-        // Regla +1% / +20% sobre precio base (no aplica a oro/platino)
-        validarRangoPuje(req.getImporte(), item, subasta);
+        // ─── marcar ganador ─────────────────────────────────────────────────────
 
-        // El nuevo importe debe ser mayor al mejor pujo actual
-        BigDecimal mejorActual = pujoRepository.findMaxImporteByItem(itemId)
-                .orElse(BigDecimal.ZERO);
-        if (req.getImporte().compareTo(mejorActual) <= 0)
-            throw new IllegalArgumentException(
-                    "El importe debe ser mayor al mejor pujo actual: " + mejorActual);
+        public PujoResponse marcarGanador(Integer subastaId, Integer itemId, Integer pujoId,
+                        MarcarGanadorRequest req) {
+                Pujo pujo = pujoRepository.findById(pujoId)
+                                .orElseThrow(() -> new EntityNotFoundException("Pujo no encontrado: " + pujoId));
 
-        Pujo nuevo = Pujo.builder()
-                .asistente(asistente)
-                .item(item)
-                .importe(req.getImporte())
-                .ganador("no")
-                .build();
-        nuevo = pujoRepository.save(nuevo);
+                if (pujo.getItem() == null || !pujo.getItem().getIdentificador().equals(itemId))
+                        throw new IllegalArgumentException("El pujo no pertenece al item " + itemId);
 
-        PujoResponse response = toResponse(nuevo);
-        messagingTemplate.convertAndSend("/topic/subastas/" + subastaId + "/pujas", response);
-        return response;
-    }
+                ItemCatalogo item = pujo.getItem();
+                Catalogo catalogo = item.getCatalogo();
+                if (catalogo == null || catalogo.getSubasta() == null
+                                || !catalogo.getSubasta().getIdentificador().equals(subastaId))
+                        throw new IllegalArgumentException("El pujo no pertenece a la subasta " + subastaId);
 
-    // ─── marcar ganador ─────────────────────────────────────────────────────
+                if (!pujoRepository.findByItem_IdentificadorAndGanador(itemId, "si").isEmpty())
+                        throw new IllegalStateException("El item ya tiene un ganador");
 
-    public PujoResponse marcarGanador(Integer subastaId, Integer itemId, Integer pujoId,
-                                      MarcarGanadorRequest req) {
-        Pujo pujo = pujoRepository.findById(pujoId)
-                .orElseThrow(() -> new EntityNotFoundException("Pujo no encontrado: " + pujoId));
+                Subasta subasta = catalogo.getSubasta();
+                Cliente cliente = pujo.getAsistente().getCliente();
 
-        if (pujo.getItem() == null || !pujo.getItem().getIdentificador().equals(itemId))
-            throw new IllegalArgumentException("El pujo no pertenece al item " + itemId);
+                MedioPago medio = medioPagoRepository.findById(req.getMedioPagoCompradorId())
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Medio de pago no encontrado: " + req.getMedioPagoCompradorId()));
 
-        ItemCatalogo item = pujo.getItem();
-        Catalogo catalogo = item.getCatalogo();
-        if (catalogo == null || catalogo.getSubasta() == null
-                || !catalogo.getSubasta().getIdentificador().equals(subastaId))
-            throw new IllegalArgumentException("El pujo no pertenece a la subasta " + subastaId);
+                if (!medio.getCliente().equals(cliente.getIdentificador()))
+                        throw new IllegalArgumentException(
+                                        "El medio de pago no pertenece al cliente ganador");
 
-        if (!pujoRepository.findByItem_IdentificadorAndGanador(itemId, "si").isEmpty())
-            throw new IllegalStateException("El item ya tiene un ganador");
+                Moneda monedaSubasta = subasta.getSubastaExtra() != null
+                                ? subasta.getSubastaExtra().getMoneda()
+                                : Moneda.ARS;
 
-        Subasta subasta = catalogo.getSubasta();
-        Cliente cliente = pujo.getAsistente().getCliente();
+                if (!Boolean.TRUE.equals(medio.getVerificado())
+                                || !Boolean.TRUE.equals(medio.getActivo())
+                                || medio.getMoneda() != monedaSubasta)
+                        throw new IllegalArgumentException(
+                                        "El medio de pago no es válido (verificado/activo/moneda)");
 
-        MedioPago medio = medioPagoRepository.findById(req.getMedioPagoCompradorId())
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Medio de pago no encontrado: " + req.getMedioPagoCompradorId()));
+                if (!medioCompatibleConMoneda(medio, monedaSubasta, subasta.getFecha()))
+                        throw new IllegalArgumentException(
+                                        "El medio de pago no cumple los requisitos para la moneda de la subasta");
 
-        if (!medio.getCliente().equals(cliente.getIdentificador()))
-            throw new IllegalArgumentException(
-                    "El medio de pago no pertenece al cliente ganador");
+                pujo.setGanador("si");
+                pujoRepository.save(pujo);
 
-        Moneda monedaSubasta = subasta.getSubastaExtra() != null
-                ? subasta.getSubastaExtra().getMoneda()
-                : Moneda.ARS;
+                item.setSubastado("si");
+                itemRepository.save(item);
 
-        if (!Boolean.TRUE.equals(medio.getVerificado())
-                || !Boolean.TRUE.equals(medio.getActivo())
-                || medio.getMoneda() != monedaSubasta)
-            throw new IllegalArgumentException(
-                    "El medio de pago no es válido (verificado/activo/moneda)");
+                RegistroDeSubasta registro = RegistroDeSubasta.builder()
+                                .subasta(subasta)
+                                .duenio(item.getProducto().getDuenio())
+                                .producto(item.getProducto())
+                                .cliente(cliente)
+                                .importe(pujo.getImporte())
+                                .comision(item.getComision())
+                                .build();
+                registro = registroRepository.save(registro);
 
-        if (!medioCompatibleConMoneda(medio, monedaSubasta, subasta.getFecha()))
-            throw new IllegalArgumentException(
-                    "El medio de pago no cumple los requisitos para la moneda de la subasta");
+                RegistroDeSubastaExtra extra = RegistroDeSubastaExtra.builder()
+                                .registroSubasta(registro)
+                                .medioPagoComprador(medio)
+                                .build();
+                registroExtraRepository.save(extra);
 
-        pujo.setGanador("si");
-        pujoRepository.save(pujo);
+                PujoResponse response = toResponse(pujo);
+                messagingTemplate.convertAndSend("/topic/subastas/" + subastaId + "/ganadores", response);
+                return response;
+        }
 
-        item.setSubastado("si");
-        itemRepository.save(item);
+        // ─── listados ───────────────────────────────────────────────────────────
 
-        RegistroDeSubasta registro = RegistroDeSubasta.builder()
-                .subasta(subasta)
-                .duenio(item.getProducto().getDuenio())
-                .producto(item.getProducto())
-                .cliente(cliente)
-                .importe(pujo.getImporte())
-                .comision(item.getComision())
-                .build();
-        registro = registroRepository.save(registro);
+        @Transactional(readOnly = true)
+        public List<PujoResponse> listarPorSubasta(Integer subastaId) {
+                return pujoRepository.findBySubastaIdWithAll(subastaId).stream()
+                                .map(this::toResponse)
+                                .toList();
+        }
 
-        RegistroDeSubastaExtra extra = RegistroDeSubastaExtra.builder()
-                .registroSubasta(registro)
-                .medioPagoComprador(medio)
-                .build();
-        registroExtraRepository.save(extra);
+        @Transactional(readOnly = true)
+        public List<PujoResponse> listarPorItem(Integer subastaId, Integer itemId) {
+                return pujoRepository.findBySubastaIdAndItemId(subastaId, itemId).stream()
+                                .map(this::toResponse)
+                                .toList();
+        }
 
-        PujoResponse response = toResponse(pujo);
-        messagingTemplate.convertAndSend("/topic/subastas/" + subastaId + "/ganadores", response);
-        return response;
-    }
+        // ─── helpers ────────────────────────────────────────────────────────────
 
-    // ─── listados ───────────────────────────────────────────────────────────
+        private void validarClienteOperativo(Cliente cliente) {
+                ClienteExtra extra = cliente.getClienteExtra();
+                if (extra == null)
+                        throw new SecurityException("Cliente sin estado operativo");
+                if (Boolean.TRUE.equals(extra.getInadmitido()))
+                        throw new SecurityException(
+                                        "Cliente no habilitado para pujar (estado: inadmitido)");
+                if (!"habilitado".equals(extra.getEstadoOperativo()))
+                        throw new SecurityException(
+                                        "Cliente no habilitado para pujar (estado: " + extra.getEstadoOperativo()
+                                                        + ")");
+                if (extra.getMultaPendiente() != null
+                                && extra.getMultaPendiente().compareTo(BigDecimal.ZERO) > 0)
+                        throw new SecurityException("Cliente con multa pendiente, no puede pujar");
+        }
 
-    @Transactional(readOnly = true)
-    public List<PujoResponse> listarPorSubasta(Integer subastaId) {
-        return pujoRepository.findBySubastaIdWithAll(subastaId).stream()
-                .map(this::toResponse)
-                .toList();
-    }
+        private List<MedioPago> mediosValidosParaPujar(Integer clienteId, Moneda moneda,
+                        LocalDate fechaSubasta) {
+                return medioPagoRepository
+                                .findByClienteAndVerificadoTrueAndActivoTrueAndMoneda(clienteId, moneda)
+                                .stream()
+                                .filter(mp -> medioCompatibleConMoneda(mp, moneda, fechaSubasta))
+                                .toList();
+        }
 
-    @Transactional(readOnly = true)
-    public List<PujoResponse> listarPorItem(Integer subastaId, Integer itemId) {
-        return pujoRepository.findBySubastaIdAndItemId(subastaId, itemId).stream()
-                .map(this::toResponse)
-                .toList();
-    }
+        private boolean medioCompatibleConMoneda(MedioPago mp, Moneda moneda, LocalDate fechaSubasta) {
+                return switch (mp.getTipo()) {
+                        case tarjeta_credito -> moneda == Moneda.ARS || esTarjetaInternacional(mp.getIdentificador());
+                        case cuenta_bancaria -> moneda == Moneda.ARS || esCuentaExterior(mp.getIdentificador());
+                        case cheque -> moneda == Moneda.ARS && chequeVigente(mp.getIdentificador(), fechaSubasta);
+                };
+        }
 
-    // ─── helpers ────────────────────────────────────────────────────────────
+        private boolean esTarjetaInternacional(Integer mpId) {
+                return tarjetaRepository.findById(mpId)
+                                .map(t -> Boolean.TRUE.equals(t.getEsInternacional()))
+                                .orElse(false);
+        }
 
-    private void validarClienteOperativo(Cliente cliente) {
-        ClienteExtra extra = cliente.getClienteExtra();
-        if (extra == null)
-            throw new SecurityException("Cliente sin estado operativo");
-        if (Boolean.TRUE.equals(extra.getInhabilitado()))
-            throw new SecurityException(
-                    "Cliente no habilitado para pujar (estado: inhabilitado)");
-        if (!"habilitado".equals(extra.getEstadoOperativo()))
-            throw new SecurityException(
-                    "Cliente no habilitado para pujar (estado: " + extra.getEstadoOperativo() + ")");
-        if (extra.getMultaPendiente() != null
-                && extra.getMultaPendiente().compareTo(BigDecimal.ZERO) > 0)
-            throw new SecurityException("Cliente con multa pendiente, no puede pujar");
-    }
+        private boolean esCuentaExterior(Integer mpId) {
+                return cuentaRepository.findById(mpId)
+                                .map(c -> Boolean.TRUE.equals(c.getEsExterior()))
+                                .orElse(false);
+        }
 
-    private List<MedioPago> mediosValidosParaPujar(Integer clienteId, Moneda moneda,
-                                                   LocalDate fechaSubasta) {
-        return medioPagoRepository
-                .findByClienteAndVerificadoTrueAndActivoTrueAndMoneda(clienteId, moneda)
-                .stream()
-                .filter(mp -> medioCompatibleConMoneda(mp, moneda, fechaSubasta))
-                .toList();
-    }
+        private boolean chequeVigente(Integer mpId, LocalDate fechaSubasta) {
+                return chequeRepository.findById(mpId)
+                                .map(c -> fechaSubasta == null
+                                                || !c.getFechaVencimiento().isBefore(fechaSubasta))
+                                .orElse(false);
+        }
 
-    private boolean medioCompatibleConMoneda(MedioPago mp, Moneda moneda, LocalDate fechaSubasta) {
-        return switch (mp.getTipo()) {
-            case tarjeta_credito -> moneda == Moneda.ARS || esTarjetaInternacional(mp.getIdentificador());
-            case cuenta_bancaria -> moneda == Moneda.ARS || esCuentaExterior(mp.getIdentificador());
-            case cheque -> moneda == Moneda.ARS && chequeVigente(mp.getIdentificador(), fechaSubasta);
-        };
-    }
+        private void validarGarantiaCheque(Integer clienteId, Moneda moneda,
+                        LocalDate fechaSubasta, BigDecimal importeNuevo) {
+                List<MedioPagoCheque> vigentes = chequeRepository
+                                .findVigentesByCliente(clienteId, moneda, fechaSubasta);
+                BigDecimal cap = vigentes.stream()
+                                .map(MedioPagoCheque::getMontoCertificado)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    private boolean esTarjetaInternacional(Integer mpId) {
-        return tarjetaRepository.findById(mpId)
-                .map(t -> Boolean.TRUE.equals(t.getEsInternacional()))
-                .orElse(false);
-    }
+                BigDecimal consumido = Optional.ofNullable(
+                                pujoRepository.sumImporteGanadorPendienteByCliente(clienteId, moneda))
+                                .orElse(BigDecimal.ZERO);
 
-    private boolean esCuentaExterior(Integer mpId) {
-        return cuentaRepository.findById(mpId)
-                .map(c -> Boolean.TRUE.equals(c.getEsExterior()))
-                .orElse(false);
-    }
+                BigDecimal disponible = cap.subtract(consumido);
+                if (importeNuevo.compareTo(disponible) > 0)
+                        throw new IllegalStateException(
+                                        "Garantía insuficiente: disponible " + disponible
+                                                        + " " + moneda + ", pujo solicitado " + importeNuevo);
+        }
 
-    private boolean chequeVigente(Integer mpId, LocalDate fechaSubasta) {
-        return chequeRepository.findById(mpId)
-                .map(c -> fechaSubasta == null
-                        || !c.getFechaVencimiento().isBefore(fechaSubasta))
-                .orElse(false);
-    }
+        private void validarRangoPuje(BigDecimal importe, ItemCatalogo item, Subasta subasta) {
+                CategoriaSubasta categoria = subasta.getCategoria();
+                if (categoria == CategoriaSubasta.oro || categoria == CategoriaSubasta.platino)
+                        return;
 
-    private void validarGarantiaCheque(Integer clienteId, Moneda moneda,
-                                       LocalDate fechaSubasta, BigDecimal importeNuevo) {
-        List<MedioPagoCheque> vigentes = chequeRepository
-                .findVigentesByCliente(clienteId, moneda, fechaSubasta);
-        BigDecimal cap = vigentes.stream()
-                .map(MedioPagoCheque::getMontoCertificado)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal precioBase = item.getPrecioBase();
+                BigDecimal mejorActual = pujoRepository.findMaxImporteByItem(item.getIdentificador())
+                                .orElse(precioBase);
+                BigDecimal minimo = mejorActual.add(precioBase.multiply(new BigDecimal("0.01")));
+                BigDecimal maximo = mejorActual.add(precioBase.multiply(new BigDecimal("0.20")));
 
-        BigDecimal consumido = Optional.ofNullable(
-                pujoRepository.sumImporteGanadorPendienteByCliente(clienteId, moneda))
-                .orElse(BigDecimal.ZERO);
+                if (importe.compareTo(minimo) < 0)
+                        throw new IllegalArgumentException(
+                                        "El importe mínimo permitido es " + minimo
+                                                        + " (mejorActual + 1% del precio base)");
+                if (importe.compareTo(maximo) > 0)
+                        throw new IllegalArgumentException(
+                                        "El importe máximo permitido es " + maximo
+                                                        + " (mejorActual + 20% del precio base)");
+        }
 
-        BigDecimal disponible = cap.subtract(consumido);
-        if (importeNuevo.compareTo(disponible) > 0)
-            throw new IllegalStateException(
-                    "Garantía insuficiente: disponible " + disponible
-                            + " " + moneda + ", pujo solicitado " + importeNuevo);
-    }
-
-    private void validarRangoPuje(BigDecimal importe, ItemCatalogo item, Subasta subasta) {
-        CategoriaSubasta categoria = subasta.getCategoria();
-        if (categoria == CategoriaSubasta.oro || categoria == CategoriaSubasta.platino)
-            return;
-
-        BigDecimal precioBase = item.getPrecioBase();
-        BigDecimal mejorActual = pujoRepository.findMaxImporteByItem(item.getIdentificador())
-                .orElse(precioBase);
-        BigDecimal minimo = mejorActual.add(precioBase.multiply(new BigDecimal("0.01")));
-        BigDecimal maximo = mejorActual.add(precioBase.multiply(new BigDecimal("0.20")));
-
-        if (importe.compareTo(minimo) < 0)
-            throw new IllegalArgumentException(
-                    "El importe mínimo permitido es " + minimo + " (mejorActual + 1% del precio base)");
-        if (importe.compareTo(maximo) > 0)
-            throw new IllegalArgumentException(
-                    "El importe máximo permitido es " + maximo + " (mejorActual + 20% del precio base)");
-    }
-
-    private PujoResponse toResponse(Pujo p) {
-        Cliente c = p.getAsistente() != null ? p.getAsistente().getCliente() : null;
-        return PujoResponse.builder()
-                .identificador(p.getIdentificador())
-                .asistenteId(p.getAsistente() != null ? p.getAsistente().getIdentificador() : null)
-                .clienteId(c != null ? c.getIdentificador() : null)
-                .clienteNombre(c != null && c.getPersona() != null ? c.getPersona().getNombre() : null)
-                .numeroPostor(p.getAsistente() != null ? p.getAsistente().getNumeroPostor() : null)
-                .itemId(p.getItem() != null ? p.getItem().getIdentificador() : null)
-                .productoDescripcion(p.getItem() != null && p.getItem().getProducto() != null
-                        ? p.getItem().getProducto().getDescripcionCatalogo()
-                        : null)
-                .importe(p.getImporte())
-                .ganador(p.getGanador())
-                .build();
-    }
+        private PujoResponse toResponse(Pujo p) {
+                Cliente c = p.getAsistente() != null ? p.getAsistente().getCliente() : null;
+                return PujoResponse.builder()
+                                .identificador(p.getIdentificador())
+                                .asistenteId(p.getAsistente() != null ? p.getAsistente().getIdentificador() : null)
+                                .clienteId(c != null ? c.getIdentificador() : null)
+                                .clienteNombre(c != null && c.getPersona() != null ? c.getPersona().getNombre() : null)
+                                .numeroPostor(p.getAsistente() != null ? p.getAsistente().getNumeroPostor() : null)
+                                .itemId(p.getItem() != null ? p.getItem().getIdentificador() : null)
+                                .productoDescripcion(p.getItem() != null && p.getItem().getProducto() != null
+                                                ? p.getItem().getProducto().getDescripcionCatalogo()
+                                                : null)
+                                .importe(p.getImporte())
+                                .ganador(p.getGanador())
+                                .build();
+        }
 }
