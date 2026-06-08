@@ -33,8 +33,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import MapView, { Marker } from "react-native-maps";
 
-
-
 export default function Register() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -378,8 +376,6 @@ export default function Register() {
               onChangeText={setDni}
             />
 
-
-
             {/* IMAGENES DNI */}
             <View className="flex-row gap-3 mb-4">
               {[
@@ -454,7 +450,7 @@ export default function Register() {
               onPress={handlePreRegistrar}
               disabled={loading}
               activeOpacity={0.85}
-              style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 20 }}
+              style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 10 }}
             >
               <LinearGradient
                 colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
@@ -470,6 +466,16 @@ export default function Register() {
                   </>
                 }
               </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.replace('/')}
+              activeOpacity={0.85}
+              className="flex-row gap-2 items-center justify-center flex py-2 px-3 mb-6 border border-neutral-600"
+              style={{ borderRadius: 16, overflow: 'hidden' }}
+            >
+              <Text style={{ fontWeight: 'bold', fontSize: 14 }} className='text-neutral-400'>Continuar como invitado</Text>
+              <ArrowRight size={16} color="#a3a3a3" strokeWidth={2.5} />
             </TouchableOpacity>
 
             <View className="flex-row justify-center mb-3">

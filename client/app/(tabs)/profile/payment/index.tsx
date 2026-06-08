@@ -4,10 +4,20 @@ import { api } from "@/lib/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ChevronLeft, CreditCard, Plus } from "lucide-react-native";
+import { Building2, ChevronLeft, CreditCard, FileText, Landmark, Plus } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+function getPaymentMethodIcon(method: any): { Icon: any; color: string } {
+  if (method.tipo === "cuenta_bancaria") return { Icon: Building2, color: "#818cf8" };
+  if (method.tipo === "cheque") return { Icon: FileText, color: "#fbbf24" };
+  const marca = method.tarjeta?.marca?.toUpperCase() ?? "";
+  if (marca === "VISA") return { Icon: CreditCard, color: "#60a5fa" };
+  if (marca === "MASTERCARD") return { Icon: CreditCard, color: "#f97316" };
+  if (marca === "AMEX") return { Icon: Landmark, color: "#34d399" };
+  return { Icon: CreditCard, color: "#00c9b1" };
+}
 
 function getPaymentMethodLabel(method: any): string {
   if (method.tipo === "tarjeta_credito" && method.tarjeta) {
@@ -112,8 +122,8 @@ export default function PaymentMethodsScreen() {
       >
         {/* Modern Header */}
         <View className="flex-row items-center justify-between mb-10">
-          <TouchableOpacity 
-            onPress={() => router.back()} 
+          <TouchableOpacity
+            onPress={() => router.back()}
             className="w-10 h-10 items-center justify-center rounded-xl bg-neutral-900 border border-neutral-800"
           >
             <ChevronLeft size={24} color="white" />
@@ -159,15 +169,16 @@ export default function PaymentMethodsScreen() {
           </View>
         ) : (
           methods.map((method) => {
+            const { Icon, color } = getPaymentMethodIcon(method);
             return (
-              <View 
-                key={method.identificador} 
-                className="mb-5 p-6 rounded-2xl bg-neutral-900 w-full"
+              <View
+                key={method.identificador}
+                className="mb-5 p-6 rounded-3xl bg-neutral-900 w-full"
               >
                 <View className="flex-row items-center justify-between mb-5">
                   <View className="flex-row items-center flex-1 mr-3">
                     <View className="w-10 h-10 rounded-xl bg-[#383838] border border-[#555555] items-center justify-center mr-4">
-                      <CreditCard size={20} color="#00c9b1" />
+                      <Icon size={20} color={color} />
                     </View>
                     <Text className="text-white font-bold text-base flex-1" numberOfLines={1}>
                       {getPaymentMethodLabel(method)}
@@ -196,9 +207,9 @@ export default function PaymentMethodsScreen() {
                     label="Eliminar"
                     onPress={() => method.identificador && handleDelete(method.identificador)}
                     activeOpacity={0.7}
-                    className="flex-1 bg-[#383838] border border-[#555555]"
-                    textClassName="text-neutral-300"
-                    innerClassName="px-4 py-3.5"
+                    className="flex-1 bg-[#410d0d] border border-[#915252] rounded-md!"
+                    textClassName="text-red-300 font-sm"
+                    innerClassName="px-4 py-1.5"
                   />
                 </View>
               </View>

@@ -5,9 +5,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ArrowRight, Check, ChevronLeft, Square } from "lucide-react-native";
-import React, { useState } from "react";
-import { Alert, Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, Animated, Easing, Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const CARD_HEIGHT = 192;
 
 export default function AddCardScreen() {
   const router = useRouter();
@@ -21,12 +23,32 @@ export default function AddCardScreen() {
   const [cvv, setCvv] = useState("");
   const [isExterior, setIsExterior] = useState(false);
 
-  // Formatear visualmente el número de tarjeta (ej: 1234 5678 1234 5678)
+  // ─── flip animation ───────────────────────────────────────────────────────────
+  const flipAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(flipAnim, {
+      toValue: 1,
+      duration: 750,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [flipAnim]);
+
+  const frontRotateY = flipAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["180deg", "360deg"],
+  });
+  const backRotateY = flipAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "180deg"],
+  });
+
+  // ─── display helpers ──────────────────────────────────────────────────────────
   const displayCardNumber = cardNumber.padEnd(16, "•").replace(/(.{4})/g, "$1 ").trim();
   const displayCardName = cardName.toUpperCase() || "•••••••• ••••••••";
   const displayExpiry = expiry.padEnd(4, "•").replace(/(.{2})(.{2})/, "$1/$2");
 
-  // Detectar marca de la tarjeta
   let cardBrand = "TARJETA";
   if (cardNumber.startsWith("4")) cardBrand = "VISA";
   else if (cardNumber.startsWith("5")) cardBrand = "MASTERCARD";
@@ -42,7 +64,7 @@ export default function AddCardScreen() {
       <ScrollView
         contentContainerStyle={{
           paddingTop: Math.max(insets.top, Platform.OS === "ios" ? 50 : 30),
-          paddingBottom: insets.bottom + 40,
+          paddingBottom: insets.bottom + 70,
           paddingHorizontal: 20,
           flexGrow: 1,
         }}
@@ -50,8 +72,8 @@ export default function AddCardScreen() {
       >
         {/* Header */}
         <View className="flex-row items-center justify-between mb-8 px-2">
-          <TouchableOpacity 
-            onPress={() => router.back()} 
+          <TouchableOpacity
+            onPress={() => router.back()}
             className="w-10 h-10 items-center justify-center"
           >
             <ChevronLeft size={28} color="white" strokeWidth={2.5} />
@@ -82,70 +104,121 @@ export default function AddCardScreen() {
         </View>
 
         {/* Main Card Container */}
-        <View 
-          className="bg-neutral-900 border border-neutral-800 p-6 pt-8 pb-8 w-full"
+        <View
+          className="bg-neutral-900 border border-neutral-800 p-6 pt-5 pb-8 w-full"
           style={{ borderRadius: 32 }}
         >
           <Text className="text-white text-2xl font-bold mb-2">
             Metodo de pago
           </Text>
-          <Text className="text-neutral-200 text-sm mb-8 leading-5 pr-4">
+          <Text className="text-neutral-200 text-sm mb-5 leading-5 pr-4">
             Agregue una tarjeta para participar en subastas activas.
           </Text>
 
-          {/* Visual Credit Card */}
-          <LinearGradient
-            colors={["#A14EBF", "#6C91BF"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="p-6 mb-8 w-full h-48 justify-between shadow-2xl shadow-[#A14EBF]/30"
-            style={{ borderRadius: 24 }}
-          >
-            <View className="flex-row justify-between items-start">
-              <View className="w-10 h-10 items-center justify-center">
-                <Image
-                  source={require("@/assets/images/logo.png")}
-                  style={{ width: 32, height: 32, tintColor: "white" }}
-                  resizeMode="contain"
-                />
-              </View>
-              <View className="items-end">
-                <Text className="text-white/80 text-[10px] tracking-widest font-semibold mb-1">
-                  PLATINUM CURATOR
-                </Text>
-                <Text className="text-white text-2xl font-extrabold tracking-wider">
-                  {cardBrand}
-                </Text>
-              </View>
-            </View>
+          {/* Visual Credit Card — flip container */}
+          <View style={{ height: CARD_HEIGHT, marginBottom: 4 }}>
+            {/* Cara trasera */}
+            <Animated.View
+              style={{
+                position: "absolute",
+                width: "100%",
+                height: CARD_HEIGHT,
+                backfaceVisibility: "hidden",
+                transform: [{ perspective: 1200 }, { rotateY: backRotateY }],
+                borderRadius: 16,
+                overflow: "hidden",
+              }}
+            >
+              <LinearGradient
+                colors={["#1a0a24", "#2d1040"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ flex: 1 }}
+              >
+                {/* franja magnética */}
+                <View style={{ height: 44, backgroundColor: "#111", marginTop: 28 }} />
+                <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 12 }}>
+                  <Image
+                    source={require("@/assets/images/logo.png")}
+                    style={{ width: 40, height: 40, tintColor: "rgba(255,255,255,0.15)" }}
+                    resizeMode="contain"
+                  />
+                  <Text style={{ color: "rgba(255,255,255,0.2)", fontSize: 11, letterSpacing: 4, fontWeight: "700" }}>
+                    SUBASTAPP
+                  </Text>
+                </View>
+              </LinearGradient>
+            </Animated.View>
 
-            <View>
-              <Text className="text-white text-xl tracking-[4px] font-bold mb-4">
-                {displayCardNumber}
-              </Text>
-              <View className="flex-row justify-between">
-                <View>
-                  <Text className="text-white/70 text-[10px] tracking-wider font-semibold mb-1">
-                    NOMBRE DEL TITULAR
-                  </Text>
-                  <Text className="text-white font-bold text-sm tracking-widest uppercase">
-                    {displayCardName}
-                  </Text>
+            {/* Cara delantera */}
+            <Animated.View
+              style={{
+                width: "100%",
+                height: CARD_HEIGHT,
+                backfaceVisibility: "hidden",
+                transform: [{ perspective: 1200 }, { rotateY: frontRotateY }],
+                borderRadius: 16,
+                overflow: "hidden",
+                shadowColor: "#A14EBF",
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.4,
+                shadowRadius: 16,
+                elevation: 12,
+              }}
+            >
+              <LinearGradient
+                colors={["#A14EBF", "#6C91BF"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ flex: 1, padding: 20, justifyContent: "space-between" }}
+              >
+                <View className="flex-row justify-between items-start">
+                  <View className="w-10 h-10 items-center justify-center">
+                    <Image
+                      source={require("@/assets/images/logo.png")}
+                      style={{ width: 32, height: 32, tintColor: "white" }}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <View className="items-end">
+                    <Text className="text-white/80 text-[10px] tracking-widest font-semibold mb-1">
+                      PLATINUM CURATOR
+                    </Text>
+                    <Text className="text-white text-2xl font-extrabold tracking-wider">
+                      {cardBrand}
+                    </Text>
+                  </View>
                 </View>
+
                 <View>
-                  <Text className="text-white/70 text-[10px] tracking-wider font-semibold mb-1 text-right">
-                    EXPIRA
+                  <Text className="text-white text-xl tracking-[4px] font-bold mb-4">
+                    {displayCardNumber}
                   </Text>
-                  <Text className="text-white font-bold text-sm tracking-widest text-right">
-                    {displayExpiry}
-                  </Text>
+                  <View className="flex-row justify-between">
+                    <View>
+                      <Text className="text-white/70 text-[10px] tracking-wider font-semibold mb-1">
+                        NOMBRE DEL TITULAR
+                      </Text>
+                      <Text className="text-white font-bold text-sm tracking-widest uppercase">
+                        {displayCardName}
+                      </Text>
+                    </View>
+                    <View>
+                      <Text className="text-white/70 text-[10px] tracking-wider font-semibold mb-1 text-right">
+                        EXPIRA
+                      </Text>
+                      <Text className="text-white font-bold text-sm tracking-widest text-right">
+                        {displayExpiry}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </View>
-          </LinearGradient>
+              </LinearGradient>
+            </Animated.View>
+          </View>
 
           {/* Forms */}
-          <View className="gap-5">
+          <View className="gap-5 mt-5">
             {/* Numero de Tarjeta */}
             <View>
               <Text className="text-white text-xs font-semibold mb-2 ml-1">

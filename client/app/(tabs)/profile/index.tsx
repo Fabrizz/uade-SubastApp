@@ -1,3 +1,4 @@
+import HeaderComp from "@/components/HeaderComp";
 import { AvatarInitials } from "@/components/ui/AvatarInitials";
 import { Button } from "@/components/ui/Button";
 import { CategoryPill } from "@/components/ui/CategoryPill";
@@ -5,31 +6,28 @@ import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
 import type { components } from "@/types/api";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   ArrowRight,
   BarChart2,
   IdCard,
   LogOut,
-  Mail,
   MapPin,
   Shield,
+  User
 } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import {
-  Image,
-  Platform,
+  ActivityIndicator,
   ScrollView,
   StatusBar,
   Text,
-  View,
+  View
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type PersonaProfile = components["schemas"]["PersonaResponse"];
 
 export default function ProfileScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, token, logout } = useAuth();
 
@@ -73,36 +71,22 @@ export default function ProfileScreen() {
     <LinearGradient colors={["#000000", "#3f0146", "#9102A2"]} style={{ flex: 1 }}>
       <StatusBar barStyle="light-content" />
 
+      <HeaderComp
+        outlet={
+          loading
+            ? (<ActivityIndicator size="small" color="#a855f7" style={{ marginLeft: 8 }} />)
+            : (categoria && <CategoryPill size="lg" category={categoria as any} />)
+        }
+      />
+
       <ScrollView
+        className="flex-1"
         contentContainerStyle={{
-          paddingTop: Math.max(insets.top, Platform.OS === "ios" ? 50 : 30),
-          paddingBottom: insets.bottom + 120,
           paddingHorizontal: 24,
+          paddingTop: 24,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header Logo */}
-        <View className="flex-row items-center mb-8 mt-2 gap-3">
-          <View
-            style={{
-              shadowColor: "#d946ef",
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.8,
-              shadowRadius: 15,
-              elevation: 10,
-            }}
-          >
-            <Image
-              source={require("@/assets/images/logo.png")}
-              style={{ width: 32, height: 32 }}
-              resizeMode="contain"
-            />
-          </View>
-          <Text className="text-white text-2xl font-bold tracking-wide">
-            SubastApp
-          </Text>
-        </View>
-
         {/* Redesigned Profile Header Area */}
         <View className="flex-row items-center gap-5 mb-6">
           <View className="relative">
@@ -113,13 +97,15 @@ export default function ProfileScreen() {
                 loading={loading}
               />
             </View>
-            <View className="absolute bottom-1 right-1 bg-emerald-500 w-4 h-4 rounded-full border-2 border-neutral-900" />
+            <View className="hidden absolute bottom-1 right-1 bg-emerald-500 w-4 h-4 rounded-full border-2 border-neutral-900" />
           </View>
-          <View className="flex-1 gap-2">
+          <View className="flex-1 gap-0.5 flex flex-col justify-center">
             <Text className="text-white text-2xl font-bold" numberOfLines={2}>
               {loading ? "..." : nombre}
             </Text>
-            {categoria && <CategoryPill category={categoria as any} />}
+            <Text className="text-neutral-400 text-md font-manrope" numberOfLines={1}>
+              {loading ? "" : email}
+            </Text>
           </View>
         </View>
 
@@ -129,18 +115,19 @@ export default function ProfileScreen() {
             Información personal
           </Text>
           {[
-            { icon: <Mail size={16} color="#a855f7" />, label: "Mail",      value: email     },
-            { icon: <IdCard size={16} color="#a855f7" />, label: "DNI",     value: documento },
+            { icon: <User size={16} color="#a855f7" />, label: "Usuario", value: `#${profile?.identificador ?? "—"}` },
+            { icon: <IdCard size={16} color="#a855f7" />, label: "DNI", value: documento },
             { icon: <MapPin size={16} color="#a855f7" />, label: "Domicilio", value: direccion },
+            // { icon: <Stamp size={16} color="#a855f7" />, label: "Activo", value: `${profile?.estado ?? "—"}` },
           ].map(({ icon, label, value }, i, arr) => (
             <View
               key={label}
-              className={`flex-row items-center px-4 py-3 gap-3${i < arr.length - 1 ? " border-b border-neutral-800" : ""}`}
+              className={`flex-row items-center px-4 py-2.5 gap-3${i < arr.length - 1 ? " border-b border-neutral-800" : ""}`}
             >
               {icon}
               <View className="flex-1">
                 <Text className="text-neutral-500 text-xs mb-0.5">{label}</Text>
-                <Text className="text-white text-sm" numberOfLines={1} style={{ color: value === "—" ? "#555" : "#fff" }}>
+                <Text className="text-white text-sm " numberOfLines={3} style={{ color: value === "—" ? "#555" : "#fff" }}>
                   {value}
                 </Text>
               </View>

@@ -1,14 +1,14 @@
+import HeaderComp from "@/components/HeaderComp";
+import ScrollViewPad from "@/components/ui/ScrollViewPad";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Gavel, Info } from "lucide-react-native";
 import React from "react";
-import { Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 export default function AuctionsScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
 
   const mockAuctions = [
     {
@@ -49,40 +49,16 @@ export default function AuctionsScreen() {
       />
       
       <StatusBar style="light" />
+      <HeaderComp />
+
       <ScrollView
+        className="flex-1"
         contentContainerStyle={{
-          paddingTop: Math.max(insets.top, Platform.OS === "ios" ? 50 : 40),
-          paddingBottom: insets.bottom + 120, // Extra espacio por el tab bar
-          paddingHorizontal: 20,
+          paddingHorizontal: 16,
+          paddingTop: 20,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header - Logo Glowing Centrado */}
-        <View className="items-center mb-10">
-          <View className="flex-row items-center gap-3">
-            <View
-              className="items-center justify-center rounded-full"
-              style={{
-                shadowColor: "#d946ef",
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.8,
-                shadowRadius: 20,
-                elevation: 15,
-                backgroundColor: "transparent",
-              }}
-            >
-              <Image
-                source={require("@/assets/images/logo.png")}
-                style={{ width: 40, height: 40, tintColor: "white" }}
-                resizeMode="contain"
-              />
-            </View>
-            <Text className="text-white text-3xl font-extrabold tracking-wide">
-              SubastApp
-            </Text>
-          </View>
-        </View>
-
         {/* Condiciones / Aclaraciones Card */}
         <View 
           className="bg-[#121212] border border-neutral-800 p-6 mb-8 w-full relative overflow-hidden"
@@ -183,6 +159,7 @@ export default function AuctionsScreen() {
           </LinearGradient>
         </TouchableOpacity>
 
+        <ScrollViewPad />
       </ScrollView>
     </View>
   );

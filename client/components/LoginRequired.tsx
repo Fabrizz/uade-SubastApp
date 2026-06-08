@@ -13,7 +13,7 @@ export function LoginRequired({ message = "Necesitás iniciar sesión para ver e
 
   return (
     <LinearGradient colors={["#000000", "#3f0146", "#9102A2"]} style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 }}>
+      <SafeAreaView style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24, paddingBottom: 70 }}>
 
         {/* Logo */}
         <View style={{ alignItems: "center", marginBottom: 48 }}>

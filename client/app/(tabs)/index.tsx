@@ -1,8 +1,8 @@
-import { AvatarInitials } from "@/components/ui/AvatarInitials";
-import { CategoryPill } from "@/components/ui/CategoryPill";
-import { useAuth } from "@/context/auth";
+import HeaderComp from "@/components/HeaderComp";
+import { CuentaRegresiva } from "@/components/ui/CuentaRegresiva";
+import ScrollViewPad from "@/components/ui/ScrollViewPad";
 import { LinearGradient } from "expo-linear-gradient";
-import { Link, useRouter } from "expo-router";
+import { Link } from "expo-router";
 import { Search } from "lucide-react-native";
 import { useState } from "react";
 import {
@@ -22,7 +22,7 @@ type Tier = "ORO" | "Platino" | "Comun";
 interface Auction {
   id: string;
   tier: Tier;
-  timeLeft: string;
+  endsAt: number;
   image: { uri: string };
   title: string;
   bidLabel: string;
@@ -31,45 +31,47 @@ interface Auction {
 }
 
 // ─── datos de ejemplo ─────────────────────────────────────────────────────────
+const NOW = Date.now();
+const H = 60 * 60 * 1000;
 const AUCTIONS: Auction[] = [
   {
     id: "1",
     tier: "ORO",
-    timeLeft: "02:45:12",
+    endsAt: NOW + 2.5 * H,
     image: {
       uri: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600",
     },
-    title: "First Edition '1984'",
-    bidLabel: "BASE BID",
-    bidAmount: "$12,800",
+    title: "Primera Edición '1984'",
+    bidLabel: "OFERTA BASE",
+    bidAmount: "$12.800",
     description:
-      "First edition hardcover in near-mint condition. One of only 1,500 copies in the 1949 UK print run.",
+      "Primera edición en tapa dura en estado casi perfecto. Una de solo 1.500 copias de la impresión inglesa de 1949.",
   },
   {
     id: "2",
     tier: "Platino",
-    timeLeft: "14:12:05",
+    endsAt: NOW + 38 * H,
     image: {
       uri: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600",
     },
     title: "Nike Dunk Low 'Chicago' (1985)",
-    bidLabel: "CURRENT BID",
-    bidAmount: "$8,450",
+    bidLabel: "OFERTA ACTUAL",
+    bidAmount: "$8.450",
     description:
-      "Rare archival piece, original box included. Never worn, museum-grade preservation.",
+      "Pieza de archivo rara, caja original incluida. Sin estrenar, preservación de nivel museo.",
   },
   {
     id: "3",
     tier: "Comun",
-    timeLeft: "08:22:50",
+    endsAt: NOW + 65 * H,
     image: {
       uri: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600",
     },
-    title: "Abstract Linear No. 4 by K. Richter",
+    title: "Abstracto Lineal N.° 4 de K. Richter",
     bidLabel: "OFERTA ACTUAL",
-    bidAmount: "$31,200",
+    bidAmount: "$31.200",
     description:
-      "Original oil on canvas, 120x150cm. Part of the 2018 'Urban Geometry' series.",
+      "Óleo sobre tela original, 120x150cm. Parte de la serie 'Geometría Urbana' de 2018.",
   },
 ];
 
@@ -111,9 +113,11 @@ function AuctionCard({ item }: { item: Auction }) {
         {/* timer */}
         <View className="absolute top-3 right-3 flex-row items-center bg-black/60 px-2.5 py-1 rounded-full gap-1">
           <View className="w-2 h-2 rounded-full bg-red-500" />
-          <Text className="text-white text-xs font-manrope-semibold">
-            {item.timeLeft}
-          </Text>
+          <CuentaRegresiva
+            endsAt={item.endsAt}
+            className="text-white text-xs font-manrope-bold"
+            style={{ textAlign: "right" }}
+          />
         </View>
       </View>
 
@@ -143,12 +147,14 @@ function AuctionCard({ item }: { item: Auction }) {
           <TouchableOpacity
             activeOpacity={0.85}
             className="rounded-xl overflow-hidden"
+            style={{ height: 48 }}
           >
             <LinearGradient
               colors={["#7c3aed", "#9333ea"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              className="py-3.5 items-center rounded-xl"
+              style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+              className="rounded-xl"
             >
               <Text className="text-white text-sm tracking-wide font-manrope-bold">
                 Unirse
@@ -163,8 +169,6 @@ function AuctionCard({ item }: { item: Auction }) {
 
 // ─── pantalla ─────────────────────────────────────────────────────────────────
 export default function Home() {
-  const router = useRouter();
-  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<Category>("top");
 
@@ -177,46 +181,7 @@ export default function Home() {
   return (
     <View className="flex-1 bg-black">
       {/* ── HEADER ── */}
-      <View
-        className="bg-black px-4 pb-3"
-        style={{
-          paddingTop: Platform.OS === "ios" ? 56 : 40,
-          borderBottomWidth: 1,
-          borderBottomColor: "#1f1f1f",
-        }}
-      >
-        {/* logo + badge tier usuario */}
-        <View className="flex-row justify-between items-center mb-3">
-          <TouchableOpacity
-            onLongPress={() => router.push("/admin")}
-            delayLongPress={800}
-            activeOpacity={1}
-            className="flex-row items-center gap-2"
-          >
-            <Image
-              source={require("@/assets/images/logo.png")}
-              style={{ width: 32, height: 32 }}
-              resizeMode="contain"
-            />
-            <Text className="text-white text-lg tracking-wide font-montserrat-bold">
-              SubastApp
-            </Text>
-          </TouchableOpacity>
-          {user && (
-            <View className="flex-row items-center gap-2.5">
-              <AvatarInitials name={user.name ?? user.email} size={36} />
-              <View className="items-end">
-                <Text className="text-white text-sm font-montserrat-bold" numberOfLines={1}>
-                  {user.name ?? user.email}
-                </Text>
-                {user.category && (
-                  <CategoryPill category={user.category as any} size="xs" />
-                )}
-              </View>
-            </View>
-          )}
-        </View>
-
+      <HeaderComp className="pb-3">
         {/* buscador */}
         <View
           className="flex-row items-center bg-neutral-900 border border-neutral-700 rounded-xl px-3 mb-3"
@@ -224,8 +189,8 @@ export default function Home() {
         >
           <Search size={16} color="#6b7280" style={{ marginRight: 6 }} />
           <TextInput
-            className="flex-1 text-white text-sm font-manrope"
-            placeholder="Search for luxury assets..."
+            className="flex-1 text-white text-sm font-manrope w-full"
+            placeholder="Buscar productos, antigüedades, ..."
             placeholderTextColor="#6b7280"
             value={search}
             onChangeText={setSearch}
@@ -242,21 +207,26 @@ export default function Home() {
                 onPress={() => setCategory(c.key)}
                 activeOpacity={0.8}
                 className="rounded-full overflow-hidden"
+                style={{ height: 24 }}
               >
                 {active ? (
                   <LinearGradient
                     colors={["#7c3aed", "#9333ea"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    className="px-4 py-1.5 rounded-full"
+                    className="rounded-full"
+                    style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
                   >
-                    <Text className="text-white text-xs font-manrope-bold">
+                    <Text className="text-white text-xs font-manrope-bold px-3">
                       {c.label}
                     </Text>
                   </LinearGradient>
                 ) : (
-                  <View className="px-4 py-1.5 rounded-full bg-neutral-800">
-                    <Text className="text-neutral-400 text-xs font-manrope-semibold">
+                  <View
+                    className="rounded-full bg-neutral-800"
+                    style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+                  >
+                    <Text className="text-neutral-400 text-xs font-manrope-semibold px-3">
                       {c.label}
                     </Text>
                   </View>
@@ -265,7 +235,7 @@ export default function Home() {
             );
           })}
         </View>
-      </View>
+      </HeaderComp>
 
       {/* ── LISTA ── */}
       <ScrollView
@@ -273,7 +243,6 @@ export default function Home() {
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingTop: 20,
-          paddingBottom: 24,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -284,6 +253,7 @@ export default function Home() {
         {AUCTIONS.map((item) => (
           <AuctionCard key={item.id} item={item} />
         ))}
+        <ScrollViewPad />
       </ScrollView>
     </View>
   );
