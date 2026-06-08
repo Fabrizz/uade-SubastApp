@@ -537,7 +537,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/clientes/{id}/inhabilitar-mail": {
+    "/api/v1/clientes/{id}/inadmitir": {
         parameters: {
             query?: never;
             header?: never;
@@ -547,10 +547,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Inhabilitar cliente por mail (Rechazo)
-         * @description Envía un mail de rechazo al cliente indicando que no fue aceptado, sin modificar la base de datos
+         * Inadmitir cliente por rechazo de cuenta
+         * @description Envía un mail de rechazo al cliente indicando que no fue aceptado
          */
-        post: operations["inhabilitarMail"];
+        post: operations["inadmitir"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1040,7 +1040,7 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Inhabilitar cliente
+         * Inadmi cliente
          * @description Inhabilita operativamente al cliente para participar en subastas
          */
         patch: operations["inhabilitar"];
@@ -2168,7 +2168,7 @@ export interface components {
             estadoOperativo?: string;
             multaPendiente?: number;
             pais?: string;
-            inhabilitado?: boolean;
+            inadmitido?: boolean;
         };
         PageProductoResponse: {
             /** Format: int32 */
@@ -2196,13 +2196,13 @@ export interface components {
             pageSize?: number;
             /** Format: int32 */
             pageNumber?: number;
-            paged?: boolean;
             sort?: components["schemas"]["SortObject"];
+            paged?: boolean;
         };
         SortObject: {
             empty?: boolean;
-            sorted?: boolean;
             unsorted?: boolean;
+            sorted?: boolean;
         };
         ProductoSeguroResponse: {
             seguroObj?: components["schemas"]["Seguro"];
@@ -4224,7 +4224,7 @@ export interface operations {
             };
         };
     };
-    inhabilitarMail: {
+    inadmitir: {
         parameters: {
             query?: never;
             header?: never;

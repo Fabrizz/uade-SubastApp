@@ -28,12 +28,12 @@ const CATEGORIAS = ['comun', 'especial', 'plata', 'oro', 'platino', 'admin'] as 
 type Categoria = typeof CATEGORIAS[number];
 
 const CATEGORIA_CONFIG: Record<Categoria, { color: string; bg: string; border: string; label: string }> = {
-  comun:    { color: '#a3a3a3', bg: '#1f1f1f',  border: '#404040', label: 'Común'   },
-  especial: { color: '#60a5fa', bg: '#0f1e38',  border: '#1d4ed8', label: 'Especial' },
-  plata:    { color: '#d4d4d8', bg: '#1c1c1e',  border: '#52525b', label: 'Plata'   },
-  oro:      { color: '#fbbf24', bg: '#2a1500',  border: '#92400e', label: 'Oro'     },
-  platino:  { color: '#2dd4bf', bg: '#021f1e',  border: '#0f766e', label: 'Platino' },
-  admin:    { color: '#c084fc', bg: '#1e0a2e',  border: '#7e22ce', label: 'Admin'   },
+  comun: { color: '#a3a3a3', bg: '#1f1f1f', border: '#404040', label: 'Común' },
+  especial: { color: '#60a5fa', bg: '#0f1e38', border: '#1d4ed8', label: 'Especial' },
+  plata: { color: '#d4d4d8', bg: '#1c1c1e', border: '#52525b', label: 'Plata' },
+  oro: { color: '#fbbf24', bg: '#2a1500', border: '#92400e', label: 'Oro' },
+  platino: { color: '#2dd4bf', bg: '#021f1e', border: '#0f766e', label: 'Platino' },
+  admin: { color: '#c084fc', bg: '#1e0a2e', border: '#7e22ce', label: 'Admin' },
 };
 
 // ─── Category Picker Modal ────────────────────────────────────────────────────
@@ -182,12 +182,12 @@ function ClienteCard({
             {loadingCat
               ? <ActivityIndicator size="small" color={catCfg.color} />
               : <>
-                  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: catCfg.color, marginRight: 8 }} />
-                  <Text style={{ flex: 1, color: catCfg.color, fontSize: 13 }}>
-                    {catCfg.label}
-                  </Text>
-                  <ChevronDown size={14} color={catCfg.color} />
-                </>
+                <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: catCfg.color, marginRight: 8 }} />
+                <Text style={{ flex: 1, color: catCfg.color, fontSize: 13 }}>
+                  {catCfg.label}
+                </Text>
+                <ChevronDown size={14} color={catCfg.color} />
+              </>
             }
           </TouchableOpacity>
 
@@ -206,14 +206,14 @@ function ClienteCard({
             {loadingEstado
               ? <ActivityIndicator size="small" color="#a3a3a3" />
               : <>
-                  {habilitado
-                    ? <ShieldOff size={14} color="#f87171" />
-                    : <Zap size={14} color="#4ade80" />
-                  }
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: habilitado ? '#f87171' : '#4ade80' }}>
-                    {habilitado ? 'Inhabilitar' : 'Habilitar'}
-                  </Text>
-                </>
+                {habilitado
+                  ? <ShieldOff size={14} color="#f87171" />
+                  : <Zap size={14} color="#4ade80" />
+                }
+                <Text style={{ fontSize: 13, fontWeight: '600', color: habilitado ? '#f87171' : '#4ade80' }}>
+                  {habilitado ? 'Inhabilitar' : 'Habilitar'}
+                </Text>
+              </>
             }
           </TouchableOpacity>
 

@@ -1,16 +1,16 @@
+import { useAuth } from "@/context/auth";
+import { useWebSocket } from "@/context/websocket";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
 import { Bell, Gavel, House, User } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/context/auth";
-import { useWebSocket } from "@/context/websocket";
 
 const TABS: Record<string, { label: string; Icon: typeof House }> = {
-  index:         { label: "Inicio",          Icon: House  },
-  notifications: { label: "Notificaciones",  Icon: Bell   },
-  auctions:      { label: "Subastas",        Icon: Gavel  },
-  profile:       { label: "Perfil",          Icon: User   },
+  index: { label: "Inicio", Icon: House },
+  notifications: { label: "Notificaciones", Icon: Bell },
+  auctions: { label: "Subastas", Icon: Gavel },
+  profile: { label: "Perfil", Icon: User },
 };
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
@@ -56,13 +56,13 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
               style={
                 isActive
                   ? {
-                      backgroundColor: "#F8B8FF15",
-                      shadowColor: "#A51DB5",
-                      shadowOffset: { width: 0, height: 0 },
-                      shadowOpacity: 0.5,
-                      shadowRadius: 20,
-                      elevation: 8,
-                    }
+                    backgroundColor: "#F8B8FF15",
+                    shadowColor: "#A51DB5",
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.5,
+                    shadowRadius: 20,
+                    elevation: 8,
+                  }
                   : {}
               }
             >

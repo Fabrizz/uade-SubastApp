@@ -40,7 +40,8 @@ public class ClienteExtra {
     @Column(name = "foto_documento_dorso")
     private byte[] fotoDocumentoDorso;
 
-    // Categoría asignada por la investigación; la mejora por puntaje nunca baja de acá.
+    // Categoría asignada por la investigación; la mejora por puntaje nunca baja de
+    // acá.
     @Enumerated(EnumType.STRING)
     @Column(name = "categoria_base", length = 15)
     private ClienteCategoria categoriaBase;
@@ -48,6 +49,6 @@ public class ClienteExtra {
     @Column(name = "puntaje")
     private Integer puntaje;
 
-    @Column(name = "inhabilitado")
-    private Boolean inhabilitado = false;
+    @Column(name = "inhabilitado") // TODO: Cambiar el nombre de la DB
+    private Boolean inadmitido = false;
 }
