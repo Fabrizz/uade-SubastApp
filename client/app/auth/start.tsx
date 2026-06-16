@@ -53,7 +53,7 @@ export default function Start() {
         temporaryPassword: tempPassword.trim(),
         newPassword,
       });
-      router.replace("/profile/payment/new");
+      router.replace("/(tabs)/profile/payment/new");
     } catch (e: any) {
       Alert.alert("Error", e?.message ?? "No se pudo completar el registro.");
     } finally {

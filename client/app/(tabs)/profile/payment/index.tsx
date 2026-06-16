@@ -221,7 +221,7 @@ export default function PaymentMethodsScreen() {
 
         <Button
           label="Agregar Método"
-          onPress={() => router.push('/profile/payment/new')}
+          onPress={() => router.push('/(tabs)/profile/payment/new')}
           colors={["#00c9b1", "#00e5c0", "#4dffd6"]}
           className="w-full mb-5"
           textClassName="text-black text-base"

@@ -12,7 +12,7 @@ export default function TabLayout() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && hasPaymentMethod === false && !isInsidePaymentNew) {
-      router.replace('/profile/payment/new');
+      router.replace('/(tabs)/profile/payment/new');
     }
   }, [isLoading, isAuthenticated, hasPaymentMethod, isInsidePaymentNew]);
 
