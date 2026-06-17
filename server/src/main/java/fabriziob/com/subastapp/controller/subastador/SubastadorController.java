@@ -1,6 +1,8 @@
 package fabriziob.com.subastapp.controller.subastador;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,7 +19,6 @@ import fabriziob.com.subastapp.repository.SubastadorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,8 +43,8 @@ public class SubastadorController {
             @ApiResponse(responseCode = "403", description = R_403, content = @Content),
     })
     @GetMapping
-    public Page<SubastadorResponse> getAll() {
-        return null;
+    public Page<SubastadorResponse> getAll(@PageableDefault(size = 50, sort = "identificador") Pageable pageable) {
+        return subastadorService.getAll(pageable).map(this::toResponse);
     }
 
     @Operation(summary = "Obtener subastador por ID")
@@ -98,7 +99,7 @@ public class SubastadorController {
 
     @Operation(summary = "Eliminar subastador")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Subastador eliminado"),
+            @ApiResponse(responseCode = "204", description = "Subastador eliminado", content = @Content),
             @ApiResponse(responseCode = "401", description = R_401, content = @Content),
             @ApiResponse(responseCode = "403", description = R_403, content = @Content),
             @ApiResponse(responseCode = "404", description = R_404, content = @Content)

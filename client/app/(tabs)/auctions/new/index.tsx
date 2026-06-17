@@ -1,11 +1,20 @@
+import HeaderComp from "@/components/HeaderComp";
+import { Button } from "@/components/ui/Button";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { Camera, FileText, Gavel, ImageIcon, X } from "lucide-react-native";
 import React, { useState } from "react";
-import { Alert, Image, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Image,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatlist";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -17,30 +26,27 @@ export default function RequestAuctionScreen() {
   const [shortDesc, setShortDesc] = useState("");
   const [longDesc, setLongDesc] = useState("");
   const [images, setImages] = useState<string[]>([]);
-  const [documents, setDocuments] = useState<{name: string, uri: string}[]>([]);
+  const [documents, setDocuments] = useState<{ name: string; uri: string }[]>([]);
 
   const handleAddPhotos = async () => {
     if (images.length >= 6) {
       Alert.alert("Límite alcanzado", "Solo puedes subir hasta 6 fotos.");
       return;
     }
-    
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissionResult.granted === false) {
+    if (!permissionResult.granted) {
       Alert.alert("Permiso denegado", "Se requiere acceso a la galería.");
       return;
     }
-    
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
       allowsMultipleSelection: true,
       selectionLimit: 6 - images.length,
     });
-    
     if (!result.canceled) {
-      const newUris = result.assets.map(asset => asset.uri);
-      setImages(prev => [...prev, ...newUris].slice(0, 6));
+      const newUris = result.assets.map((a) => a.uri);
+      setImages((prev) => [...prev, ...newUris].slice(0, 6));
     }
   };
 
@@ -51,22 +57,20 @@ export default function RequestAuctionScreen() {
         copyToCacheDirectory: true,
         multiple: true,
       });
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const newDocs = result.assets.map(asset => ({ name: asset.name, uri: asset.uri }));
-        setDocuments(prev => [...prev, ...newDocs]);
+      if (!result.canceled && result.assets?.length) {
+        const newDocs = result.assets.map((a) => ({ name: a.name, uri: a.uri }));
+        setDocuments((prev) => [...prev, ...newDocs]);
       }
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "No se pudo seleccionar el documento.");
     }
   };
 
-  const handleRemovePhoto = (indexToRemove: number) => {
-    setImages(prev => prev.filter((_, index) => index !== indexToRemove));
-  };
+  const handleRemovePhoto = (i: number) =>
+    setImages((prev) => prev.filter((_, idx) => idx !== i));
 
-  const handleRemoveDocument = (indexToRemove: number) => {
-    setDocuments(prev => prev.filter((_, index) => index !== indexToRemove));
-  };
+  const handleRemoveDocument = (i: number) =>
+    setDocuments((prev) => prev.filter((_, idx) => idx !== i));
 
   return (
     <LinearGradient
@@ -74,50 +78,36 @@ export default function RequestAuctionScreen() {
       style={{ flex: 1 }}
     >
       <Stack.Screen options={{ headerShown: false, presentation: "modal" }} />
-      <StatusBar style="light" />
+
+      <HeaderComp
+        inline
+        outlet={
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="w-10 h-10 items-center justify-center"
+            hitSlop={8}
+          >
+            <X size={24} color="white" strokeWidth={2.5} />
+          </TouchableOpacity>
+        }
+      />
+
       <ScrollView
         contentContainerStyle={{
-          paddingTop: Math.max(insets.top, Platform.OS === "ios" ? 50 : 30),
-          paddingBottom: insets.bottom + 40,
           paddingHorizontal: 20,
-          flexGrow: 1,
+          paddingTop: 24,
+          paddingBottom: insets.bottom + 40,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header con Logo */}
-        <View className="flex-row items-center justify-between mb-8 px-2">
-          <TouchableOpacity 
-            onPress={() => router.back()} 
-            className="w-10 h-10 items-center justify-center"
-          >
-            <X size={28} color="white" strokeWidth={2.5} />
-          </TouchableOpacity>
-          <View className="flex-row items-center gap-3">
-            <View className="items-center justify-center rounded-full">
-              <Image
-                source={require("@/assets/images/logo.png")}
-                style={{ width: 32, height: 32, tintColor: "white" }}
-                resizeMode="contain"
-              />
-            </View>
-            <Text className="text-white text-2xl font-bold tracking-wide">
-              SubastApp
-            </Text>
-          </View>
-          <View className="w-10" />
-        </View>
+        {/* Card contenedor */}
+        <View className="bg-neutral-900 border border-neutral-800 p-6 pt-8 w-full mb-8" style={{ borderRadius: 32 }}>
 
-        {/* Main Card Container que engloba TODO */}
-        <View 
-          className="bg-neutral-900 border border-neutral-800 p-6 pt-8 w-full mb-8"
-          style={{ borderRadius: 32 }}
-        >
-          {/* Título */}
           <Text className="text-white text-3xl font-bold mb-8 tracking-wide">
-            Subastar Articulo
+            Subastar Artículo
           </Text>
 
-          {/* Media Section Premium (Horizontal Drag & Drop) */}
+          {/* ── Fotos ── */}
           <View className="mb-8">
             <View className="flex-row justify-between items-end mb-4">
               <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase ml-1">
@@ -136,9 +126,9 @@ export default function RequestAuctionScreen() {
                 keyExtractor={(item, index) => item + index}
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ gap: 12, paddingRight: 20, paddingVertical: 4 }}
-                ListHeaderComponent={() => (
+                ListHeaderComponent={() =>
                   images.length < 6 ? (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       activeOpacity={0.7}
                       onPress={handleAddPhotos}
                       className="w-32 h-44 bg-[#383838] border-2 border-dashed border-[#A14EBF]/60 rounded-2xl items-center justify-center mr-3"
@@ -151,7 +141,7 @@ export default function RequestAuctionScreen() {
                       </Text>
                     </TouchableOpacity>
                   ) : null
-                )}
+                }
                 ListEmptyComponent={() => (
                   <View className="w-32 h-44 bg-[#1a1a1a] rounded-2xl items-center justify-center border border-neutral-800">
                     <ImageIcon size={32} color="#737373" strokeWidth={1.5} />
@@ -168,24 +158,34 @@ export default function RequestAuctionScreen() {
                         onLongPress={drag}
                         disabled={isActive}
                         activeOpacity={0.9}
-                        className={`w-32 h-44 rounded-2xl bg-black border ${isActive ? 'border-[#A14EBF] border-2' : 'border-neutral-700'} relative`}
-                        style={{ elevation: isActive ? 10 : 0, shadowColor: isActive ? "#A14EBF" : "transparent", shadowOpacity: isActive ? 0.8 : 0, shadowRadius: 10 }}
+                        className={`w-32 h-44 rounded-2xl bg-black border ${isActive ? "border-[#A14EBF] border-2" : "border-neutral-700"} relative`}
+                        style={{
+                          elevation: isActive ? 10 : 0,
+                          shadowColor: isActive ? "#A14EBF" : "transparent",
+                          shadowOpacity: isActive ? 0.8 : 0,
+                          shadowRadius: 10,
+                        }}
                       >
-                        <Image source={{ uri: item }} className="w-full h-full rounded-2xl" resizeMode="cover" />
-                        
-                        {/* Badge de Portada para la primera foto */}
+                        <Image
+                          source={{ uri: item }}
+                          className="w-full h-full rounded-2xl"
+                          resizeMode="cover"
+                        />
                         {index === 0 && (
-                          <View className="absolute bottom-0 w-full bg-teal-500/90 py-1.5 items-center" style={{ borderBottomLeftRadius: 14, borderBottomRightRadius: 14 }}>
-                            <Text className="text-black text-[10px] font-extrabold tracking-widest uppercase">PORTADA</Text>
+                          <View
+                            className="absolute bottom-0 w-full bg-teal-500/90 py-1.5 items-center"
+                            style={{ borderBottomLeftRadius: 14, borderBottomRightRadius: 14 }}
+                          >
+                            <Text className="text-black text-[10px] font-extrabold tracking-widest uppercase">
+                              PORTADA
+                            </Text>
                           </View>
                         )}
-
-                        {/* Botón para Eliminar la foto */}
                         <TouchableOpacity
                           activeOpacity={0.8}
                           onPress={() => handleRemovePhoto(index!)}
                           className="absolute -top-2 -right-2 bg-rose-500 w-8 h-8 rounded-full items-center justify-center border-2 border-neutral-900"
-                          style={{ shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.5, shadowRadius: 3, elevation: 5 }}
+                          style={{ elevation: 5 }}
                         >
                           <X size={16} color="white" strokeWidth={3} />
                         </TouchableOpacity>
@@ -195,41 +195,38 @@ export default function RequestAuctionScreen() {
                 }}
               />
             </View>
-            
-            <Text className="text-neutral-300 text-[11px] italic mt-2 ml-1">
+
+            <Text className="text-neutral-400 text-[11px] italic mt-2 ml-1">
               Mantén presionada una foto y arrástrala para cambiar el orden.
             </Text>
           </View>
 
-          {/* Documentación de pertenencia */}
+          {/* ── Documentación ── */}
           <View className="mb-8">
-            <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
+            <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-3 ml-1">
               Documentación de pertenencia
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               activeOpacity={0.8}
               onPress={handleAddDocument}
               className="h-[50px] bg-[#383838] border border-[#A14EBF]/40 border-dashed rounded-xl flex-row items-center justify-center px-4 mb-3"
             >
               <FileText size={20} color="#A14EBF" strokeWidth={2} style={{ marginRight: 10 }} />
-              <Text className="text-[#A14EBF] font-bold text-sm">
-                Añadir Documentos
-              </Text>
+              <Text className="text-[#A14EBF] font-bold text-sm">Añadir Documentos</Text>
             </TouchableOpacity>
 
-            {/* Lista de documentos subidos */}
             {documents.length > 0 && (
               <View className="gap-2">
-                {documents.map((doc, index) => (
-                  <View key={index} className="flex-row items-center bg-[#1a1a1a] border border-neutral-800 rounded-lg p-3">
+                {documents.map((doc, i) => (
+                  <View
+                    key={i}
+                    className="flex-row items-center bg-[#1a1a1a] border border-neutral-800 rounded-lg p-3"
+                  >
                     <FileText size={18} color="#2dd4bf" strokeWidth={2} style={{ marginRight: 10 }} />
                     <Text className="flex-1 text-white text-xs" numberOfLines={1}>
                       {doc.name}
                     </Text>
-                    <TouchableOpacity 
-                      onPress={() => handleRemoveDocument(index)}
-                      className="p-1"
-                    >
+                    <TouchableOpacity onPress={() => handleRemoveDocument(i)} className="p-1">
                       <X size={16} color="#ef4444" strokeWidth={2.5} />
                     </TouchableOpacity>
                   </View>
@@ -238,12 +235,11 @@ export default function RequestAuctionScreen() {
             )}
           </View>
 
-          {/* Text Forms */}
+          {/* ── Formulario ── */}
           <View className="gap-5 mb-10">
-            {/* Nombre del artículo */}
             <View>
               <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
-                Nombre del articulo
+                Nombre del artículo
               </Text>
               <TextInput
                 className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
@@ -255,7 +251,6 @@ export default function RequestAuctionScreen() {
               />
             </View>
 
-            {/* Descripción breve */}
             <View>
               <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
                 Descripción breve
@@ -270,7 +265,6 @@ export default function RequestAuctionScreen() {
               />
             </View>
 
-            {/* Descripción detallada */}
             <View>
               <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
                 Descripción detallada
@@ -288,39 +282,26 @@ export default function RequestAuctionScreen() {
             </View>
           </View>
 
-          {/* Action Buttons */}
-          <View className="gap-4 mb-2">
-            {/* Agregar otro producto */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              className="overflow-hidden"
-              style={{ borderRadius: 16 }}
-            >
-              <View className="bg-[#A14EBF] items-center justify-center p-4">
-                <Text className="text-white font-bold text-lg">Agregar otro producto</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Solicitar subasta */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              className="overflow-hidden shadow-lg shadow-[#9102A2]/40"
-              style={{ borderRadius: 16 }}
+          {/* ── Acciones ── */}
+          <View className="gap-3">
+            <Button
+              label="Agregar otro producto"
+              onPress={() => {}}
+              className="bg-[#A14EBF]"
+              textClassName="text-white text-base"
+              innerClassName="px-6 py-4"
+            />
+            <Button
+              label="Solicitar subasta"
               onPress={() => {
                 Alert.alert("Éxito", "Subasta solicitada correctamente");
                 router.back();
               }}
-            >
-              <LinearGradient
-                colors={["#A14EBF", "#9102A2"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                className="flex-row items-center justify-center p-4"
-              >
-                <Gavel size={20} color="white" strokeWidth={2.5} style={{ marginRight: 10 }} />
-                <Text className="text-white font-bold text-lg">Solicitar subasta</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+              colors={["#A14EBF", "#9102A2"]}
+              icon={<Gavel size={20} color="white" strokeWidth={2.5} />}
+              textClassName="text-white text-base"
+              innerClassName="px-6 py-4"
+            />
           </View>
 
         </View>

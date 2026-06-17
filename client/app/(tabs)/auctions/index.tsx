@@ -1,8 +1,8 @@
 import HeaderComp from "@/components/HeaderComp";
+import { Button } from "@/components/ui/Button";
 import ScrollViewPad from "@/components/ui/ScrollViewPad";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { Gavel, Info } from "lucide-react-native";
 import React from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -28,136 +28,110 @@ export default function AuctionsScreen() {
       title: "Reloj Premium",
       status: "EN REVISIÓN",
       image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=300&auto=format&fit=crop",
-    }
+    },
   ];
 
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case "ACEPTADA": return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
-      case "RECHAZADA": return "text-rose-400 bg-rose-500/10 border-rose-500/20";
-      case "EN REVISIÓN": return "text-amber-400 bg-amber-500/10 border-amber-500/20";
-      default: return "text-white bg-white/10 border-white/20";
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case "ACEPTADA":   return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+      case "RECHAZADA":  return "text-rose-400 bg-rose-500/10 border-rose-500/20";
+      case "EN REVISIÓN":return "text-amber-400 bg-amber-500/10 border-amber-500/20";
+      default:           return "text-white bg-white/10 border-white/20";
     }
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000000" }}>
-      {/* Background Gradient sutil arriba */}
       <LinearGradient
         colors={["#A14EBF20", "#0f766e10", "#000000", "#000000"]}
-        style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 600 }}
+        style={{ position: "absolute", left: 0, right: 0, top: 0, height: 600 }}
       />
-      
-      <StatusBar style="light" />
+
       <HeaderComp />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingTop: 20,
-        }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Condiciones / Aclaraciones Card */}
-        <View 
-          className="bg-[#121212] border border-neutral-800 p-6 mb-8 w-full relative overflow-hidden"
+        {/* Condiciones */}
+        <View
+          className="bg-[#121212] border border-neutral-800 p-5 mb-6 w-full overflow-hidden"
           style={{ borderRadius: 28 }}
         >
-          {/* Subtle glow inside card */}
-          <View className="absolute -top-10 -right-10 w-32 h-32 bg-teal-500/10 rounded-full blur-3xl" />
-          
-          <View className="flex-row items-center mb-3">
-            <Info size={20} color="#2dd4bf" strokeWidth={2.5} style={{ marginRight: 8 }} />
-            <Text className="text-white text-xl font-bold tracking-wide">
+          <View className="flex-row items-center mb-2">
+            <Info size={18} color="#2dd4bf" strokeWidth={2.5} style={{ marginRight: 8 }} />
+            <Text className="text-white text-base font-bold tracking-wide">
               Condiciones / Aclaraciones
             </Text>
           </View>
-          <Text className="text-neutral-300 text-sm leading-6">
-            Antes de solicitar una subasta, asegúrate de que tu artículo cumple con nuestras políticas de calidad. El equipo revisará tu solicitud en un plazo de 24-48 horas hábiles. Una vez aprobada, se publicará automáticamente en la plataforma.
+          <Text className="text-neutral-400 text-xs" style={{ lineHeight: 18 }}>
+            Antes de solicitar una subasta, asegurate de que tu artículo cumple con nuestras
+            políticas de calidad. El equipo revisará tu solicitud en un plazo de 24–48 horas
+            hábiles. Una vez aprobada, se publicará automáticamente en la plataforma.
           </Text>
         </View>
 
-        {/* Solicitar subasta Button */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => router.push("/request-auction" as any)}
-          className="mb-10 shadow-lg shadow-[#9102A2]/30"
-        >
-          <LinearGradient
-            colors={["#A14EBF", "#9102A2"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            className="flex-row items-center justify-center p-5"
-            style={{ borderRadius: 20 }}
-          >
-            <Gavel size={24} color="white" strokeWidth={2.5} style={{ marginRight: 12 }} />
-            <Text className="text-white font-bold text-xl tracking-wide">Solicitar subasta</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        {/* Solicitar subasta */}
+        <Button
+          label="Solicitar subasta"
+          onPress={() => router.push("/(tabs)/auctions/new")}
+          colors={["#A14EBF", "#9102A2"]}
+          icon={<Gavel size={20} color="white" strokeWidth={2.5} />}
+          textClassName="text-white text-base tracking-wide"
+          innerClassName="px-6 py-4"
+          className="mb-8"
+        />
 
-        {/* Mis Subastas Section */}
-        <View className="mb-6">
-          <Text className="text-white text-2xl font-bold tracking-wide mb-4">
-            Mis subastas
-          </Text>
+        {/* Mis subastas */}
+        <Text className="text-white text-2xl font-bold tracking-wide mb-4">
+          Mis subastas
+        </Text>
 
-          <View className="gap-4">
-            {mockAuctions.map((auction) => {
-              const statusStyle = getStatusColor(auction.status);
-              
-              return (
-                <TouchableOpacity 
-                  key={auction.id}
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    if (auction.status === "EN REVISIÓN") {
-                      router.push("/auction-verification" as any);
-                    } else if (auction.status === "ACEPTADA") {
-                      router.push("/auction-accepted" as any);
-                    }
-                  }}
-                  className="flex-row items-center justify-between bg-[#141414] border border-neutral-800 p-4"
-                  style={{ borderRadius: 24 }}
-                >
-                  <View className="flex-1 pr-4">
-                    <Text className="text-white text-lg font-bold mb-2 tracking-wide" numberOfLines={1}>
-                      {auction.title}
+        <View className="gap-4 mb-8">
+          {mockAuctions.map((auction) => {
+            const statusStyle = getStatusStyle(auction.status);
+            return (
+              <TouchableOpacity
+                key={auction.id}
+                activeOpacity={0.8}
+                onPress={() => {
+                  if (auction.status === "EN REVISIÓN") router.push("/(tabs)/auctions/verification" as any);
+                  else if (auction.status === "ACEPTADA") router.push("/(tabs)/auctions/accepted" as any);
+                }}
+                className="flex-row items-center bg-[#141414] border border-neutral-800 p-4"
+                style={{ borderRadius: 24 }}
+              >
+                <View className="flex-1 pr-4">
+                  <Text className="text-white text-base font-bold mb-2 tracking-wide" numberOfLines={1}>
+                    {auction.title}
+                  </Text>
+                  <View className={`self-start px-3 py-1 border rounded-full ${statusStyle}`}>
+                    <Text className={`text-[10px] font-extrabold tracking-widest ${statusStyle.split(" ")[0]}`}>
+                      {auction.status}
                     </Text>
-                    <View className={`self-start px-3 py-1.5 border rounded-full ${statusStyle}`}>
-                      <Text className={`text-[10px] font-extrabold tracking-widest ${statusStyle.split(' ')[0]}`}>
-                        {auction.status}
-                      </Text>
-                    </View>
                   </View>
-                  
-                  <Image 
-                    source={{ uri: auction.image }}
-                    className="w-24 h-24 bg-neutral-800"
-                    style={{ borderRadius: 16 }}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
-              )
-            })}
-          </View>
+                </View>
+                <Image
+                  source={{ uri: auction.image }}
+                  className="w-24 h-24 bg-neutral-800"
+                  style={{ borderRadius: 16 }}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Ver mis artículos Button */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          className="mt-4"
-        >
-          <LinearGradient
-            colors={["#A14EBF", "#9102A2"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            className="items-center justify-center p-4 py-4"
-            style={{ borderRadius: 9999 }}
-          >
-            <Text className="text-white font-bold text-lg">Ver mis artículos a subastar</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        {/* Ver artículos */}
+        <Button
+          label="Ver mis artículos a subastar"
+          onPress={() => {}}
+          colors={["#A14EBF", "#9102A2"]}
+          textClassName="text-white text-base"
+          innerClassName="px-6 py-4"
+          className="rounded-full"
+        />
 
         <ScrollViewPad />
       </ScrollView>

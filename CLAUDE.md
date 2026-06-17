@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-SubastApp is a monorepo for an auction-house management app (Desarrollo de Aplicaciones I, UADE). It has two independent projects that each get their own nested `CLAUDE.md` with stack-specific guidance:
+SubastApp is a monorepo for an auction-house management app (Desarrollo de Aplicaciones I, UADE). The full TP assignment description and requirements are in [TPO-DAI.MD](TPO-DAI.MD). It has two independent projects that each get their own nested `CLAUDE.md` with stack-specific guidance:
 
 - **[server/](server/CLAUDE.md)** — Spring Boot 4 / PostgreSQL backend exposing a REST API (documented via springdoc-openapi) and STOMP-over-WebSocket endpoints for real-time bidding/notifications.
 - **[client/](client/CLAUDE.md)** — Expo / React Native app (Expo Router, NativeWind) consuming that API.
