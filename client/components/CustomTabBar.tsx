@@ -2,7 +2,7 @@ import { useAuth } from "@/context/auth";
 import { useWebSocket } from "@/context/websocket";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
-import { Bell, Gavel, House, User } from "lucide-react-native";
+import { ArrowUpRight, Bell, Gavel, House, User } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -36,6 +36,11 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         elevation: 20,
       }}
     >
+      <View className="bg-[#6b267e]/70 overflow-hidden flex-row px-2 gap-1 flex items-center justify-center">
+        <View className="h-1.5 w-1.5 rounded-full bg-white animate-ping mr-0.5"></View>
+        <Text className="text-white font-semibold text-xs py-0.5">Estas conectado a una subasta</Text>
+        <ArrowUpRight color="white" size={12} />
+      </View>
       <View
         style={{ paddingBottom: insets.bottom - 12 }}
         className="flex-row font-montserrat items-center justify-between px-4 pb-3 pt-2

@@ -12,11 +12,13 @@ export default function HeaderComp({
   outlet,
   action = null,
   className = "",
+  inline = false,
 }: {
   children?: React.ReactNode
   outlet?: React.ReactNode
   action?: React.ReactNode
   className?: string
+  inline?: boolean
 }) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -25,7 +27,7 @@ export default function HeaderComp({
     <View
       className={"bg-black px-4 xmin-h-[112px] flex justify-center " + className}
       style={{
-        paddingTop: Math.max(insets.top, Platform.OS === "ios" ? 56 : 40),
+        paddingTop: inline ? 12 : Math.max(insets.top, Platform.OS === "ios" ? 56 : 40),
         borderBottomWidth: 1,
         borderBottomColor: "#1f1f1f",
       }}

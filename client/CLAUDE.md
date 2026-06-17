@@ -48,6 +48,16 @@ Both wrap the entire app from the root layout, so any screen can assume they're 
 
 When adding a feature that needs auth state or live notifications, consume these contexts via `useAuth()`/`useWebSocket()` rather than re-deriving token/connection state locally.
 
+`context/websocket.tsx` also exposes `subscribeToTopic(topic, callback) → unsubscribe` for subscribing to arbitrary STOMP topics beyond the user notifications queue. Subscriptions registered this way survive reconnects automatically.
+
+### Zustand stores (`lib/*.store.ts`)
+
+Zustand is used for cross-cutting global state that needs to be read from multiple unrelated route trees (e.g. a banner visible across all tabs).
+
+- `lib/subastas.store.ts` (`useSubastaStore`) — owns the active auction session: auction details, catalog items, `itemActual` (the item currently being auctioned), `mejorPuja` (updated in real time via WS), the full bids list, and the user's `asistente` record (needed as `asistenteId` when placing bids). Call `joinSubasta(id, token, clienteId, subscribeToTopic)` to enter a session — it fetches auction + catalog + current bids then subscribes to `/topic/subastas/{id}/pujas`. Call `leaveSubasta()` to clean up. `placePuja(importe, token)` POSTs the bid; the WS broadcast updates state automatically on success. Also exports `getBidBounds(precioBase, mejorPuja, categoria)` which returns `{ min, max }` per TPO bid rules (max is `null` for oro/platino auctions).
+
+A user can only be in one auction at a time (TPO rule); `joinSubasta` calls `leaveSubasta` first if a session is already active.
+
 ### Styling
 
 NativeWind v4 (`className` props, Tailwind classes) is the default styling approach; `global.css` + `tailwind.config` (via `nativewind-env.d.ts`) wire it up. `constants/theme.ts` / `lib/theme.ts` and `hooks/use-theme-color.ts` / `hooks/use-color-scheme*.ts` handle the few cases needing JS-level theme values (the app forces a custom dark `ThemeProvider` in the root layout).

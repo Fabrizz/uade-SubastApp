@@ -1,8 +1,9 @@
 package fabriziob.com.subastapp.repository;
 
-import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import fabriziob.com.subastapp.entity.Persona;
@@ -17,8 +18,8 @@ public class SubastadorService {
     private final SubastadorRepository subastadorRepository;
     private final UserRepository userRepository;
 
-    public List<Subastador> getAll() {
-        return subastadorRepository.findAll();
+    public Page<Subastador> getAll(Pageable pageable) {
+        return subastadorRepository.findAll(pageable);
     }
 
     public Optional<Subastador> getById(Integer id) {

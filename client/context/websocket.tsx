@@ -1,5 +1,5 @@
 import { API_BASE } from '@/lib/api';
-import { Client, IMessage } from '@stomp/stompjs';
+import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useAuth } from './auth';
 
@@ -30,6 +30,7 @@ interface WebSocketContextValue {
   notifications: WsNotification[];
   removeNotification: (id: number | string) => void;
   clearNotifications: () => void;
+  subscribeToTopic: (topic: string, callback: (msg: IMessage) => void) => () => void;
 }
 
 // Converts http(s):// → ws(s):// and appends the native (non-SockJS) STOMP endpoint
@@ -42,6 +43,10 @@ const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const { token, isAuthenticated, refreshUser } = useAuth();
   const clientRef = useRef<Client | null>(null);
+  // topic → callback: persists across reconnects so we can re-subscribe automatically
+  const topicCallbacksRef = useRef<Map<string, (msg: IMessage) => void>>(new Map());
+  // topic → StompSubscription: needed to unsubscribe while connected
+  const stompSubsRef = useRef<Map<string, StompSubscription>>(new Map());
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -51,6 +56,8 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated || !token) {
       clientRef.current?.deactivate();
       clientRef.current = null;
+      topicCallbacksRef.current.clear();
+      stompSubsRef.current.clear();
       setIsConnected(false);
       setIsConnecting(false);
       return;
@@ -84,8 +91,14 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
             // malformed message — ignore
           }
         });
+        // Re-subscribe to any topics registered before/during reconnect
+        topicCallbacksRef.current.forEach((cb, topic) => {
+          const sub = client.subscribe(topic, cb);
+          stompSubsRef.current.set(topic, sub);
+        });
       },
       onDisconnect: () => {
+        stompSubsRef.current.clear(); // handles are gone; re-created in onConnect on reconnect
         setIsConnected(false);
         setIsConnecting(false);
       },
@@ -132,8 +145,24 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
   const clearNotifications = useCallback(() => setNotifications([]), []);
 
+  const subscribeToTopic = useCallback((topic: string, callback: (msg: IMessage) => void) => {
+    topicCallbacksRef.current.set(topic, callback);
+    if (clientRef.current?.connected) {
+      const sub = clientRef.current.subscribe(topic, callback);
+      stompSubsRef.current.set(topic, sub);
+    }
+    return () => {
+      topicCallbacksRef.current.delete(topic);
+      const sub = stompSubsRef.current.get(topic);
+      if (sub) {
+        sub.unsubscribe();
+        stompSubsRef.current.delete(topic);
+      }
+    };
+  }, []);
+
   return (
-    <WebSocketContext.Provider value={{ isConnected, isConnecting, connectionError, notifications, removeNotification, clearNotifications }}>
+    <WebSocketContext.Provider value={{ isConnected, isConnecting, connectionError, notifications, removeNotification, clearNotifications, subscribeToTopic }}>
       {children}
     </WebSocketContext.Provider>
   );

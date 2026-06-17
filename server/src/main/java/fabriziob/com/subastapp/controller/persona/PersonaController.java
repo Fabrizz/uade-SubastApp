@@ -100,7 +100,8 @@ public class PersonaController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Obtener foto de perfil", description = "Devuelve el contenido binario de la foto. El Content-Type se detecta automáticamente (PNG, JPEG o WEBP)")
+    @Deprecated
+    @Operation(summary = "Obtener foto de perfil (DEPRECADO)", description = "DEPRECADO — no usar. Devuelve el contenido binario de la foto. El Content-Type se detecta automáticamente (PNG, JPEG o WEBP)", deprecated = true)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Imagen encontrada", content = {
                     @Content(mediaType = MediaType.IMAGE_PNG_VALUE),

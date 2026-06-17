@@ -19,6 +19,7 @@ export default function AuctionsLayout() {
       <Stack.Screen name="[id]" />
       <Stack.Screen name="item/[itemId]" />
       <Stack.Screen name="history/[itemId]" />
+      <Stack.Screen name="new/index" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }
