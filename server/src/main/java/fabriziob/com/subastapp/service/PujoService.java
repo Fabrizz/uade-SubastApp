@@ -55,6 +55,7 @@ public class PujoService {
         private final RegistroDeSubastaRepository registroRepository;
         private final RegistroDeSubastaExtraRepository registroExtraRepository;
         private final SimpMessagingTemplate messagingTemplate;
+        private final NotificacionService notificacionService;
 
         // ─── crear pujo ─────────────────────────────────────────────────────────
 
@@ -207,6 +208,20 @@ public class PujoService {
                                                 .subastaId(subastaId)
                                                 .itemId(itemId)
                                                 .build());
+
+                // Mensaje privado al ganador con el detalle de pago (lo pujado +
+                // comisiones). El costo de envío se define luego al elegir el medio de
+                // envío (PATCH .../medio-envio), que reenvía la factura completa.
+                BigDecimal comision = item.getComision() != null ? item.getComision() : BigDecimal.ZERO;
+                BigDecimal totalProvisional = pujo.getImporte().add(comision);
+                notificacionService.notificarCliente(cliente.getIdentificador(),
+                                WsNotificacionService.Tipo.success, "pago",
+                                "¡Ganaste la subasta!",
+                                "Te adjudicaste \"" + item.getProducto().getDescripcionCatalogo()
+                                                + "\". Debés abonar: pujado " + pujo.getImporte()
+                                                + " + comisión " + comision + " = " + totalProvisional
+                                                + " " + monedaSubasta.name()
+                                                + " (más el costo de envío a definir según el medio de envío que elijas).");
                 return response;
         }
 

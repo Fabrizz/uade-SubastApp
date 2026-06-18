@@ -24,6 +24,7 @@ import fabriziob.com.subastapp.entity.enums.EstadoSubasta;
 import fabriziob.com.subastapp.service.AsistenteService;
 import fabriziob.com.subastapp.service.CatalogoService;
 import fabriziob.com.subastapp.service.PujoService;
+import fabriziob.com.subastapp.service.RegistroService;
 import fabriziob.com.subastapp.service.SubastaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -45,6 +46,7 @@ public class SubastaController {
         private final SubastaService subastaService;
         private final CatalogoService catalogoService;
         private final AsistenteService asistenteService;
+        private final RegistroService registroService;
 
         // ── Subastas ──────────────────────────────────────────────────────────
 
@@ -339,8 +341,9 @@ public class SubastaController {
         })
         @GetMapping("/{id}/registro")
         public ResponseEntity<Page<RegistroDeSubastaResponse>> getRegistro(
-                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id) {
-                return null;
+                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
+                        @PageableDefault(size = 30, sort = "identificador") Pageable pageable) {
+                return ResponseEntity.ok(registroService.getRegistros(id, pageable));
         }
 
         @Operation(summary = "Obtener registro por ID", description = "Devuelve un registro de venta específico con sus datos extra")
@@ -354,7 +357,7 @@ public class SubastaController {
         public ResponseEntity<RegistroDeSubastaResponse> getRegistroById(
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
                         @Parameter(description = "ID del registro", required = true, example = "3") @PathVariable Integer idRegistro) {
-                return null;
+                return ResponseEntity.ok(registroService.getRegistroById(id, idRegistro));
         }
 
         @Operation(summary = "Agregar registro a la subasta", description = "Registra la venta de un item durante la subasta, incluyendo datos de envío y cuenta de cobro del dueño")
@@ -369,7 +372,7 @@ public class SubastaController {
         public ResponseEntity<RegistroDeSubastaResponse> addRegistro(
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
                         @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Datos del registro de venta e información de envío y cobro", required = true) @RequestBody RegistroDeSubastaRequest request) {
-                return null;
+                return ResponseEntity.status(201).body(registroService.addRegistro(id, request));
         }
 
         @Operation(summary = "Actualizar estado de pago del dueño", description = "Avanza el estado de pago al dueño (pendiente → transferido → confirmado)")
@@ -385,7 +388,7 @@ public class SubastaController {
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
                         @Parameter(description = "ID del registro", required = true, example = "3") @PathVariable Integer idRegistro,
                         @Parameter(description = "Nuevo estado de pago", required = true) @RequestParam EstadoPagoDuenio estadoPago) {
-                return null;
+                return ResponseEntity.ok(registroService.cambiarEstadoPago(id, idRegistro, estadoPago));
         }
 
         @Operation(summary = "Actualizar medio de envío", description = "Cambia el medio de envío del registro (ENVIO_DOMICILIO / RETIRO_DEPOSITO). Si es ENVIO_DOMICILIO, direccionEnvio y paisEnvio pasan a ser requeridos")
@@ -401,7 +404,21 @@ public class SubastaController {
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
                         @Parameter(description = "ID del registro", required = true, example = "3") @PathVariable Integer idRegistro,
                         @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Nuevo medio de envío y datos opcionales de dirección", required = true) @RequestBody MedioEnvioRequest request) {
-                return null;
+                return ResponseEntity.ok(registroService.cambiarMedioEnvio(id, idRegistro, request));
+        }
+
+        @Operation(summary = "Marcar impago del comprador", description = "Registra que el comprador no abonó la compra: aplica una multa del 10% del valor ofertado, suspende al cliente y le notifica el plazo de 72hs")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Impago registrado y multa aplicada"),
+                        @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Subasta o registro no encontrado", content = @Content)
+        })
+        @PatchMapping("/{id}/registro/{idRegistro}/impago")
+        public ResponseEntity<RegistroDeSubastaResponse> marcarImpago(
+                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
+                        @Parameter(description = "ID del registro", required = true, example = "3") @PathVariable Integer idRegistro) {
+                return ResponseEntity.ok(registroService.marcarImpago(id, idRegistro));
         }
 
         // ── Pujos ─────────────────────────────────────────────────────────────
