@@ -17,6 +17,9 @@ public interface AsistenciaActualRepository extends JpaRepository<AsistenciaActu
 
     List<AsistenciaActual> findByAsistente_IdentificadorAndEstado(Integer asistenteId, String estado);
 
+    // Asistencias activas del cliente en CUALQUIER subasta (regla "una sola subasta a la vez").
+    List<AsistenciaActual> findByAsistente_Cliente_IdentificadorAndEstado(Integer clienteId, String estado);
+
     Optional<AsistenciaActual> findTopByAsistente_IdentificadorOrderByFechaHoraIngresoDesc(Integer asistenteId);
 
     @Query("""

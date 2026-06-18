@@ -1,9 +1,11 @@
 package fabriziob.com.subastapp.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,4 +26,16 @@ public interface SubastaRepository extends JpaRepository<Subasta, Integer> {
 
     @Query("SELECT s FROM Subasta s LEFT JOIN FETCH s.subastaExtra WHERE s.identificador = :id")
     Optional<Subasta> findByIdWithExtra(@Param("id") Integer id);
+
+    // Listado con filtros opcionales (cualquier combinación de estado/categoria/fecha) + paginado.
+    @Query("""
+            SELECT s FROM Subasta s
+            WHERE (:estado IS NULL OR s.estado = :estado)
+              AND (:categoria IS NULL OR s.categoria = :categoria)
+              AND (:fecha IS NULL OR s.fecha = :fecha)
+            """)
+    Page<Subasta> buscar(@Param("estado") EstadoSubasta estado,
+            @Param("categoria") CategoriaSubasta categoria,
+            @Param("fecha") LocalDate fecha,
+            Pageable pageable);
 }

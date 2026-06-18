@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import fabriziob.com.subastapp.controller.subasta.MarcarGanadorRequest;
 import fabriziob.com.subastapp.controller.subasta.PujoRequest;
 import fabriziob.com.subastapp.controller.subasta.PujoResponse;
+import fabriziob.com.subastapp.controller.subasta.SubastaEventoResponse;
 import fabriziob.com.subastapp.entity.Asistente;
 import fabriziob.com.subastapp.entity.Catalogo;
 import fabriziob.com.subastapp.entity.Cliente;
@@ -197,6 +198,15 @@ public class PujoService {
 
                 PujoResponse response = toResponse(pujo);
                 messagingTemplate.convertAndSend("/topic/subastas/" + subastaId + "/ganadores", response);
+
+                // Avance de ítem: el ítem quedó subastado → señal liviana para que los
+                // clientes refetcheen el catálogo y re-deriven el ítem actual.
+                messagingTemplate.convertAndSend("/topic/subastas/" + subastaId,
+                                SubastaEventoResponse.builder()
+                                                .tipo("ITEM_SUBASTADO")
+                                                .subastaId(subastaId)
+                                                .itemId(itemId)
+                                                .build());
                 return response;
         }
 
