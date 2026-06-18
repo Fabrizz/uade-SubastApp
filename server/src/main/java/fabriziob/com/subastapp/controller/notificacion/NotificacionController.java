@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import fabriziob.com.subastapp.service.NotificacionService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -24,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Tag(name = "Notificaciones", description = "Gestión de notificaciones para personas, clientes, dueños y subastadores")
 public class NotificacionController {
+
+    private final NotificacionService notificacionService;
 
     @Operation(summary = "Listar notificaciones de una persona", description = "Devuelve las notificaciones paginadas de un destinatario, con filtros opcionales por tipo y estado de lectura")
     @ApiResponses({
@@ -38,7 +41,7 @@ public class NotificacionController {
             @Parameter(description = "Filtrar por tipo (info, exito, advertencia, error, subasta, pago, envio)") @RequestParam(required = false) String tipo,
             @Parameter(description = "Filtrar por estado de lectura") @RequestParam(required = false) Boolean leida,
             @PageableDefault(size = 20, sort = "fecha") Pageable pageable) {
-        return null;
+        return ResponseEntity.ok(notificacionService.getAll(destinatarioId, tipo, leida, pageable));
     }
 
     @Operation(summary = "Obtener notificación por ID")
@@ -51,7 +54,7 @@ public class NotificacionController {
     @GetMapping("/{id}")
     public ResponseEntity<NotificacionResponse> getById(
             @Parameter(description = "ID de la notificación", required = true, example = "1") @PathVariable Integer id) {
-        return null;
+        return ResponseEntity.ok(notificacionService.getById(id));
     }
 
     @Operation(summary = "Marcar notificación como leída")
@@ -64,6 +67,6 @@ public class NotificacionController {
     @PatchMapping("/{id}/leer")
     public ResponseEntity<NotificacionResponse> marcarLeida(
             @Parameter(description = "ID de la notificación", required = true, example = "1") @PathVariable Integer id) {
-        return null;
+        return ResponseEntity.ok(notificacionService.marcarLeida(id));
     }
 }
