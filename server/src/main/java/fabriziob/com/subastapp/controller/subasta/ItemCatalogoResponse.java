@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class ItemCatalogoResponse {
     private Integer identificador;
     private Integer catalogoId;
+    private Integer subastaId;
     private Integer productoId;
     private String productoDescripcion;
     private BigDecimal precioBase;

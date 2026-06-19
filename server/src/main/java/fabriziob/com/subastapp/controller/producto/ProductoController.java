@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import fabriziob.com.subastapp.service.ProductoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -26,14 +28,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
-// TODO: REPOSITORIO MOCKEADO
 @RestController
 @RequestMapping("/productos")
 @RequiredArgsConstructor
 @Tag(name = "Productos", description = "Endpoints para productos, incluye imágenes y seguro")
 public class ProductoController {
 
-    // private final ProductoService service;
+    private final ProductoService service;
 
     @Operation(summary = "Listar productos", description = "Devuelve todos los productos con sus datos y lista de IDs de fotos")
     @ApiResponses({
@@ -41,7 +42,7 @@ public class ProductoController {
     })
     @GetMapping
     public ResponseEntity<Page<ProductoResponse>> listar() {
-        return null;
+        return ResponseEntity.ok(service.listar(PageRequest.of(0, 1000)));
     }
 
     @Operation(summary = "Obtener producto por ID", description = "Devuelve un producto con sus datos completos, extra y lista de IDs de fotos")
@@ -52,7 +53,7 @@ public class ProductoController {
     @GetMapping("/{id}")
     public ResponseEntity<ProductoResponse> obtener(
             @Parameter(description = "ID del producto", required = true, example = "1") @PathVariable Integer id) {
-        return null;
+        return ResponseEntity.ok(service.obtener(id));
     }
 
     @Operation(summary = "Crear producto", description = "Crea un producto con sus datos y opcionalmente una lista de imágenes")
@@ -65,7 +66,7 @@ public class ProductoController {
             @Parameter(description = "Datos del producto en JSON", required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductoRequest.class))) @RequestPart("datos") ProductoRequest request,
             @Parameter(description = "Lista de imágenes del producto (PNG, JPEG, WEBP)") @RequestPart(value = "imagenes", required = false) List<MultipartFile> imagenes)
             throws IOException {
-        return null;
+        return ResponseEntity.status(201).body(service.crear(request, imagenes));
     }
 
     @Operation(summary = "Actualizar producto", description = "Actualiza parcialmente los campos de un producto. Solo para uso interno de la empresa")
@@ -78,7 +79,7 @@ public class ProductoController {
     public ResponseEntity<ProductoResponse> patch(
             @Parameter(description = "ID del producto", required = true, example = "1") @PathVariable Integer id,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Campos a actualizar, solo se pisan los que vienen en el body", required = true, content = @Content(schema = @Schema(implementation = ProductoUpdateRequest.class))) @RequestBody ProductoUpdateRequest dto) {
-        return null;
+        return ResponseEntity.ok(service.patch(id, dto));
     }
 
     @Operation(summary = "Actualizar habilitación del producto", description = "Cambia el estado del bien. Si el estado es 'rechazado', motivoRechazo es obligatorio. Solo para uso interno de la empresa")
@@ -91,7 +92,7 @@ public class ProductoController {
     public ResponseEntity<ProductoResponse> patchEstado(
             @Parameter(description = "ID del producto", required = true, example = "1") @PathVariable Integer id,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Nuevo estado del bien", required = true, content = @Content(schema = @Schema(implementation = ProductoHabilitacionUpdateRequest.class))) @RequestBody ProductoHabilitacionUpdateRequest dto) {
-        return null;
+        return ResponseEntity.ok(service.patchEstado(id, dto));
     }
 
     @Operation(summary = "Subir fotos", description = "Agrega una o más imágenes a un producto existente. Devuelve la lista de IDs generados")
@@ -105,7 +106,7 @@ public class ProductoController {
             @Parameter(description = "ID del producto", required = true, example = "1") @PathVariable Integer id,
             @Parameter(description = "Lista de imágenes (PNG, JPEG, WEBP)", required = true) @RequestPart("imagenes") List<MultipartFile> imagenes)
             throws IOException {
-        return null;
+        return ResponseEntity.status(201).body(service.subirFotos(id, imagenes));
     }
 
     @Operation(summary = "Obtener imagen", description = "Devuelve el contenido binario de una foto. El Content-Type se detecta automáticamente (PNG, JPEG o WEBP)")
@@ -125,7 +126,7 @@ public class ProductoController {
     public ResponseEntity<byte[]> fotoContent(
             @Parameter(description = "ID del producto", required = true, example = "1") @PathVariable Integer id,
             @Parameter(description = "ID de la imagen", required = true, example = "12") @PathVariable Integer imgId) {
-        return null;
+        return ResponseEntity.ok(service.fotoContent(id, imgId));
     }
 
     @Operation(summary = "Obtener seguro del producto", description = "Devuelve el seguro completo si la póliza existe en la tabla de seguros, solo el número si está registrado pero no existe en la tabla, o indica que no tiene seguro")
@@ -136,6 +137,6 @@ public class ProductoController {
     @GetMapping("/{id}/seguro")
     public ResponseEntity<ProductoSeguroResponse> seguro(
             @Parameter(description = "ID del producto", required = true, example = "1") @PathVariable Integer id) {
-        return null;
+        return ResponseEntity.ok(service.seguro(id));
     }
 }

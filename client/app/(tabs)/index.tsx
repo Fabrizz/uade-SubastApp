@@ -203,7 +203,8 @@ export default function Home() {
       if (!token) return;
       setLoading(true);
       try {
-        const targetEstado = category === "terminadas" ? "cerrada" : "abierta";
+        const isAdmin = user?.category?.toLowerCase() === "admin";
+        const targetEstado = isAdmin ? undefined : (category === "terminadas" ? "cerrada" : "abierta");
         const { data } = await api.GET("/api/v1/subastas", {
           params: {
             query: {
@@ -226,7 +227,7 @@ export default function Home() {
       }
     }
     loadSubastas();
-  }, [token, category]);
+  }, [token, category, user?.category]);
 
   const CATEGORIES: { key: CategoryTab; label: string }[] = [
     { key: "top", label: "Top items" },

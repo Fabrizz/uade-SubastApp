@@ -1,10 +1,12 @@
 import HeaderComp from "@/components/HeaderComp";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/auth";
+import { api, API_BASE } from "@/lib/api";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
-import { Camera, FileText, Gavel, ImageIcon, X } from "lucide-react-native";
+import { Camera, FileText, Gavel, ImageIcon, X, Check } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Alert,
@@ -14,6 +16,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatlist";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,12 +24,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export default function RequestAuctionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { token, user } = useAuth();
 
   const [name, setName] = useState("");
   const [shortDesc, setShortDesc] = useState("");
   const [longDesc, setLongDesc] = useState("");
+  const [artista, setArtista] = useState("");
+  const [fechaCreacion, setFechaCreacion] = useState("");
+  const [historia, setHistoria] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [documents, setDocuments] = useState<{ name: string; uri: string }[]>([]);
+
+  // Declaraciones juradas obligatorias según TPO-DAI
+  const [declaracionPropiedad, setDeclaracionPropiedad] = useState(false);
+  const [origenLicito, setOrigenLicito] = useState(false);
+  const [aceptaCargosDevolucion, setAceptaCargosDevolucion] = useState(false);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAddPhotos = async () => {
     if (images.length >= 6) {
@@ -72,6 +86,125 @@ export default function RequestAuctionScreen() {
   const handleRemoveDocument = (i: number) =>
     setDocuments((prev) => prev.filter((_, idx) => idx !== i));
 
+  const handleRequestAuction = async () => {
+    if (!token || !user) {
+      Alert.alert("Sesión no iniciada", "Inicia sesión para solicitar una subasta.");
+      return;
+    }
+
+    if (!name.trim()) {
+      Alert.alert("Campo Requerido", "El nombre del artículo es obligatorio.");
+      return;
+    }
+    if (!shortDesc.trim()) {
+      Alert.alert("Campo Requerido", "La descripción breve es obligatoria.");
+      return;
+    }
+
+    // Requisito TPO-DAI: Al menos 6 fotos
+    if (images.length < 6) {
+      Alert.alert(
+        "Fotos insuficientes",
+        `Por favor sube al menos 6 fotos de tu artículo (tienes ${images.length}). Esto es requerido para la inspección y tasación.`
+      );
+      return;
+    }
+
+    // Declaraciones obligatorias
+    if (!declaracionPropiedad || !origenLicito || !aceptaCargosDevolucion) {
+      Alert.alert(
+        "Declaraciones obligatorias",
+        "Debes aceptar todas las declaraciones juradas y de devolución para poder ofrecer tu artículo."
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // 1. Verificar si la persona ya está registrada como dueño en la base de datos
+      const { data: duenioData, error: duenioErr } = await api.GET("/api/v1/duenios/{id}", {
+        params: { path: { id: user.id ?? 0 } },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (duenioErr || !duenioData) {
+        // Registrar a la persona como dueño rápido
+        const { error: createDuenioErr } = await api.POST("/api/v1/duenios", {
+          headers: { Authorization: `Bearer ${token}` },
+          body: {
+            identificadorPersona: user.id ?? 0,
+            verificacionFinanciera: "si",
+            verificacionJudicial: "si",
+            calificacionRiesgo: 1,
+            verificadorId: 1,
+          },
+        });
+        if (createDuenioErr) {
+          const detail = (createDuenioErr as any)?.mensaje || (createDuenioErr as any)?.message || JSON.stringify(createDuenioErr);
+          throw new Error(`No se pudo registrar tu cuenta como dueño de bienes: ${detail}`);
+        }
+      }
+
+      // 2. Crear FormData para enviar el producto y sus fotos
+      const payload = {
+        titulo: name.trim(),
+        descripcionCompleta: longDesc.trim() || name.trim(),
+        descripcionCatalogo: shortDesc.trim(),
+        declaracionPropiedad: true,
+        esPiezaMultiple: false,
+        cantidadPiezas: 1,
+        esObraDeArte: !!artista || !!fechaCreacion || !!historia,
+        artista: artista.trim() || undefined,
+        fechaCreacionObra: fechaCreacion.trim() || undefined,
+        historia: historia.trim() || undefined,
+        deposito: "Sede Central",
+      };
+
+      const formData = new FormData();
+      formData.append("datos", {
+        string: JSON.stringify(payload),
+        type: "application/json",
+        name: "datos.json",
+      } as any);
+
+      images.forEach((uri, index) => {
+        const filename = uri.split("/").pop() || `imagen_${index}.jpg`;
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : `image/jpeg`;
+        formData.append("imagenes", {
+          uri,
+          name: filename,
+          type,
+        } as any);
+      });
+
+      // 3. Enviar producto al backend
+      const response = await fetch(`${API_BASE}/productos`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Error en el servidor al registrar el producto.");
+      }
+
+      Alert.alert(
+        "Solicitud Registrada",
+        "Tu artículo ha sido registrado con éxito. Nuestro equipo revisará la información. Deberás coordinar el envío a nuestra sede para la inspección física y posterior inclusión en subasta."
+      );
+      router.back();
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Ocurrió un error al registrar el artículo.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <LinearGradient
       colors={["#000000", "#171717", "#0f766e", "#2dd4bf"]}
@@ -86,6 +219,7 @@ export default function RequestAuctionScreen() {
             onPress={() => router.back()}
             className="w-10 h-10 items-center justify-center"
             hitSlop={8}
+            disabled={isSubmitting}
           >
             <X size={24} color="white" strokeWidth={2.5} />
           </TouchableOpacity>
@@ -98,6 +232,7 @@ export default function RequestAuctionScreen() {
           paddingTop: 24,
           paddingBottom: insets.bottom + 40,
         }}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {/* Card contenedor */}
@@ -107,13 +242,13 @@ export default function RequestAuctionScreen() {
             Subastar Artículo
           </Text>
 
-          {/* ── Fotos ── */}
+          {/* ── Fotos (Mínimo 6 según TPO) ── */}
           <View className="mb-8">
             <View className="flex-row justify-between items-end mb-4">
               <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase ml-1">
-                Media (Fotos del producto)
+                Media (Mínimo 6 fotos obligatorias)
               </Text>
-              <Text className="text-[#3b82f6] text-xs font-bold">
+              <Text className={images.length >= 6 ? "text-emerald-400 text-xs font-bold" : "text-amber-400 text-xs font-bold"}>
                 {images.length} / 6
               </Text>
             </View>
@@ -131,6 +266,7 @@ export default function RequestAuctionScreen() {
                     <TouchableOpacity
                       activeOpacity={0.7}
                       onPress={handleAddPhotos}
+                      disabled={isSubmitting}
                       className="w-32 h-44 bg-[#383838] border-2 border-dashed border-[#A14EBF]/60 rounded-2xl items-center justify-center mr-3"
                     >
                       <View className="w-12 h-12 bg-[#A14EBF]/20 rounded-full items-center justify-center mb-3">
@@ -156,7 +292,7 @@ export default function RequestAuctionScreen() {
                     <ScaleDecorator>
                       <TouchableOpacity
                         onLongPress={drag}
-                        disabled={isActive}
+                        disabled={isActive || isSubmitting}
                         activeOpacity={0.9}
                         className={`w-32 h-44 rounded-2xl bg-black border ${isActive ? "border-[#A14EBF] border-2" : "border-neutral-700"} relative`}
                         style={{
@@ -184,6 +320,7 @@ export default function RequestAuctionScreen() {
                         <TouchableOpacity
                           activeOpacity={0.8}
                           onPress={() => handleRemovePhoto(index!)}
+                          disabled={isSubmitting}
                           className="absolute -top-2 -right-2 bg-rose-500 w-8 h-8 rounded-full items-center justify-center border-2 border-neutral-900"
                           style={{ elevation: 5 }}
                         >
@@ -197,18 +334,19 @@ export default function RequestAuctionScreen() {
             </View>
 
             <Text className="text-neutral-400 text-[11px] italic mt-2 ml-1">
-              Mantén presionada una foto y arrástrala para cambiar el orden.
+              Mantén presionada una foto y arrástrala para cambiar el orden de portada.
             </Text>
           </View>
 
           {/* ── Documentación ── */}
           <View className="mb-8">
             <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-3 ml-1">
-              Documentación de pertenencia
+              Documentación adicional (Acreditación lícita opcional)
             </Text>
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={handleAddDocument}
+              disabled={isSubmitting}
               className="h-[50px] bg-[#383838] border border-[#A14EBF]/40 border-dashed rounded-xl flex-row items-center justify-center px-4 mb-3"
             >
               <FileText size={20} color="#A14EBF" strokeWidth={2} style={{ marginRight: 10 }} />
@@ -226,7 +364,7 @@ export default function RequestAuctionScreen() {
                     <Text className="flex-1 text-white text-xs" numberOfLines={1}>
                       {doc.name}
                     </Text>
-                    <TouchableOpacity onPress={() => handleRemoveDocument(i)} className="p-1">
+                    <TouchableOpacity onPress={() => handleRemoveDocument(i)} disabled={isSubmitting} className="p-1">
                       <X size={16} color="#ef4444" strokeWidth={2.5} />
                     </TouchableOpacity>
                   </View>
@@ -236,10 +374,10 @@ export default function RequestAuctionScreen() {
           </View>
 
           {/* ── Formulario ── */}
-          <View className="gap-5 mb-10">
+          <View className="gap-5 mb-8">
             <View>
               <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
-                Nombre del artículo
+                Nombre del artículo *
               </Text>
               <TextInput
                 className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
@@ -248,12 +386,13 @@ export default function RequestAuctionScreen() {
                 placeholderTextColor="#a3a3a3"
                 value={name}
                 onChangeText={setName}
+                disabled={isSubmitting}
               />
             </View>
 
             <View>
               <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
-                Descripción breve
+                Descripción breve *
               </Text>
               <TextInput
                 className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
@@ -262,6 +401,7 @@ export default function RequestAuctionScreen() {
                 placeholderTextColor="#a3a3a3"
                 value={shortDesc}
                 onChangeText={setShortDesc}
+                disabled={isSubmitting}
               />
             </View>
 
@@ -271,37 +411,134 @@ export default function RequestAuctionScreen() {
               </Text>
               <TextInput
                 className="bg-[#383838] border border-[#555555] p-4 text-white text-base"
-                style={{ borderRadius: 16, minHeight: 120, textAlignVertical: "top" }}
-                placeholder="Describe el estado, historia y detalles técnicos..."
+                style={{ borderRadius: 16, minHeight: 100, textAlignVertical: "top" }}
+                placeholder="Describe el estado de conservación..."
                 placeholderTextColor="#a3a3a3"
                 multiline
-                numberOfLines={5}
+                numberOfLines={4}
                 value={longDesc}
                 onChangeText={setLongDesc}
+                disabled={isSubmitting}
+              />
+            </View>
+
+            {/* Campos de Artista, Fecha e Historia para Obras/Objetos especiales según TPO */}
+            <View>
+              <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
+                Artista o Diseñador (Opcional)
+              </Text>
+              <TextInput
+                className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
+                style={{ borderRadius: 12 }}
+                placeholder="Ej. Pablo Picasso, Rolex, Desconocido"
+                placeholderTextColor="#a3a3a3"
+                value={artista}
+                onChangeText={setArtista}
+                disabled={isSubmitting}
+              />
+            </View>
+
+            <View>
+              <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
+                Fecha o Año de Creación (Opcional)
+              </Text>
+              <TextInput
+                className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
+                style={{ borderRadius: 12 }}
+                placeholder="Ej. 1950, Siglo XIX"
+                placeholderTextColor="#a3a3a3"
+                value={fechaCreacion}
+                onChangeText={setFechaCreacion}
+                disabled={isSubmitting}
+              />
+            </View>
+
+            <View>
+              <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
+                Historia / Datos de interés (Opcional)
+              </Text>
+              <TextInput
+                className="bg-[#383838] border border-[#555555] p-4 text-white text-base"
+                style={{ borderRadius: 16, minHeight: 80, textAlignVertical: "top" }}
+                placeholder="Contexto histórico, dueños anteriores, procedencia..."
+                placeholderTextColor="#a3a3a3"
+                multiline
+                numberOfLines={3}
+                value={historia}
+                onChangeText={setHistoria}
+                disabled={isSubmitting}
               />
             </View>
           </View>
 
+          {/* ── Declaraciones juradas obligatorias (TPO-DAI) ── */}
+          <View className="gap-4 mb-10">
+            <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase ml-1">
+              Declaraciones Juradas Requeridas *
+            </Text>
+
+            {/* Checkbox 1 */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => !isSubmitting && setDeclaracionPropiedad(!declaracionPropiedad)}
+              className={`flex-row items-start gap-3 p-4 bg-neutral-900 border rounded-2xl ${declaracionPropiedad ? "border-teal-500/40" : "border-neutral-800"}`}
+            >
+              <View className={`w-5 h-5 rounded-md border items-center justify-center mt-0.5 ${declaracionPropiedad ? "bg-teal-500 border-teal-500" : "border-neutral-600 bg-neutral-800"}`}>
+                {declaracionPropiedad && <Check size={12} color="black" strokeWidth={3} />}
+              </View>
+              <Text className="flex-1 text-neutral-300 text-xs leading-5">
+                Declaro bajo juramento que el bien presentado me pertenece legítimamente y no posee ningún impedimento legal ni gravamen para su venta o subasta.
+              </Text>
+            </TouchableOpacity>
+
+            {/* Checkbox 2 */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => !isSubmitting && setOrigenLicito(!origenLicito)}
+              className={`flex-row items-start gap-3 p-4 bg-neutral-900 border rounded-2xl ${origenLicito ? "border-teal-500/40" : "border-neutral-800"}`}
+            >
+              <View className={`w-5 h-5 rounded-md border items-center justify-center mt-0.5 ${origenLicito ? "bg-teal-500 border-teal-500" : "border-neutral-600 bg-neutral-800"}`}>
+                {origenLicito && <Check size={12} color="black" strokeWidth={3} />}
+              </View>
+              <Text className="flex-1 text-neutral-300 text-xs leading-5">
+                Acredito y garantizo la procedencia y origen lícito de los bienes ofrecidos, obligándome a presentar la documentación de respaldo si fuera solicitada.
+              </Text>
+            </TouchableOpacity>
+
+            {/* Checkbox 3 */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => !isSubmitting && setAceptaCargosDevolucion(!aceptaCargosDevolucion)}
+              className={`flex-row items-start gap-3 p-4 bg-neutral-900 border rounded-2xl ${aceptaCargosDevolucion ? "border-teal-500/40" : "border-neutral-800"}`}
+            >
+              <View className={`w-5 h-5 rounded-md border items-center justify-center mt-0.5 ${aceptaCargosDevolucion ? "bg-teal-500 border-teal-500" : "border-neutral-600 bg-neutral-800"}`}>
+                {aceptaCargosDevolucion && <Check size={12} color="black" strokeWidth={3} />}
+              </View>
+              <Text className="flex-1 text-neutral-300 text-xs leading-5">
+                Acepto que si la empresa de subastas rechaza el bien enviado tras la inspección física (por no cumplir políticas de calidad), la devolución se hará con cargo a mi cuenta.
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {/* ── Acciones ── */}
           <View className="gap-3">
-            <Button
-              label="Agregar otro producto"
-              onPress={() => {}}
-              className="bg-[#A14EBF]"
-              textClassName="text-white text-base"
-              innerClassName="px-6 py-4"
-            />
-            <Button
-              label="Solicitar subasta"
-              onPress={() => {
-                Alert.alert("Éxito", "Subasta solicitada correctamente");
-                router.back();
-              }}
-              colors={["#A14EBF", "#9102A2"]}
-              icon={<Gavel size={20} color="white" strokeWidth={2.5} />}
-              textClassName="text-white text-base"
-              innerClassName="px-6 py-4"
-            />
+            {isSubmitting ? (
+              <View className="py-4 items-center justify-center">
+                <ActivityIndicator size="large" color="#A14EBF" />
+                <Text className="text-neutral-400 text-xs mt-2">
+                  Registrando artículo e imágenes...
+                </Text>
+              </View>
+            ) : (
+              <Button
+                label="Solicitar subasta de artículo"
+                onPress={handleRequestAuction}
+                colors={["#A14EBF", "#9102A2"]}
+                icon={<Gavel size={20} color="white" strokeWidth={2.5} />}
+                textClassName="text-white text-base font-bold"
+                innerClassName="px-6 py-4"
+              />
+            )}
           </View>
 
         </View>

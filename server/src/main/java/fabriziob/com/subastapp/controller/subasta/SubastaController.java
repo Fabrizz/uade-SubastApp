@@ -209,6 +209,19 @@ public class SubastaController {
                 return ResponseEntity.ok(catalogoService.getItem(id, idItem));
         }
 
+        @Operation(summary = "Obtener item de catálogo por ID de producto")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Item encontrado"),
+                        @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Item no encontrado", content = @Content)
+        })
+        @GetMapping("/catalogo/items/producto/{productoId}")
+        public ResponseEntity<ItemCatalogoResponse> getByProducto(
+                        @Parameter(description = "ID del producto", required = true, example = "1") @PathVariable Integer productoId) {
+                return ResponseEntity.ok(catalogoService.getCatalogoItemByProducto(productoId));
+        }
+
         @Operation(summary = "Aceptar o rechazar item del catálogo", description = "Actualiza el estado de aceptación del item (aceptado / rechazado)")
         @ApiResponses({
                         @ApiResponse(responseCode = "201", description = "Estado de aceptación actualizado"),
@@ -222,7 +235,7 @@ public class SubastaController {
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
                         @Parameter(description = "ID del item", required = true, example = "5") @PathVariable Integer idItem,
                         @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Datos del item", required = true) @RequestBody ItemCatalogoPatchAceptacionRequest request) {
-                return null;
+                return ResponseEntity.ok(catalogoService.setAceptacion(id, idItem, request));
         }
 
         @Operation(summary = "Agregar item al catálogo")
@@ -253,7 +266,7 @@ public class SubastaController {
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
                         @Parameter(description = "ID del item", required = true, example = "5") @PathVariable Integer idItem,
                         @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Campos a actualizar", required = true) @RequestBody ItemCatalogoPatchRequest request) {
-                return null;
+                return ResponseEntity.ok(catalogoService.patchItem(id, idItem, request));
         }
 
         @Operation(summary = "Eliminar item del catálogo")
@@ -267,7 +280,8 @@ public class SubastaController {
         public ResponseEntity<Void> deleteItem(
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
                         @Parameter(description = "ID del item", required = true, example = "5") @PathVariable Integer idItem) {
-                return null;
+                catalogoService.deleteItem(id, idItem);
+                return ResponseEntity.noContent().build();
         }
 
         // ── Asistentes ────────────────────────────────────────────────────────
