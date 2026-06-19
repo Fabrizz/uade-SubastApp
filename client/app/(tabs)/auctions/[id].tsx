@@ -1,7 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, FileText, Hammer, Info, MapPin, Clock } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   Platform,
@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
+import { useSubastaStore } from "@/lib/subastas.store";
 
 const PAYMENT_METHODS = [
   { id: "1", label: "Tarjeta 1 (Visa terminada en 4242)" },
@@ -46,6 +47,11 @@ export default function AuctionDetailScreen() {
           body: {},
           headers: { Authorization: `Bearer ${token}` }
         });
+        
+        // Update the Zustand store to indicate we joined
+        useSubastaStore.setState({
+          subasta: { identificador: Number(id), titulo: item.title } as any
+        });
       }
     } catch (err) {
       console.warn("API join failed, proceeding with local state:", err);
@@ -56,10 +62,18 @@ export default function AuctionDetailScreen() {
 
   const handleAbandon = () => {
     setIsJoined(false);
+    useSubastaStore.getState().leaveSubasta();
     // Reset bidding states
     setTopBidder("JUAN");
     setCurrentBidValue("$14,250.00");
   };
+
+  // Clean up auction state on unmount
+  useEffect(() => {
+    return () => {
+      useSubastaStore.getState().leaveSubasta();
+    };
+  }, []);
 
   const handleConfirmBid = () => {
     const amountNum = parseFloat(bidAmount.replace(/[^0-9.]/g, ""));

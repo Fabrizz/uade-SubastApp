@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import fabriziob.com.subastapp.entity.enums.CategoriaSubasta;
 import fabriziob.com.subastapp.entity.enums.Moneda;
+import fabriziob.com.subastapp.service.EstadisticasService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -27,6 +28,8 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Estadísticas", description = "Estadísticas de clientes, subastas y métricas globales")
 public class EstadisticasController {
 
+    private final EstadisticasService estadisticasService;
+
     @Operation(summary = "Participaciones de un cliente", description = "Devuelve cantidad de subastas asistidas, subastas donde pujó al menos una vez y subastas ganadas")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Estadísticas de participación"),
@@ -37,7 +40,7 @@ public class EstadisticasController {
     @GetMapping("/clientes/{id}/participaciones")
     public ResponseEntity<ClienteParticipacionesResponse> getParticipaciones(
             @Parameter(description = "ID del cliente", required = true, example = "1") @PathVariable Integer id) {
-        return null;
+        return ResponseEntity.ok(estadisticasService.getParticipaciones(id));
     }
 
     @Operation(summary = "Pujos de un cliente en una subasta específica", description = "Devuelve el historial de pujos de un cliente dentro de una subasta puntual")
@@ -51,7 +54,7 @@ public class EstadisticasController {
     public ResponseEntity<List<PujoDetalle>> getPujosPorSubasta(
             @Parameter(description = "ID del cliente", required = true, example = "1") @PathVariable Integer id,
             @Parameter(description = "ID de la subasta", required = true, example = "3") @PathVariable Integer idSubasta) {
-        return null;
+        return ResponseEntity.ok(estadisticasService.getPujosPorSubasta(id, idSubasta));
     }
 
     @Operation(summary = "Estadísticas globales por categoría", description = "Devuelve participación y recaudación agrupadas por categoría (comun, especial, plata, oro, platino)")
@@ -62,7 +65,7 @@ public class EstadisticasController {
     })
     @GetMapping("/globales/categorias")
     public ResponseEntity<List<CategoriaEstadisticaResponse>> getEstadisticasCategorias() {
-        return null;
+        return ResponseEntity.ok(estadisticasService.getEstadisticasCategorias());
     }
 
     @Operation(summary = "Estadísticas globales de subastas", description = "Devuelve subastas agrupadas por período, filtrables por moneda y categoría")
@@ -79,6 +82,6 @@ public class EstadisticasController {
             @Parameter(description = "Filtrar por moneda (ARS, USD)", schema = @Schema(implementation = Moneda.class)) @RequestParam(required = false) Moneda moneda,
             @Parameter(description = "Filtrar por categoría", schema = @Schema(implementation = CategoriaSubasta.class)) @RequestParam(required = false) CategoriaSubasta categoria,
             @Parameter(description = "Agrupación por período (mes, trimestre, anio)", example = "mes") @RequestParam(required = false, defaultValue = "mes") String agrupacion) {
-        return null;
+        return ResponseEntity.ok(estadisticasService.getEstadisticasGlobales(desde, hasta, moneda, categoria, agrupacion));
     }
 }

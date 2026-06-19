@@ -89,7 +89,7 @@ export const useSubastaStore = create<SubastaStore>((set, get) => ({
 
       // 3. Catalog
       const { data: catalogoPage } = await api.GET('/api/v1/subastas/{id}/catalogo/items', {
-        params: { path: { id: subastaId }, query: { size: 100 } },
+        params: { path: { id: subastaId } },
         headers: authHeaders(token),
       });
       const catalogo = (catalogoPage as any)?.content ?? catalogoPage ?? [];

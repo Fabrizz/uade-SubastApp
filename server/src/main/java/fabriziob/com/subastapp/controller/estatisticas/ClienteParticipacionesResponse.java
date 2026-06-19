@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,4 +17,7 @@ public class ClienteParticipacionesResponse {
     private Long subastasAsistidas;
     private Long subastasConPuja;
     private Long subastasGanadas;
+    private BigDecimal importeTotalOfertado;
+    private BigDecimal importeTotalPagado;
+    private BigDecimal pujoPromedio;
 }

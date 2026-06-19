@@ -84,4 +84,25 @@ public interface PujoRepository extends JpaRepository<Pujo, Integer> {
     BigDecimal sumImporteGanadorPendienteByCliente(
             @Param("clienteId") Integer clienteId,
             @Param("moneda") Moneda moneda);
+
+    @Query("SELECT COUNT(DISTINCT a.subasta.identificador) FROM Pujo p JOIN p.asistente a WHERE a.cliente.identificador = :clienteId")
+    long countUniqueSubastasByClienteId(@Param("clienteId") Integer clienteId);
+
+    @Query("SELECT COUNT(DISTINCT a.subasta.identificador) FROM Pujo p JOIN p.asistente a WHERE a.cliente.identificador = :clienteId AND p.ganador = 'si'")
+    long countUniqueSubastasGanadasByClienteId(@Param("clienteId") Integer clienteId);
+
+    @Query("SELECT COUNT(DISTINCT p.asistente.cliente.identificador) FROM Pujo p WHERE p.asistente.subasta.identificador = :subastaId")
+    long countUniqueBiddersBySubastaId(@Param("subastaId") Integer subastaId);
+
+    @Query("SELECT DISTINCT p.asistente.cliente.identificador FROM Pujo p WHERE p.asistente.subasta.identificador = :subastaId")
+    List<Integer> findUniqueBidderIdsBySubastaId(@Param("subastaId") Integer subastaId);
+
+    @Query("SELECT COALESCE(SUM(p.importe), 0) FROM Pujo p WHERE p.asistente.cliente.identificador = :clienteId")
+    BigDecimal sumImporteByClienteId(@Param("clienteId") Integer clienteId);
+
+    @Query("SELECT COALESCE(SUM(p.importe), 0) FROM Pujo p WHERE p.asistente.cliente.identificador = :clienteId AND p.ganador = 'si'")
+    BigDecimal sumImporteGanadorByClienteId(@Param("clienteId") Integer clienteId);
+
+    @Query("SELECT COALESCE(AVG(p.importe), 0.0) FROM Pujo p WHERE p.asistente.cliente.identificador = :clienteId")
+    Double averageImporteByClienteId(@Param("clienteId") Integer clienteId);
 }

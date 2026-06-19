@@ -2,13 +2,77 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, Banknote, Gavel, Star, Trophy } from "lucide-react-native";
-import React from "react";
-import { Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/context/auth";
+import { api } from "@/lib/api";
 
 export default function StatsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { token, user } = useAuth();
+
+  const [stats, setStats] = useState<{
+    subastasAsistidas: number;
+    subastasConPuja: number;
+    subastasGanadas: number;
+    importeTotalOfertado: number;
+    importeTotalPagado: number;
+    pujoPromedio: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!token || !user?.id) {
+      setLoading(false);
+      return;
+    }
+    const clienteId = user.id;
+
+    const fetchStats = async () => {
+      try {
+        const { data } = await api.GET("/api/v1/estadisticas/clientes/{id}/participaciones", {
+          params: { path: { id: clienteId } },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (data) {
+          setStats({
+            subastasAsistidas: Number(data.subastasAsistidas ?? 0),
+            subastasConPuja: Number(data.subastasConPuja ?? 0),
+            subastasGanadas: Number(data.subastasGanadas ?? 0),
+            importeTotalOfertado: Number(data.importeTotalOfertado ?? 0),
+            importeTotalPagado: Number(data.importeTotalPagado ?? 0),
+            pujoPromedio: Number(data.pujoPromedio ?? 0),
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [token, user?.id]);
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-[#121212] justify-center items-center">
+        <Stack.Screen options={{ headerShown: false }} />
+        <StatusBar style="light" />
+        <ActivityIndicator size="large" color="#A14EBF" />
+      </View>
+    );
+  }
+
+  const successRate = stats && stats.subastasConPuja > 0 
+    ? Math.round((stats.subastasGanadas / stats.subastasConPuja) * 100) 
+    : 0;
+
+  const progressWidth = stats && stats.importeTotalOfertado > 0
+    ? `${Math.min(100, Math.max(0, Math.round((stats.importeTotalPagado / stats.importeTotalOfertado) * 100)))}%`
+    : '0%';
 
   return (
     <View className="flex-1 bg-[#121212]">
@@ -91,7 +155,7 @@ export default function StatsScreen() {
               Tasa de éxito
             </Text>
             <Text className="text-[#2dd4bf] text-4xl font-black">
-              68%
+              {successRate}%
             </Text>
           </View>
 
@@ -118,7 +182,7 @@ export default function StatsScreen() {
               Participadas
             </Text>
             <Text className="text-white text-2xl font-black">
-              124
+              {stats?.subastasAsistidas ?? 0}
             </Text>
           </View>
 
@@ -127,13 +191,13 @@ export default function StatsScreen() {
             style={{ borderRadius: 24 }}
           >
             <View className="w-10 h-10 rounded-xl bg-[#115e59] items-center justify-center mb-4">
-              <Trophy size={20} color="#2dd4bf" strokeWidth={2} />
+               <Trophy size={20} color="#2dd4bf" strokeWidth={2} />
             </View>
             <Text className="text-neutral-400 text-[10px] font-bold tracking-wider uppercase mb-1">
               Ganadas
             </Text>
             <Text className="text-white text-2xl font-black">
-              84
+              {stats?.subastasGanadas ?? 0}
             </Text>
           </View>
         </View>
@@ -151,16 +215,16 @@ export default function StatsScreen() {
           </View>
 
           <Text className="text-[#93c5fd] text-3xl font-black mb-5">
-            €45,280.00
+            ${(stats?.importeTotalOfertado ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </Text>
 
           {/* Progress Bar */}
           <View className="h-2 w-full bg-neutral-800 rounded-full flex-row">
-            <View className="h-full bg-[#60a5fa] rounded-full" style={{ width: '75%' }} />
+            <View className="h-full bg-[#60a5fa] rounded-full" style={{ width: progressWidth as any }} />
           </View>
         </View>
 
-        {/* Ahorro Total */}
+        {/* Monto total adjudicado */}
         <View
           className="bg-[#A14EBF] p-6 w-full mb-8 relative overflow-hidden"
           style={{ borderRadius: 24 }}
@@ -172,10 +236,10 @@ export default function StatsScreen() {
             end={{ x: 1, y: 1 }}
           />
           <Text className="text-white/80 text-[11px] font-bold tracking-wider uppercase mb-1">
-            Ahorro total estimado
+            Monto total adjudicado
           </Text>
           <Text className="text-white text-3xl font-black">
-            €12,450.00
+            ${(stats?.importeTotalPagado ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </Text>
         </View>
 
@@ -193,16 +257,24 @@ export default function StatsScreen() {
           </View>
 
           <View
-            className="bg-neutral-900 border border-neutral-800 w-full h-40 flex-row items-end justify-between px-4 pb-0 pt-6 overflow-hidden"
+            className="bg-neutral-900 border border-neutral-800 w-full h-40 items-center justify-center px-4"
             style={{ borderRadius: 24 }}
           >
-            <View className="w-[12%] bg-[#1a1a1a] rounded-t-lg" style={{ height: '20%' }} />
-            <View className="w-[12%] bg-[#262626] rounded-t-lg" style={{ height: '35%' }} />
-            <View className="w-[12%] bg-[#2dd4bf] rounded-t-lg" style={{ height: '65%' }} />
-            <View className="w-[12%] bg-[#4c1d95] rounded-t-lg" style={{ height: '40%' }} />
-            <View className="w-[12%] bg-[#d946ef] rounded-t-lg" style={{ height: '90%' }} />
-            <View className="w-[12%] bg-[#1a1a1a] rounded-t-lg" style={{ height: '15%' }} />
-            <View className="w-[12%] bg-[#262626] rounded-t-lg" style={{ height: '45%' }} />
+            {stats && stats.subastasConPuja > 0 ? (
+              <View className="w-full h-full flex-row items-end justify-between pb-2 pt-6 overflow-hidden">
+                <View className="w-[12%] bg-[#1a1a1a] rounded-t-lg" style={{ height: '20%' }} />
+                <View className="w-[12%] bg-[#262626] rounded-t-lg" style={{ height: '35%' }} />
+                <View className="w-[12%] bg-[#2dd4bf] rounded-t-lg" style={{ height: '65%' }} />
+                <View className="w-[12%] bg-[#4c1d95] rounded-t-lg" style={{ height: '40%' }} />
+                <View className="w-[12%] bg-[#d946ef] rounded-t-lg" style={{ height: '90%' }} />
+                <View className="w-[12%] bg-[#1a1a1a] rounded-t-lg" style={{ height: '15%' }} />
+                <View className="w-[12%] bg-[#262626] rounded-t-lg" style={{ height: '45%' }} />
+              </View>
+            ) : (
+              <Text className="text-neutral-500 text-sm font-semibold">
+                Sin actividad de pujas registrada
+              </Text>
+            )}
           </View>
         </View>
 

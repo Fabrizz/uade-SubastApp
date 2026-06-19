@@ -2418,6 +2418,9 @@ export interface components {
             subastasConPuja?: number;
             /** Format: int64 */
             subastasGanadas?: number;
+            importeTotalOfertado?: number;
+            importeTotalPagado?: number;
+            pujoPromedio?: number;
         };
         PageSectorResponse: {
             /** Format: int32 */
