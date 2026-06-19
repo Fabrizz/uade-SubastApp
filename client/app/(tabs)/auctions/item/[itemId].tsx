@@ -1,23 +1,58 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, MapPin } from "lucide-react-native";
-import React from "react";
-import { Image, Platform, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Image, Platform, ScrollView, StatusBar, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/context/auth";
+import { api, API_BASE } from "@/lib/api";
+import type { components } from "@/types/api";
 
 export default function ItemDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
+  const { token } = useAuth();
+  
+  const { itemId } = params;
 
-  // Fallbacks if navigation params are not passed
-  const title = (params.title as string) || "Item";
-  const description = (params.description as string) || "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu";
-  const imageUri = (params.image as string) || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800";
-  const shipping = (params.shipping as string) || "Geneva, Switzerland";
+  const [product, setProduct] = useState<components["schemas"]["ProductoResponse"] | null>(null);
+  const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    async function fetchProduct() {
+      if (!itemId || !token) return;
+      setLoading(true);
+      try {
+        const { data } = await api.GET("/productos/{id}", {
+          params: { path: { id: Number(itemId) } },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (data) {
+          setProduct(data);
+        }
+      } catch (err) {
+        console.error("Error fetching product details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProduct();
+  }, [itemId, token]);
+
+  // Fallback hierarchies: uses API data first, then router params, then hardcoded fallbacks
+  const title = product?.titulo || (params.title as string) || "Lote de Subasta";
+  const description = product?.descripcionCompleta || product?.descripcionCatalogo || (params.description as string) || "No hay una descripción completa disponible para este lote.";
+  
+  const imageUri = product?.fotosIds && product.fotosIds.length > 0
+    ? `${API_BASE}/productos/${itemId}/fotos/${product.fotosIds[0]}/content`
+    : (params.image as string) || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800";
+
+  const shipping = product?.deposito || (params.shipping as string) || "Ginebra, Suiza";
   const parts = shipping.split(",");
-  const city = parts[0]?.trim() || "Geneva";
-  const country = parts[1]?.trim() || "Switzerland";
+  const city = parts[0]?.trim() || "Ginebra";
+  const country = parts[1]?.trim() || "Suiza";
+
+  const history = product?.historia || (params.history as string) || "";
 
   return (
     <View className="flex-1 bg-[#121212]">
@@ -34,30 +69,20 @@ export default function ItemDetailScreen() {
         <View className="flex-row items-center justify-between mb-8 px-2">
           <TouchableOpacity
             onPress={() => router.back()}
-            className="w-10 h-10 items-center justify-center"
+            className="w-10 h-10 items-center justify-center bg-neutral-900/60 rounded-full border border-neutral-800"
           >
-            <ArrowLeft size={28} color="#9102A2" strokeWidth={2.5} />
+            <ArrowLeft size={24} color="#9102A2" strokeWidth={2.5} />
           </TouchableOpacity>
           
           <View className="flex-row items-center gap-3">
-            <View
-              className="items-center justify-center rounded-full"
-              style={{
-                shadowColor: "#d946ef",
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.8,
-                shadowRadius: 15,
-                elevation: 10,
-                backgroundColor: "transparent",
-              }}
-            >
+            <View className="items-center justify-center rounded-full bg-transparent">
               <Image
                 source={require("@/assets/images/logo.png")}
                 style={{ width: 32, height: 32 }}
                 resizeMode="contain"
               />
             </View>
-            <Text className="text-white text-2xl font-bold tracking-wide">
+            <Text className="text-white text-2xl font-bold tracking-wide font-montserrat-bold">
               SubastApp
             </Text>
           </View>
@@ -65,22 +90,30 @@ export default function ItemDetailScreen() {
         </View>
 
         {/* Title */}
-        <Text className="text-white text-3xl font-extrabold mb-6 px-1">
+        <Text className="text-white text-3xl font-extrabold mb-6 px-1 font-montserrat-bold">
           {title}
         </Text>
 
         {/* Item Image */}
-        <View className="mb-6 rounded-[32px] overflow-hidden shadow-2xl shadow-black/80">
+        <View className="mb-6 rounded-[32px] overflow-hidden shadow-2xl shadow-black/80 relative">
           <Image
             source={{ uri: imageUri }}
             style={{ width: "100%", height: 260 }}
             resizeMode="cover"
           />
+          {loading && (
+            <View className="absolute inset-0 bg-black/40 items-center justify-center">
+              <ActivityIndicator size="large" color="#9102A2" />
+            </View>
+          )}
         </View>
 
         {/* Description Card */}
         <View className="bg-[#181818] border border-neutral-900 p-6 mb-6 rounded-[28px]">
-          <Text className="text-neutral-300 text-sm leading-6">
+          <Text className="text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">
+            Descripción Detallada
+          </Text>
+          <Text className="text-neutral-300 text-sm leading-6 font-manrope">
             {description}
           </Text>
         </View>
@@ -90,10 +123,10 @@ export default function ItemDetailScreen() {
           <View className="flex-row items-center gap-4 flex-1">
             <MapPin size={24} color="#00e5c0" />
             <View className="flex-1">
-              <Text className="text-neutral-400 text-xs">
-                Ships from <Text className="text-white font-bold">{city},</Text>
+              <Text className="text-neutral-400 text-xs font-manrope">
+                Ubicación del Lote: <Text className="text-white font-bold">{city},</Text>
               </Text>
-              <Text className="text-white font-bold text-sm mt-0.5">
+              <Text className="text-white font-bold text-sm mt-0.5 font-manrope-bold">
                 {country}
               </Text>
             </View>
@@ -108,17 +141,17 @@ export default function ItemDetailScreen() {
           </View>
         </View>
 
-        {/* Historia Card (Conditional for Art items) */}
-        {params.history && (
+        {/* Historia Card (Conditional for Art items or items with history) */}
+        {history ? (
           <View className="bg-[#181818] border border-neutral-900 p-6 mt-6 rounded-[28px]">
-            <Text className="text-white text-2xl font-bold mb-4">
+            <Text className="text-white text-2xl font-bold mb-3 font-montserrat-bold">
               Historia
             </Text>
-            <Text className="text-neutral-300 text-sm leading-6">
-              {params.history as string}
+            <Text className="text-neutral-300 text-sm leading-6 font-manrope">
+              {history}
             </Text>
           </View>
-        )}
+        ) : null}
 
       </ScrollView>
     </View>

@@ -48,6 +48,7 @@ export default function AdminLayout() {
       <Stack.Screen name="users" />
       <Stack.Screen name="new-subastador" />
       <Stack.Screen name="drop-subastador" />
+      <Stack.Screen name="auctions" />
     </Stack>
   );
 }

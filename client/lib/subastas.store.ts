@@ -114,7 +114,7 @@ export const useSubastaStore = create<SubastaStore>((set, get) => ({
       }
 
       // 5. Subscribe to live bids
-      const unsubscribe = subscribe(`/topic/subastas/${subastaId}/pujas`, (msg: IMessage) => {
+      const unsubBids = subscribe(`/topic/subastas/${subastaId}/pujas`, (msg: IMessage) => {
         try {
           const puja: PujoResponse = JSON.parse(msg.body);
           set((s) => ({
@@ -126,7 +126,64 @@ export const useSubastaStore = create<SubastaStore>((set, get) => ({
         }
       });
 
-      set({ subasta, asistente: asistente ?? null, catalogo, itemActual, mejorPuja, pujas, isLoading: false, _unsubscribe: unsubscribe });
+      // 6. Subscribe to subasta events (e.g. item advancement)
+      const unsubProgression = subscribe(`/topic/subastas/${subastaId}`, async (msg: IMessage) => {
+        try {
+          const event = JSON.parse(msg.body);
+          if (event.tipo === 'ITEM_SUBASTADO') {
+            // Re-fetch catalog
+            const { data: catalogoPage } = await api.GET('/api/v1/subastas/{id}/catalogo/items', {
+              params: { path: { id: subastaId } },
+              headers: authHeaders(token),
+            });
+            const newCatalogo = (catalogoPage as any)?.content ?? catalogoPage ?? [];
+            const newItemActual = (newCatalogo as ItemCatalogoResponse[]).find((i) => !i.subastado)
+              ?? (newCatalogo as ItemCatalogoResponse[])[0]
+              ?? null;
+
+            // Re-fetch bids for new item
+            let newMejorPuja = newItemActual?.precioBase ?? 0;
+            let newPujas: PujoResponse[] = [];
+            if (newItemActual?.identificador) {
+              const { data: pujasData } = await api.GET(
+                '/api/v1/subastas/{id}/catalogo/items/{idItem}/pujos',
+                {
+                  params: { path: { id: subastaId, idItem: newItemActual.identificador } },
+                  headers: authHeaders(token),
+                },
+              );
+              newPujas = (Array.isArray(pujasData) ? pujasData : (pujasData as any)?.content ?? []) as PujoResponse[];
+              const top = newPujas.reduce((max, p) => Math.max(max, p.importe ?? 0), 0);
+              if (top > 0) newMejorPuja = top;
+            }
+
+            set({
+              catalogo: newCatalogo,
+              itemActual: newItemActual,
+              mejorPuja: newMejorPuja,
+              pujas: newPujas,
+            });
+          }
+        } catch {
+          // malformed frame or API error — ignore
+        }
+      });
+
+      const combinedUnsubscribe = () => {
+        unsubBids();
+        unsubProgression();
+      };
+
+      set({
+        subasta,
+        asistente: asistente ?? null,
+        catalogo,
+        itemActual,
+        mejorPuja,
+        pujas,
+        isLoading: false,
+        _unsubscribe: combinedUnsubscribe
+      });
     } catch (e: any) {
       set({ isLoading: false, error: e.message ?? 'Error al unirse a la subasta' });
     }
