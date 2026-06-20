@@ -35,4 +35,7 @@ public interface RegistroDeSubastaRepository extends JpaRepository<RegistroDeSub
 
     @Query("SELECT SUM(r.importe) FROM RegistroDeSubasta r WHERE r.subasta.categoria = :categoria")
     java.math.BigDecimal sumImporteByCategoria(@Param("categoria") fabriziob.com.subastapp.entity.enums.CategoriaSubasta categoria);
+
+    @Query("SELECT SUM(r.importe) FROM RegistroDeSubasta r WHERE r.subasta.identificador = :subastaId")
+    java.math.BigDecimal sumImporteBySubastaId(@Param("subastaId") Integer subastaId);
 }
