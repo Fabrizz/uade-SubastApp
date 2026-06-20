@@ -2211,10 +2211,10 @@ export interface components {
             inadmitido?: boolean;
         };
         PageProductoResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ProductoResponse"][];
@@ -2231,13 +2231,13 @@ export interface components {
         PageableObject: {
             /** Format: int64 */
             offset?: number;
-            paged?: boolean;
             sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            pageNumber?: number;
+            paged?: boolean;
+            unpaged?: boolean;
             /** Format: int32 */
             pageSize?: number;
-            unpaged?: boolean;
+            /** Format: int32 */
+            pageNumber?: number;
         };
         SortObject: {
             empty?: boolean;
@@ -2262,10 +2262,10 @@ export interface components {
             sort?: string[];
         };
         PageSubastaResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SubastaResponse"][];
@@ -2280,10 +2280,10 @@ export interface components {
             empty?: boolean;
         };
         PageRegistroDeSubastaResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["RegistroDeSubastaResponse"][];
@@ -2298,10 +2298,10 @@ export interface components {
             empty?: boolean;
         };
         PageItemCatalogoResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ItemCatalogoResponse"][];
@@ -2316,10 +2316,10 @@ export interface components {
             empty?: boolean;
         };
         PageAsistenteResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["AsistenteResponse"][];
@@ -2334,10 +2334,10 @@ export interface components {
             empty?: boolean;
         };
         PageSubastadorResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SubastadorResponse"][];
@@ -2352,10 +2352,10 @@ export interface components {
             empty?: boolean;
         };
         PagePersonaResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PersonaResponse"][];
@@ -2370,10 +2370,10 @@ export interface components {
             empty?: boolean;
         };
         PagePaisResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PaisResponse"][];
@@ -2397,10 +2397,10 @@ export interface components {
             idiomas?: string;
         };
         PageNotificacionResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["NotificacionResponse"][];
@@ -2463,10 +2463,10 @@ export interface components {
             pujoPromedio?: number;
         };
         PageSectorResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SectorResponse"][];
@@ -2481,10 +2481,10 @@ export interface components {
             empty?: boolean;
         };
         PageEmpleadoResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["EmpleadoResponse"][];
@@ -2499,10 +2499,10 @@ export interface components {
             empty?: boolean;
         };
         PageDuenioResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["DuenioResponse"][];
@@ -2517,10 +2517,10 @@ export interface components {
             empty?: boolean;
         };
         PageClienteResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ClienteResponse"][];
