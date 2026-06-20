@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import fabriziob.com.subastapp.controller.producto.ProductoResponse;
 import fabriziob.com.subastapp.controller.subasta.RegistroDeSubastaResponse;
+import fabriziob.com.subastapp.service.DuenioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,6 +30,8 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Dueños", description = "Gestión de dueños de bienes")
 public class DuenioController {
 
+        private final DuenioService duenioService;
+
         @Operation(summary = "Listar dueños")
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "Lista paginada de dueños")
@@ -36,7 +39,7 @@ public class DuenioController {
         @GetMapping
         public ResponseEntity<Page<DuenioResponse>> getAll(
                         @PageableDefault(size = 30, sort = "identificador") Pageable pageable) {
-                return null;
+                return ResponseEntity.ok(duenioService.getAll(pageable));
         }
 
         @Operation(summary = "Obtener dueño por ID")
@@ -49,7 +52,7 @@ public class DuenioController {
         @GetMapping("/{id}")
         public ResponseEntity<DuenioResponse> getById(
                         @Parameter(description = "ID del dueño", required = true, example = "1") @PathVariable Integer id) {
-                return null;
+                return ResponseEntity.ok(duenioService.getById(id));
         }
 
         @Operation(summary = "Crear dueño")
@@ -62,7 +65,7 @@ public class DuenioController {
         @PostMapping
         public ResponseEntity<DuenioResponse> create(
                         @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Datos del dueño", required = true) @RequestBody DuenioRequest request) {
-                return null;
+                return ResponseEntity.status(201).body(duenioService.create(request));
         }
 
         @Operation(summary = "Actualizar dueño", description = "Actualiza parcialmente los datos de un dueño")
@@ -77,7 +80,7 @@ public class DuenioController {
         public ResponseEntity<DuenioResponse> patch(
                         @Parameter(description = "ID del dueño", required = true, example = "1") @PathVariable Integer id,
                         @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Campos a actualizar", required = true) @RequestBody DuenioUpdateRequest request) {
-                return null;
+                return ResponseEntity.ok(duenioService.patch(id, request));
         }
 
         @Operation(summary = "Eliminar dueño")
@@ -90,7 +93,8 @@ public class DuenioController {
         @DeleteMapping("/{id}")
         public ResponseEntity<Void> delete(
                         @Parameter(description = "ID del dueño", required = true, example = "1") @PathVariable Integer id) {
-                return null;
+                duenioService.delete(id);
+                return ResponseEntity.noContent().build();
         }
 
         @Operation(summary = "Listar productos del dueño", description = "Devuelve todos los productos asociados al dueño")
@@ -102,9 +106,11 @@ public class DuenioController {
         })
         @GetMapping("/{id}/productos")
         public ResponseEntity<Page<ProductoResponse>> getProductos(
-                        @Parameter(description = "ID del dueño", required = true, example = "1") @PathVariable Integer id) {
-                return null;
+                        @Parameter(description = "ID del dueño", required = true, example = "1") @PathVariable Integer id,
+                        @PageableDefault(size = 30, sort = "identificador") Pageable pageable) {
+                return ResponseEntity.ok(duenioService.getProductos(id, pageable));
         }
+
 
         @Operation(summary = "Historial de ventas del dueño", description = "Devuelve todos los registros de subasta donde el dueño vendió un bien")
         @ApiResponses({
@@ -116,6 +122,6 @@ public class DuenioController {
         @GetMapping("/{id}/historial")
         public ResponseEntity<Page<RegistroDeSubastaResponse>> getHistorial(
                         @Parameter(description = "ID del dueño", required = true, example = "1") @PathVariable Integer id) {
-                return null;
+                return ResponseEntity.ok(Page.empty());
         }
 }

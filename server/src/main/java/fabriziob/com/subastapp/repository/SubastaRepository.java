@@ -38,4 +38,18 @@ public interface SubastaRepository extends JpaRepository<Subasta, Integer> {
             @Param("categoria") CategoriaSubasta categoria,
             @Param("fecha") LocalDate fecha,
             Pageable pageable);
+
+    @Query("""
+            SELECT s FROM Subasta s
+            LEFT JOIN FETCH s.subastaExtra e
+            WHERE (:desde IS NULL OR s.fecha >= :desde)
+              AND (:hasta IS NULL OR s.fecha <= :hasta)
+              AND (:categoria IS NULL OR s.categoria = :categoria)
+              AND (:moneda IS NULL OR e.moneda = :moneda)
+            """)
+    List<Subasta> findForGlobalStats(
+            @Param("desde") java.time.LocalDate desde,
+            @Param("hasta") java.time.LocalDate hasta,
+            @Param("categoria") CategoriaSubasta categoria,
+            @Param("moneda") fabriziob.com.subastapp.entity.enums.Moneda moneda);
 }

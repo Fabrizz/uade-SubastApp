@@ -70,6 +70,7 @@ public class SecurityConfig {
                                 "/docs")
                         .permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/productos/*/fotos/*/content").permitAll()
                         .requestMatchers("/api/v1/ws/**").permitAll()
                         .requestMatchers("/api/v1/paises").permitAll()
                         .anyRequest().authenticated())

@@ -21,4 +21,7 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, Inte
 
     @Query("SELECT i FROM ItemCatalogo i LEFT JOIN FETCH i.producto WHERE i.catalogo.identificador = :catalogoId")
     List<ItemCatalogo> findByCatalogoIdWithProducto(@Param("catalogoId") Integer catalogoId);
+
+    @Query("SELECT COUNT(i) FROM ItemCatalogo i WHERE i.catalogo.subasta.identificador = :subastaId")
+    long countBySubastaId(@Param("subastaId") Integer subastaId);
 }

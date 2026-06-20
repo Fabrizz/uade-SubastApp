@@ -72,7 +72,17 @@ export default function AdminAdmitir() {
 
         {/* Header */}
         <View className="flex-row items-center px-6 pt-4 pb-4 gap-3">
-          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} className="p-1 -ml-1">
+          <TouchableOpacity
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/admin");
+              }
+            }}
+            activeOpacity={0.7}
+            className="p-1 -ml-1"
+          >
             <ArrowLeft size={22} color="white" />
           </TouchableOpacity>
           <View className="bg-purple-950 rounded-full p-2">

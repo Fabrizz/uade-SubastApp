@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fabriziob.com.subastapp.controller.subasta.CatalogoRequest;
 import fabriziob.com.subastapp.controller.subasta.CatalogoResponse;
+import fabriziob.com.subastapp.controller.subasta.ItemCatalogoPatchAceptacionRequest;
+import fabriziob.com.subastapp.controller.subasta.ItemCatalogoPatchRequest;
 import fabriziob.com.subastapp.controller.subasta.ItemCatalogoRequest;
 import fabriziob.com.subastapp.controller.subasta.ItemCatalogoResponse;
 import fabriziob.com.subastapp.entity.Catalogo;
@@ -17,6 +19,7 @@ import fabriziob.com.subastapp.entity.Empleado;
 import fabriziob.com.subastapp.entity.ItemCatalogo;
 import fabriziob.com.subastapp.entity.Producto;
 import fabriziob.com.subastapp.entity.Subasta;
+import fabriziob.com.subastapp.entity.enums.EstadoAceptacionItem;
 import fabriziob.com.subastapp.repository.CatalogoRepository;
 import fabriziob.com.subastapp.repository.EmpleadoRepository;
 import fabriziob.com.subastapp.repository.ItemCatalogoRepository;
@@ -60,6 +63,15 @@ public class CatalogoService {
                                 .orElseThrow(() -> new EntityNotFoundException("Item no encontrado: " + idItem));
                 verificarItemEnSubasta(item, subastaId);
                 return toItemResponse(item);
+        }
+
+        @Transactional(readOnly = true)
+        public ItemCatalogoResponse getCatalogoItemByProducto(Integer productoId) {
+                List<ItemCatalogo> items = itemRepository.findByProducto_Identificador(productoId);
+                if (items.isEmpty()) {
+                        throw new EntityNotFoundException("El producto " + productoId + " no está asociado a ningún catálogo");
+                }
+                return toItemResponse(items.get(0));
         }
 
         @Transactional(readOnly = true)
@@ -109,6 +121,63 @@ public class CatalogoService {
                 return toItemResponse(item);
         }
 
+        public ItemCatalogoResponse setAceptacion(Integer subastaId, Integer idItem, ItemCatalogoPatchAceptacionRequest req) {
+                ItemCatalogo item = itemRepository.findById(idItem)
+                                .orElseThrow(() -> new EntityNotFoundException("Item no encontrado: " + idItem));
+                verificarItemEnSubasta(item, subastaId);
+                
+                if (req.getEstadoAceptacion() != null) {
+                        item.setEstadoAceptacion(req.getEstadoAceptacion());
+                        
+                        // Update the product's EstadoBien as appropriate
+                        if (item.getProducto() != null) {
+                                Producto p = item.getProducto();
+                                if (req.getEstadoAceptacion() == EstadoAceptacionItem.aceptado) {
+                                        if (p.getProductoExtra() != null) {
+                                                p.getProductoExtra().setEstadoBien(fabriziob.com.subastapp.entity.enums.EstadoBien.aceptado);
+                                        }
+                                } else if (req.getEstadoAceptacion() == EstadoAceptacionItem.rechazado) {
+                                        if (p.getProductoExtra() != null) {
+                                                p.getProductoExtra().setEstadoBien(fabriziob.com.subastapp.entity.enums.EstadoBien.devuelto);
+                                        }
+                                }
+                                productoRepository.save(p);
+                        }
+                }
+                
+                item = itemRepository.save(item);
+                return toItemResponse(item);
+        }
+
+        public ItemCatalogoResponse patchItem(Integer subastaId, Integer idItem, ItemCatalogoPatchRequest req) {
+                ItemCatalogo item = itemRepository.findById(idItem)
+                                .orElseThrow(() -> new EntityNotFoundException("Item no encontrado: " + idItem));
+                verificarItemEnSubasta(item, subastaId);
+
+                if (req.getPrecioBase() != null) {
+                        item.setPrecioBase(req.getPrecioBase());
+                }
+                if (req.getComision() != null) {
+                        item.setComision(req.getComision());
+                }
+                if (req.getSubastado() != null) {
+                        item.setSubastado(req.getSubastado());
+                }
+                if (req.getEstadoAceptacion() != null) {
+                        item.setEstadoAceptacion(req.getEstadoAceptacion());
+                }
+
+                item = itemRepository.save(item);
+                return toItemResponse(item);
+        }
+
+        public void deleteItem(Integer subastaId, Integer idItem) {
+                ItemCatalogo item = itemRepository.findById(idItem)
+                                .orElseThrow(() -> new EntityNotFoundException("Item no encontrado: " + idItem));
+                verificarItemEnSubasta(item, subastaId);
+                itemRepository.delete(item);
+        }
+
         // ─── helpers ───────────────────────────────────────────────────────────
 
         private void verificarSubasta(Integer subastaId) {
@@ -142,9 +211,14 @@ public class CatalogoService {
 
         private ItemCatalogoResponse toItemResponse(ItemCatalogo i) {
                 Producto producto = i.getProducto();
+                Catalogo catalogo = i.getCatalogo();
+                Integer subastaId = (catalogo != null && catalogo.getSubasta() != null)
+                                ? catalogo.getSubasta().getIdentificador() : null;
+
                 return ItemCatalogoResponse.builder()
                                 .identificador(i.getIdentificador())
-                                .catalogoId(i.getCatalogo() != null ? i.getCatalogo().getIdentificador() : null)
+                                .catalogoId(catalogo != null ? catalogo.getIdentificador() : null)
+                                .subastaId(subastaId)
                                 .productoId(producto != null ? producto.getIdentificador() : null)
                                 .productoDescripcion(producto != null ? producto.getDescripcionCatalogo() : null)
                                 .precioBase(i.getPrecioBase())

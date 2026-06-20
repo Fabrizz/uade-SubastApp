@@ -2,6 +2,8 @@ package fabriziob.com.subastapp.repository;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,4 +15,7 @@ import fabriziob.com.subastapp.entity.Producto;
 public interface ProductoRepository extends JpaRepository<Producto, Integer> {
     @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.seguro WHERE p.identificador = :id")
     Optional<Producto> findByIdWithSeguro(@Param("id") Integer id);
+
+    Page<Producto> findByDuenioIdentificador(Integer duenioId, Pageable pageable);
 }
+

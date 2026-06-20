@@ -259,7 +259,17 @@ export default function AdminUsers() {
 
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 12, gap: 12 }}>
-          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={{ padding: 4, marginLeft: -4 }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/admin");
+              }
+            }}
+            activeOpacity={0.7}
+            style={{ padding: 4, marginLeft: -4 }}
+          >
             <ArrowLeft size={22} color="white" />
           </TouchableOpacity>
           <View style={{ backgroundColor: '#3b0764', borderRadius: 99, padding: 8 }}>

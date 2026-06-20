@@ -6,6 +6,8 @@ import { ArrowUpRight, Bell, Gavel, House, User } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useSubastaStore } from "@/lib/subastas.store";
+
 const TABS: Record<string, { label: string; Icon: typeof House }> = {
   index: { label: "Inicio", Icon: House },
   notifications: { label: "Notificaciones", Icon: Bell },
@@ -15,9 +17,11 @@ const TABS: Record<string, { label: string; Icon: typeof House }> = {
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const { hasPaymentMethod } = useAuth();
+  const { hasPaymentMethod, isAuthenticated } = useAuth();
   const { notifications } = useWebSocket();
   const notifCount = notifications.length;
+  const subastaActiva = useSubastaStore((s) => s.subasta);
+  const showSubastaBanner = isAuthenticated && subastaActiva !== null;
 
   if (hasPaymentMethod === false) {
     return null;
@@ -36,11 +40,13 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         elevation: 20,
       }}
     >
-      <View className="bg-[#6b267e]/70 overflow-hidden flex-row px-2 gap-1 flex items-center justify-center">
-        <View className="h-1.5 w-1.5 rounded-full bg-white animate-ping mr-0.5"></View>
-        <Text className="text-white font-semibold text-xs py-0.5">Estas conectado a una subasta</Text>
-        <ArrowUpRight color="white" size={12} />
-      </View>
+      {showSubastaBanner && (
+        <View className="bg-[#6b267e]/70 overflow-hidden flex-row px-2 gap-1 flex items-center justify-center">
+          <View className="h-1.5 w-1.5 rounded-full bg-white animate-ping mr-0.5"></View>
+          <Text className="text-white font-semibold text-xs py-0.5">Estas conectado a una subasta</Text>
+          <ArrowUpRight color="white" size={12} />
+        </View>
+      )}
       <View
         style={{ paddingBottom: insets.bottom - 12 }}
         className="flex-row font-montserrat items-center justify-between px-4 pb-3 pt-2
@@ -53,10 +59,32 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           const { label, Icon } = tabConfig;
           const isActive = state.index === index;
 
+          const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!event.defaultPrevented) {
+              if (isActive) {
+                if (route.name === "auctions") {
+                  if (!subastaActiva) {
+                    navigation.navigate("auctions", { screen: "index" });
+                  }
+                } else {
+                  navigation.navigate(route.name, { screen: "index" });
+                }
+              } else {
+                navigation.navigate(route.name);
+              }
+            }
+          };
+
           return (
             <Pressable
               key={route.key}
-              onPress={() => navigation.navigate(route.name)}
+              onPress={onPress}
               className="items-center flex-1 rounded-2xl pb-1 pt-1.5 gap-1"
               style={
                 isActive
