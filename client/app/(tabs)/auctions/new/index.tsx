@@ -4,6 +4,7 @@ import { useAuth } from "@/context/auth";
 import { api, API_BASE } from "@/lib/api";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system/legacy";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { Camera, FileText, Gavel, ImageIcon, X, Check } from "lucide-react-native";
@@ -53,7 +54,7 @@ export default function RequestAuctionScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: 'images',
       quality: 0.8,
       allowsMultipleSelection: true,
       selectionLimit: 6 - images.length,
@@ -146,7 +147,20 @@ export default function RequestAuctionScreen() {
         }
       }
 
-      // 2. Crear FormData para enviar el producto y sus fotos
+      // 2. Parsear fechaCreacionObra de forma segura para evitar error 400 por LocalDate
+      let parsedFechaCreacionObra: string | undefined = undefined;
+      let extraHistoria = "";
+      if (fechaCreacion.trim()) {
+        const cleaned = fechaCreacion.trim();
+        if (/^\d{4}$/.test(cleaned)) {
+          parsedFechaCreacionObra = `${cleaned}-01-01`;
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(cleaned)) {
+          parsedFechaCreacionObra = cleaned;
+        } else {
+          extraHistoria = `Época de creación: ${cleaned}. `;
+        }
+      }
+
       const payload = {
         titulo: name.trim(),
         descripcionCompleta: longDesc.trim() || name.trim(),
@@ -156,14 +170,19 @@ export default function RequestAuctionScreen() {
         cantidadPiezas: 1,
         esObraDeArte: !!artista || !!fechaCreacion || !!historia,
         artista: artista.trim() || undefined,
-        fechaCreacionObra: fechaCreacion.trim() || undefined,
-        historia: historia.trim() || undefined,
+        fechaCreacionObra: parsedFechaCreacionObra,
+        historia: extraHistoria + (historia.trim() || ""),
         deposito: "Sede Central",
       };
 
+      const jsonUri = FileSystem.cacheDirectory + "datos.json";
+      await FileSystem.writeAsStringAsync(jsonUri, JSON.stringify(payload), {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
       const formData = new FormData();
       formData.append("datos", {
-        string: JSON.stringify(payload),
+        uri: jsonUri,
         type: "application/json",
         name: "datos.json",
       } as any);
@@ -193,11 +212,7 @@ export default function RequestAuctionScreen() {
         throw new Error(text || "Error en el servidor al registrar el producto.");
       }
 
-      Alert.alert(
-        "Solicitud Registrada",
-        "Tu artículo ha sido registrado con éxito. Nuestro equipo revisará la información. Deberás coordinar el envío a nuestra sede para la inspección física y posterior inclusión en subasta."
-      );
-      router.back();
+      router.replace("/(tabs)/auctions/new/verification-success" as any);
     } catch (err: any) {
       Alert.alert("Error", err.message || "Ocurrió un error al registrar el artículo.");
     } finally {
@@ -386,7 +401,7 @@ export default function RequestAuctionScreen() {
                 placeholderTextColor="#a3a3a3"
                 value={name}
                 onChangeText={setName}
-                disabled={isSubmitting}
+                editable={!isSubmitting}
               />
             </View>
 
@@ -401,7 +416,7 @@ export default function RequestAuctionScreen() {
                 placeholderTextColor="#a3a3a3"
                 value={shortDesc}
                 onChangeText={setShortDesc}
-                disabled={isSubmitting}
+                editable={!isSubmitting}
               />
             </View>
 
@@ -418,7 +433,7 @@ export default function RequestAuctionScreen() {
                 numberOfLines={4}
                 value={longDesc}
                 onChangeText={setLongDesc}
-                disabled={isSubmitting}
+                editable={!isSubmitting}
               />
             </View>
 
@@ -434,7 +449,7 @@ export default function RequestAuctionScreen() {
                 placeholderTextColor="#a3a3a3"
                 value={artista}
                 onChangeText={setArtista}
-                disabled={isSubmitting}
+                editable={!isSubmitting}
               />
             </View>
 
@@ -449,7 +464,7 @@ export default function RequestAuctionScreen() {
                 placeholderTextColor="#a3a3a3"
                 value={fechaCreacion}
                 onChangeText={setFechaCreacion}
-                disabled={isSubmitting}
+                editable={!isSubmitting}
               />
             </View>
 
@@ -466,7 +481,7 @@ export default function RequestAuctionScreen() {
                 numberOfLines={3}
                 value={historia}
                 onChangeText={setHistoria}
-                disabled={isSubmitting}
+                editable={!isSubmitting}
               />
             </View>
           </View>

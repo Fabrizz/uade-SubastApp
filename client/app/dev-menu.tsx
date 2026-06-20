@@ -66,6 +66,7 @@ const ROUTES = [
   { name: "Pantalla: Detalle Subasta (Test ID: 1)", path: "/(tabs)/auctions/1", icon: "eye-outline" },
   { name: "Pantalla: Subastar Artículo", path: "/(tabs)/auctions/new", icon: "hammer-outline" },
   { name: "Pantalla: Subasta Aceptada", path: "/(tabs)/auctions/new/auction-accepted", icon: "checkmark-circle-outline" },
+  { name: "Pantalla: Verificación Éxito", path: "/(tabs)/auctions/new/verification-success", icon: "checkmark-circle-outline" },
 ] satisfies { name: string; path: string; icon: keyof typeof ICON_MAP }[];
 
 export default function DevMenu() {

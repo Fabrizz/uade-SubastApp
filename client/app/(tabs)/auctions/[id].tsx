@@ -96,7 +96,10 @@ export default function AuctionDetailScreen() {
             headers: { Authorization: `Bearer ${token}` }
           }),
           api.GET("/api/v1/subastas/{id}/catalogo/items", {
-            params: { path: { id: Number(id) } },
+            params: {
+              path: { id: Number(id) },
+              query: { pageable: {} }
+            },
             headers: { Authorization: `Bearer ${token}` }
           }),
           api.GET("/api/v1/clientes/{id}/medios-pago", {

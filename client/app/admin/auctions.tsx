@@ -3,7 +3,8 @@ import { useAuth } from "@/context/auth";
 import { api, API_BASE } from "@/lib/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Calendar, Clock, MapPin, Plus, Users, X, DollarSign, Check, Gavel } from "lucide-react-native";
+import { ArrowLeft, Calendar, Clock, MapPin, Plus, Users, X, DollarSign, Check, Gavel, ChevronDown, ChevronUp, User } from "lucide-react-native";
+import * as FileSystem from "expo-file-system/legacy";
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Alert,
@@ -15,6 +16,8 @@ import {
   ActivityIndicator,
   Modal,
   Switch,
+  Image,
+  Pressable,
 } from "react-native";
 import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 
@@ -55,6 +58,11 @@ export default function AdminAuctionsScreen() {
   const [subastadores, setSubastadores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<"subastas" | "articulos">("subastas");
+  const [moderationReasonModalVisible, setModerationReasonModalVisible] = useState(false);
+  const [selectedProductForRejection, setSelectedProductForRejection] = useState<any | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [isModerating, setIsModerating] = useState(false);
 
   // Creation Form State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -71,11 +79,20 @@ export default function AdminAuctionsScreen() {
   // Add Lot Form States
   const [products, setProducts] = useState<any[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [expandedProductId, setExpandedProductId] = useState<number | null>(null);
+  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState("");
   const [precioBase, setPrecioBase] = useState("");
   const [comision, setComision] = useState("10");
   const [isAddingLot, setIsAddingLot] = useState(false);
   const [showProductDropdown, setShowProductDropdown] = useState(false);
+
+  // Physical Approval Form States
+  const [physicalApprovalModalVisible, setPhysicalApprovalModalVisible] = useState(false);
+  const [selectedProductForPhysicalApproval, setSelectedProductForPhysicalApproval] = useState<any | null>(null);
+  const [physicalBasePrice, setPhysicalBasePrice] = useState("");
+  const [physicalCommission, setPhysicalCommission] = useState("10");
+  const [physicalSubastaId, setPhysicalSubastaId] = useState("");
 
   // Quick Product/Owner Registration States
   const [newProductTitle, setNewProductTitle] = useState("");
@@ -149,7 +166,10 @@ export default function AdminAuctionsScreen() {
         setCatalogId(catalogData.identificador ?? null);
         
         const { data: resItems, error: itemsError } = await api.GET("/api/v1/subastas/{id}/catalogo/items", {
-          params: { path: { id: subastaId }, query: { size: 100 } },
+          params: {
+            path: { id: subastaId },
+            query: { pageable: { size: 100 } }
+          },
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -175,6 +195,7 @@ export default function AdminAuctionsScreen() {
       let responsableId = 1;
       try {
         const { data: resEmployees } = await api.GET("/api/v1/empleados/", {
+          params: { query: { pageable: {} } },
           headers: { Authorization: `Bearer ${token}` },
         });
         const employeesList = (resEmployees as any)?.content ?? resEmployees ?? [];
@@ -224,11 +245,170 @@ export default function AdminAuctionsScreen() {
     }
   };
 
+  const handleApproveProduct = async (productId: number) => {
+    if (!token) return;
+    setIsModerating(true);
+    try {
+      const { error } = await api.PATCH("/productos/{id}/habilitacion", {
+        params: { path: { id: productId } },
+        headers: { Authorization: `Bearer ${token}` },
+        body: { estadoBien: "inspeccionado" },
+      });
+      if (error) {
+        throw new Error((error as any)?.mensaje || (error as any)?.message || JSON.stringify(error));
+      }
+      Alert.alert("Éxito", "El artículo ha sido aprobado digitalmente. Se le ha enviado un mensaje al usuario solicitando el envío del bien al almacén (Lima 700).");
+      await fetchProducts();
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "No se pudo aprobar el artículo.");
+    } finally {
+      setIsModerating(false);
+    }
+  };
+
+  const handleApprovePhysicalProductSubmit = async () => {
+    if (!token || !selectedProductForPhysicalApproval) return;
+    
+    if (!physicalBasePrice || isNaN(Number(physicalBasePrice)) || Number(physicalBasePrice) <= 0) {
+      Alert.alert("Error", "Ingresa un precio base válido.");
+      return;
+    }
+    if (!physicalCommission || isNaN(Number(physicalCommission)) || Number(physicalCommission) < 0) {
+      Alert.alert("Error", "Ingresa una comisión válida.");
+      return;
+    }
+    if (!physicalSubastaId) {
+      Alert.alert("Error", "Selecciona una subasta.");
+      return;
+    }
+
+    setIsModerating(true);
+    try {
+      // 1. Approve product physically
+      const { error: approveError } = await api.PATCH("/productos/{id}/habilitacion", {
+        params: { path: { id: selectedProductForPhysicalApproval.identificador } },
+        headers: { Authorization: `Bearer ${token}` },
+        body: { estadoBien: "aceptado" },
+      });
+      if (approveError) {
+        throw new Error((approveError as any)?.mensaje || (approveError as any)?.message || JSON.stringify(approveError));
+      }
+
+      // 2. Check if catalog exists for selected subasta, create if not
+      let catalogIdToUse = null;
+      const { data: catalogData, error: catalogGetError } = await api.GET("/api/v1/subastas/{id}/catalogo", {
+        params: { path: { id: Number(physicalSubastaId) } },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (catalogData && !catalogGetError) {
+        catalogIdToUse = catalogData.identificador;
+      } else {
+        // Create catalog
+        let responsableId = 1;
+        try {
+          const { data: resEmployees } = await api.GET("/api/v1/empleados/", {
+            params: { query: { pageable: {} } },
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const employeesList = (resEmployees as any)?.content ?? resEmployees ?? [];
+          if (employeesList.length > 0 && employeesList[0].identificador) {
+            responsableId = employeesList[0].identificador;
+          }
+        } catch (e) {
+          console.warn("Could not fetch employees, using default ID 1:", e);
+        }
+
+        const { data: createdCatalog, error: catalogCreateError } = await api.POST("/api/v1/subastas/{id}/catalogo", {
+          params: { path: { id: Number(physicalSubastaId) } },
+          headers: { Authorization: `Bearer ${token}` },
+          body: {
+            descripcion: `Catálogo de Subasta #${physicalSubastaId}`,
+            responsableId,
+          },
+        });
+        if (catalogCreateError) {
+          throw new Error("No se pudo crear el catálogo automático para la subasta.");
+        }
+      }
+
+      // 3. Add product to catalog items
+      const { error: itemError } = await api.POST("/api/v1/subastas/{id}/catalogo/items", {
+        params: { path: { id: Number(physicalSubastaId) } },
+        headers: { Authorization: `Bearer ${token}` },
+        body: {
+          productoId: selectedProductForPhysicalApproval.identificador,
+          precioBase: Number(physicalBasePrice),
+          comision: Number(physicalCommission),
+        },
+      });
+
+      if (itemError) {
+        throw new Error((itemError as any)?.message ?? "Error al agregar el lote al catálogo.");
+      }
+
+      Alert.alert(
+        "Éxito",
+        "El artículo ha sido aprobado físicamente, se ha asignado a la subasta con el precio base y la comisión ingresadas, y se le notificó al dueño para su aceptación."
+      );
+      
+      setPhysicalApprovalModalVisible(false);
+      setSelectedProductForPhysicalApproval(null);
+      setPhysicalBasePrice("");
+      setPhysicalCommission("10");
+      setPhysicalSubastaId("");
+      
+      await fetchProducts();
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "No se pudo completar la aprobación física.");
+    } finally {
+      setIsModerating(false);
+    }
+  };
+
+  const handleRejectProductPress = (prod: any) => {
+    setSelectedProductForRejection(prod);
+    setRejectionReason("");
+    setModerationReasonModalVisible(true);
+  };
+
+  const handleRejectProductSubmit = async () => {
+    if (!token || !selectedProductForRejection) return;
+    if (!rejectionReason.trim()) {
+      Alert.alert("Motivo requerido", "Por favor ingresa un motivo para el rechazo.");
+      return;
+    }
+    setIsModerating(true);
+    try {
+      const targetState = selectedProductForRejection.estadoBien === "inspeccionado" ? "devuelto" : "rechazado";
+      const { error } = await api.PATCH("/productos/{id}/habilitacion", {
+        params: { path: { id: selectedProductForRejection.identificador } },
+        headers: { Authorization: `Bearer ${token}` },
+        body: {
+          estadoBien: targetState,
+          motivoRechazo: rejectionReason.trim(),
+        },
+      });
+      if (error) {
+        throw new Error((error as any)?.mensaje || (error as any)?.message || JSON.stringify(error));
+      }
+      Alert.alert("Éxito", `El artículo ha sido ${targetState === "devuelto" ? "devuelto (rechazo físico)" : "rechazado (rechazo digital)"} y se le notificó al dueño.`);
+      setModerationReasonModalVisible(false);
+      setSelectedProductForRejection(null);
+      await fetchProducts();
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "No se pudo rechazar el artículo.");
+    } finally {
+      setIsModerating(false);
+    }
+  };
+
   const fetchOwners = async () => {
     if (!token) return;
     setOwnersLoading(true);
     try {
       const { data, error } = await api.GET("/api/v1/duenios", {
+        params: { query: { pageable: {} } },
         headers: { Authorization: `Bearer ${token}` },
       });
       if (error) {
@@ -355,9 +535,14 @@ export default function AdminAuctionsScreen() {
         deposito: "Sede Central",
       };
 
+      const jsonUri = FileSystem.cacheDirectory + "quick_datos.json";
+      await FileSystem.writeAsStringAsync(jsonUri, JSON.stringify(payload), {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
       const formData = new FormData();
       formData.append("datos", {
-        string: JSON.stringify(payload),
+        uri: jsonUri,
         type: "application/json",
         name: "datos.json",
       } as any);
@@ -476,7 +661,7 @@ export default function AdminAuctionsScreen() {
       setSelectedSubastador("");
 
       // Reload
-      setRefreshing(true);
+      setLoading(true);
       loadData();
     } catch (err: any) {
       Alert.alert("Error de Creación", err.message || "No se pudo crear la subasta");
@@ -502,7 +687,13 @@ export default function AdminAuctionsScreen() {
         outlet={
           <View className="flex-row items-center gap-3">
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/admin");
+                }
+              }}
               className="w-10 h-10 items-center justify-center bg-neutral-900/60 rounded-full border border-neutral-800"
             >
               <ArrowLeft size={20} color="#d8b4fe" />
@@ -516,156 +707,407 @@ export default function AdminAuctionsScreen() {
       />
 
       <View className="flex-1 px-4 pt-4">
-        {/* Search Bar + Create Button Row */}
-        <View className="flex-row items-center gap-3 mb-5">
-          <View className="flex-1 bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2.5 flex-row items-center">
-            <TextInput
-              className="flex-1 text-white text-xs font-manrope"
-              placeholder="Buscar por colección, ubicación, ..."
-              placeholderTextColor="#6b7280"
-              value={search}
-              onChangeText={setSearch}
-            />
-            {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch("")} className="p-0.5">
-                <X size={14} color="#6b7280" />
-              </TouchableOpacity>
-            )}
-          </View>
-
+        {/* Tab Selector */}
+        <View className="flex-row bg-neutral-900 border border-neutral-800 rounded-xl p-1 mb-5">
           <TouchableOpacity
-            onPress={() => setShowCreateModal(true)}
+            onPress={() => setActiveTab("subastas")}
             activeOpacity={0.8}
-            className="w-11 h-11 bg-purple-700 rounded-xl items-center justify-center border border-purple-500"
+            className={`flex-1 py-2.5 rounded-lg items-center ${activeTab === "subastas" ? "bg-purple-700" : ""}`}
           >
-            <Plus size={22} color="white" />
+            <Text className={`font-bold text-xs ${activeTab === "subastas" ? "text-white" : "text-neutral-400"}`}>
+              Subastas
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setActiveTab("articulos");
+              fetchProducts();
+            }}
+            activeOpacity={0.8}
+            className={`flex-1 py-2.5 rounded-lg items-center ${activeTab === "articulos" ? "bg-purple-700" : ""}`}
+          >
+            <Text className={`font-bold text-xs ${activeTab === "articulos" ? "text-white" : "text-neutral-400"}`}>
+              Moderar Artículos
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* List of subastas */}
-        {loading ? (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#d8b4fe" />
-            <Text className="text-neutral-400 text-xs mt-3">Cargando subastas...</Text>
-          </View>
-        ) : filteredSubastas.length === 0 ? (
-          <View className="flex-1 justify-center items-center py-20">
-            <Text className="text-neutral-500 font-manrope text-sm">No hay subastas registradas.</Text>
-          </View>
+        {activeTab === "subastas" ? (
+          <>
+            {/* Search Bar + Create Button Row */}
+            <View className="flex-row items-center gap-3 mb-5">
+              <View className="flex-1 bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2.5 flex-row items-center">
+                <TextInput
+                  className="flex-1 text-white text-xs font-manrope"
+                  placeholder="Buscar por colección, ubicación, ..."
+                  placeholderTextColor="#6b7280"
+                  value={search}
+                  onChangeText={setSearch}
+                />
+                {search.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearch("")} className="p-0.5">
+                    <X size={14} color="#6b7280" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setShowCreateModal(true)}
+                activeOpacity={0.8}
+                className="w-11 h-11 bg-purple-700 rounded-xl items-center justify-center border border-purple-500"
+              >
+                <Plus size={22} color="white" />
+              </TouchableOpacity>
+            </View>
+
+            {/* List of subastas */}
+            {loading ? (
+              <View className="flex-1 justify-center items-center">
+                <ActivityIndicator size="large" color="#d8b4fe" />
+                <Text className="text-neutral-400 text-xs mt-3">Cargando subastas...</Text>
+              </View>
+            ) : filteredSubastas.length === 0 ? (
+              <View className="flex-1 justify-center items-center py-20">
+                <Text className="text-neutral-500 font-manrope text-sm">No hay subastas registradas.</Text>
+              </View>
+            ) : (
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+              >
+                {filteredSubastas.map((s) => {
+                  const catKey = (s.categoria || "comun").toLowerCase();
+                  const color = TIER_COLOR[catKey] || "#2dd4bf";
+                  const bg = TIER_BG[catKey] || "#0f3330";
+                  const isClosed = s.estado === "cerrada";
+
+                  return (
+                    <View
+                      key={s.identificador}
+                      className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 mb-3"
+                    >
+                      <View className="flex-row justify-between items-start mb-2">
+                        <Text className="text-white text-base font-bold flex-1 mr-2" numberOfLines={1}>
+                          {s.nombreColeccion || `Subasta #${s.identificador}`}
+                        </Text>
+                        {/* Category pill */}
+                        <View
+                          className="px-2 py-0.5 rounded-full border"
+                          style={{ backgroundColor: bg, borderColor: color }}
+                        >
+                          <Text className="text-[9px] font-bold uppercase" style={{ color }}>
+                            {s.categoria}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Subtitle location */}
+                      <View className="flex-row items-center gap-1.5 mb-3">
+                        <MapPin size={12} color="#8e8e8e" />
+                        <Text className="text-neutral-400 text-xs flex-1" numberOfLines={1}>
+                          {s.ubicacion || "Ubicación virtual"}
+                        </Text>
+                      </View>
+
+                      {/* Badges footer */}
+                      <View className="flex-row items-center justify-between border-t border-neutral-800/80 pt-3 mb-3">
+                        <View className="flex-row gap-4">
+                          <View className="flex-row items-center gap-1">
+                            <Calendar size={12} color="#a855f7" />
+                            <Text className="text-neutral-400 text-[10px]">{s.fecha}</Text>
+                          </View>
+                          <View className="flex-row items-center gap-1">
+                            <Clock size={12} color="#a855f7" />
+                            <Text className="text-neutral-400 text-[10px]">{s.hora?.slice(0, 5) || "--:--"}</Text>
+                          </View>
+                          <View className="flex-row items-center gap-1">
+                            <Users size={12} color="#a855f7" />
+                            <Text className="text-neutral-400 text-[10px]">{s.capacidadAsistentes || "0"} postores</Text>
+                          </View>
+                        </View>
+
+                        {/* Status badge */}
+                        <View className={`px-2 py-0.5 rounded-md ${isClosed ? "bg-neutral-800" : "bg-emerald-950/40"}`}>
+                          <Text className={`text-[9px] font-bold uppercase ${isClosed ? "text-neutral-500" : "text-emerald-400"}`}>
+                            {s.estado}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Metadata expansion rows for all subasta fields */}
+                      <View className="bg-neutral-950/50 rounded-xl p-3 border border-neutral-800/60 gap-2">
+                        <View className="flex-row justify-between items-center">
+                          <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Martillero</Text>
+                          <Text className="text-neutral-300 text-xs font-manrope-medium">
+                            {s.subastadorNombre ? `${s.subastadorNombre} (ID: ${s.subastadorId})` : `No asignado (ID: ${s.subastadorId || "—"})`}
+                          </Text>
+                        </View>
+                        <View className="flex-row justify-between items-center">
+                          <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Moneda / Finanzas</Text>
+                          <Text className="text-teal-400 text-xs font-manrope-bold">{s.moneda || "ARS"}</Text>
+                        </View>
+                        <View className="flex-row justify-between items-center">
+                          <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Estado Granular</Text>
+                          <Text className="text-fuchsia-400 text-xs font-manrope-semibold uppercase">{s.estadoDetallado || "creada"}</Text>
+                        </View>
+                        <View className="flex-row justify-between items-center">
+                          <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Depósito Propio</Text>
+                          <Text className="text-neutral-300 text-xs font-manrope-medium">{s.tieneDeposito === "si" ? "Sí" : "No"}</Text>
+                        </View>
+                        <View className="flex-row justify-between items-center">
+                          <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Seguridad Propia</Text>
+                          <Text className="text-neutral-300 text-xs font-manrope-medium">{s.seguridadPropia === "si" ? "Sí" : "No"}</Text>
+                        </View>
+                        <View className="flex-row justify-between items-center">
+                          <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Tipo Subasta</Text>
+                          <Text className="text-neutral-300 text-xs font-manrope-medium">
+                            {s.esColeccion === true || s.esColeccion === "si" ? `Colección (${s.nombreColeccion || ""})` : "General"}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSelectedSubastaForCatalog(s);
+                          setShowCatalogModal(true);
+                          fetchCatalogData(s.identificador);
+                          fetchProducts();
+                          fetchOwners();
+                        }}
+                        activeOpacity={0.8}
+                        className="mt-3 bg-purple-955 border border-purple-800/60 py-2.5 rounded-xl items-center justify-center flex-row gap-2"
+                        style={{ backgroundColor: "#2e0854" }}
+                      >
+                        <Gavel size={14} color="#d8b4fe" />
+                        <Text className="text-purple-300 text-xs font-bold font-manrope-bold">Gestionar Lotes (Catálogo)</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </>
         ) : (
+          /* List of products under moderation */
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
           >
-            {filteredSubastas.map((s) => {
-              const catKey = (s.categoria || "comun").toLowerCase();
-              const color = TIER_COLOR[catKey] || "#2dd4bf";
-              const bg = TIER_BG[catKey] || "#0f3330";
-              const isClosed = s.estado === "cerrada";
+            {productsLoading ? (
+              <View className="py-20 justify-center items-center">
+                <ActivityIndicator size="large" color="#d8b4fe" />
+                <Text className="text-neutral-400 text-xs mt-3">Cargando artículos...</Text>
+              </View>
+            ) : products.filter((p) => p.estadoBien === "recibido" || p.estadoBien === "inspeccionado").length === 0 ? (
+              <View className="py-20 justify-center items-center">
+                <Text className="text-neutral-500 font-manrope text-sm text-center">No hay artículos pendientes de revisión.</Text>
+              </View>
+            ) : (
+              products
+                .filter((p) => p.estadoBien === "recibido" || p.estadoBien === "inspeccionado")
+                .map((p) => {
+                  const isInspected = p.estadoBien === "inspeccionado";
+                  const isExpanded = expandedProductId === p.identificador;
+                  const owner = owners.find((o) => o.identificador === p.duenio);
+                  
+                  const imageUrl = (p.fotosIds && p.fotosIds.length > 0)
+                    ? `${API_BASE}/productos/${p.identificador}/fotos/${p.fotosIds[0]}/content`
+                    : "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=300&auto=format&fit=crop";
 
-              return (
-                <View
-                  key={s.identificador}
-                  className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 mb-3"
-                >
-                  <View className="flex-row justify-between items-start mb-2">
-                    <Text className="text-white text-base font-bold flex-1 mr-2" numberOfLines={1}>
-                      {s.nombreColeccion || `Subasta #${s.identificador}`}
-                    </Text>
-                    {/* Category pill */}
+                  return (
                     <View
-                      className="px-2 py-0.5 rounded-full border"
-                      style={{ backgroundColor: bg, borderColor: color }}
+                      key={p.identificador}
+                      className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-5 mb-4"
                     >
-                      <Text className="text-[9px] font-bold uppercase" style={{ color }}>
-                        {s.categoria}
-                      </Text>
-                    </View>
-                  </View>
+                      {/* Touchable card header */}
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => setExpandedProductId(isExpanded ? null : p.identificador)}
+                      >
+                        {/* Top status badges */}
+                        <View className="flex-row justify-between items-center mb-3">
+                          <View className={`px-2.5 py-0.5 rounded-full border ${
+                            isInspected 
+                              ? "bg-cyan-500/10 border-cyan-500/20" 
+                              : "bg-amber-500/10 border-amber-500/20"
+                          }`}>
+                            <Text className={`text-[10px] font-extrabold tracking-wider ${
+                              isInspected ? "text-cyan-400" : "text-amber-400"
+                            }`}>
+                              {isInspected ? "PENDIENTE FISICO" : "PENDIENTE DIGITAL"}
+                            </Text>
+                          </View>
+                          <View className="flex-row items-center gap-1">
+                            <Text className="text-neutral-500 text-[10px] font-manrope-medium">ID: {p.identificador}</Text>
+                            {isExpanded ? (
+                              <ChevronUp size={14} color="#6b7280" />
+                            ) : (
+                              <ChevronDown size={14} color="#6b7280" />
+                            )}
+                          </View>
+                        </View>
 
-                  {/* Subtitle location */}
-                  <View className="flex-row items-center gap-1.5 mb-3">
-                    <MapPin size={12} color="#8e8e8e" />
-                    <Text className="text-neutral-400 text-xs flex-1" numberOfLines={1}>
-                      {s.ubicacion || "Ubicación virtual"}
-                    </Text>
-                  </View>
+                        {/* General header info */}
+                        <View className="flex-row gap-4 mb-4">
+                          <Image
+                            source={{ uri: imageUrl }}
+                            className="w-20 h-20 bg-neutral-950 rounded-xl"
+                            resizeMode="cover"
+                          />
+                          <View className="flex-1">
+                            <Text className="text-white text-base font-bold mb-1">{p.titulo}</Text>
+                            <Text className="text-neutral-400 text-xs" numberOfLines={isExpanded ? 100 : 2}>
+                              {p.descripcionCatalogo || p.descripcionCompleta}
+                            </Text>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
 
-                  {/* Badges footer */}
-                  <View className="flex-row items-center justify-between border-t border-neutral-800/80 pt-3 mb-3">
-                    <View className="flex-row gap-4">
-                      <View className="flex-row items-center gap-1">
-                        <Calendar size={12} color="#a855f7" />
-                        <Text className="text-neutral-400 text-[10px]">{s.fecha}</Text>
-                      </View>
-                      <View className="flex-row items-center gap-1">
-                        <Clock size={12} color="#a855f7" />
-                        <Text className="text-neutral-400 text-[10px]">{s.hora?.slice(0, 5) || "--:--"}</Text>
-                      </View>
-                      <View className="flex-row items-center gap-1">
-                        <Users size={12} color="#a855f7" />
-                        <Text className="text-neutral-400 text-[10px]">{s.capacidadAsistentes || "0"} postores</Text>
-                      </View>
-                    </View>
+                      {/* Expanded View */}
+                      {isExpanded && (
+                        <View className="border-t border-neutral-800/80 pt-4 mt-2 gap-4">
+                          {/* Image Carousel */}
+                          {p.fotosIds && p.fotosIds.length > 0 && (
+                            <View>
+                              <Text className="text-neutral-400 text-[10px] uppercase font-manrope-bold mb-2">Fotos del artículo ({p.fotosIds.length})</Text>
+                               <ScrollView
+                                 horizontal={true}
+                                 nestedScrollEnabled={true}
+                                 showsHorizontalScrollIndicator={true}
+                                 contentContainerStyle={{ paddingRight: 20 }}
+                               >
+                                {p.fotosIds.map((imgId: number, idx: number) => {
+                                  const picUrl = `${API_BASE}/productos/${p.identificador}/fotos/${imgId}/content`;
+                                  return (
+                                    <TouchableOpacity
+                                      key={imgId || idx}
+                                      activeOpacity={0.9}
+                                      onPress={() => setSelectedPhotoUrl(picUrl)}
+                                    >
+                                      <Image
+                                        source={{ uri: picUrl }}
+                                        className="w-44 h-36 bg-neutral-950 rounded-xl mr-3"
+                                        resizeMode="cover"
+                                      />
+                                    </TouchableOpacity>
+                                  );
+                                })}
+                              </ScrollView>
+                            </View>
+                          )}
 
-                    {/* Status badge */}
-                    <View className={`px-2 py-0.5 rounded-md ${isClosed ? "bg-neutral-800" : "bg-emerald-950/40"}`}>
-                      <Text className={`text-[9px] font-bold uppercase ${isClosed ? "text-neutral-500" : "text-emerald-400"}`}>
-                        {s.estado}
-                      </Text>
-                    </View>
-                  </View>
+                          {/* Extended info grid */}
+                          <View className="bg-neutral-950/50 border border-neutral-800/80 rounded-xl p-4 gap-3">
+                            <View className="border-b border-neutral-900 pb-2">
+                              <Text className="text-neutral-500 text-[9px] uppercase font-manrope-bold mb-0.5">Descripción Completa</Text>
+                              <Text className="text-neutral-200 text-xs leading-5">{p.descripcionCompleta || "—"}</Text>
+                            </View>
 
-                  {/* Metadata expansion rows for all subasta fields */}
-                  <View className="bg-neutral-950/50 rounded-xl p-3 border border-neutral-800/60 gap-2">
-                    <View className="flex-row justify-between items-center">
-                      <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Martillero</Text>
-                      <Text className="text-neutral-300 text-xs font-manrope-medium">
-                        {s.subastadorNombre ? `${s.subastadorNombre} (ID: ${s.subastadorId})` : `No asignado (ID: ${s.subastadorId || "—"})`}
-                      </Text>
-                    </View>
-                    <View className="flex-row justify-between items-center">
-                      <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Moneda / Finanzas</Text>
-                      <Text className="text-teal-400 text-xs font-manrope-bold">{s.moneda || "ARS"}</Text>
-                    </View>
-                    <View className="flex-row justify-between items-center">
-                      <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Estado Granular</Text>
-                      <Text className="text-fuchsia-400 text-xs font-manrope-semibold uppercase">{s.estadoDetallado || "creada"}</Text>
-                    </View>
-                    <View className="flex-row justify-between items-center">
-                      <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Depósito Propio</Text>
-                      <Text className="text-neutral-300 text-xs font-manrope-medium">{s.tieneDeposito === "si" ? "Sí" : "No"}</Text>
-                    </View>
-                    <View className="flex-row justify-between items-center">
-                      <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Seguridad Propia</Text>
-                      <Text className="text-neutral-300 text-xs font-manrope-medium">{s.seguridadPropia === "si" ? "Sí" : "No"}</Text>
-                    </View>
-                    <View className="flex-row justify-between items-center">
-                      <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Tipo Subasta</Text>
-                      <Text className="text-neutral-300 text-xs font-manrope-medium">
-                        {s.esColeccion === true || s.esColeccion === "si" ? `Colección (${s.nombreColeccion || ""})` : "General"}
-                      </Text>
-                    </View>
-                  </View>
+                            <View className="flex-row flex-wrap gap-y-3">
+                              {p.artista && (
+                                <View style={{ width: "50%" }}>
+                                  <Text className="text-neutral-500 text-[9px] uppercase font-manrope-bold">Artista</Text>
+                                  <Text className="text-neutral-200 text-xs font-semibold">{p.artista}</Text>
+                                </View>
+                              )}
+                              {p.fechaCreacionObra && (
+                                <View style={{ width: "50%" }}>
+                                  <Text className="text-neutral-500 text-[9px] uppercase font-manrope-bold">Año/Creación</Text>
+                                  <Text className="text-neutral-200 text-xs font-semibold">{p.fechaCreacionObra}</Text>
+                                </View>
+                              )}
+                              {p.deposito && (
+                                <View style={{ width: "50%" }}>
+                                  <Text className="text-neutral-500 text-[9px] uppercase font-manrope-bold">Depósito asignado</Text>
+                                  <Text className="text-neutral-200 text-xs font-semibold">{p.deposito}</Text>
+                                </View>
+                              )}
+                              {p.cantidadPiezas != null && (
+                                <View style={{ width: "50%" }}>
+                                  <Text className="text-neutral-500 text-[9px] uppercase font-manrope-bold">Piezas</Text>
+                                  <Text className="text-neutral-200 text-xs font-semibold">
+                                    {p.esPiezaMultiple === true || p.esPiezaMultiple === "si" ? `Múltiple (${p.cantidadPiezas})` : "Única"}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
 
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSelectedSubastaForCatalog(s);
-                      setShowCatalogModal(true);
-                      fetchCatalogData(s.identificador);
-                      fetchProducts();
-                      fetchOwners();
-                    }}
-                    activeOpacity={0.8}
-                    className="mt-3 bg-purple-955 border border-purple-800/60 py-2.5 rounded-xl items-center justify-center flex-row gap-2"
-                    style={{ backgroundColor: "#2e0854" }}
-                  >
-                    <Gavel size={14} color="#d8b4fe" />
-                    <Text className="text-purple-300 text-xs font-bold font-manrope-bold">Gestionar Lotes (Catálogo)</Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
+                            {p.historia && (
+                              <View className="border-t border-neutral-900 pt-2">
+                                <Text className="text-neutral-500 text-[9px] uppercase font-manrope-bold mb-0.5">Historia/Procedencia</Text>
+                                <Text className="text-neutral-300 text-xs leading-5">{p.historia}</Text>
+                              </View>
+                            )}
+                          </View>
+
+                          {/* Owner details */}
+                          <View className="bg-[#A14EBF]/5 border border-[#A14EBF]/20 rounded-xl p-4">
+                            <View className="flex-row items-center gap-2 mb-2">
+                              <User size={14} color="#d8b4fe" />
+                              <Text className="text-purple-300 text-xs font-bold font-manrope-bold">Detalles del Propietario</Text>
+                            </View>
+                            {owner ? (
+                              <View className="gap-1">
+                                <View className="flex-row justify-between">
+                                  <Text className="text-neutral-500 text-[10px] font-manrope">Nombre:</Text>
+                                  <Text className="text-neutral-200 text-xs font-medium">{owner.nombre}</Text>
+                                </View>
+                                <View className="flex-row justify-between">
+                                  <Text className="text-neutral-500 text-[10px] font-manrope">Email:</Text>
+                                  <Text className="text-neutral-200 text-xs font-medium">{owner.email}</Text>
+                                </View>
+                                <View className="flex-row justify-between">
+                                  <Text className="text-neutral-500 text-[10px] font-manrope">Documento / CUIT:</Text>
+                                  <Text className="text-neutral-200 text-xs font-medium">{owner.documento || "—"}</Text>
+                                </View>
+                                <View className="flex-row justify-between">
+                                  <Text className="text-neutral-500 text-[10px] font-manrope">País:</Text>
+                                  <Text className="text-neutral-200 text-xs font-medium">{owner.pais || "—"}</Text>
+                                </View>
+                              </View>
+                            ) : (
+                              <Text className="text-neutral-400 text-xs">ID Dueño: {p.duenio || "—"} (No se encontró perfil cargado)</Text>
+                            )}
+                          </View>
+
+                          {/* Actions */}
+                          <View className="flex-row gap-3 mt-2">
+                            <TouchableOpacity
+                              onPress={() => handleRejectProductPress(p)}
+                              disabled={isModerating}
+                              className="flex-1 bg-red-950/45 border border-red-500/25 py-3 rounded-xl items-center justify-center"
+                            >
+                              <Text className="text-red-400 text-xs font-bold font-manrope-bold">
+                                {isInspected ? "Devolver / Rechazar" : "Rechazar"}
+                              </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              onPress={() => {
+                                if (isInspected) {
+                                  setSelectedProductForPhysicalApproval(p);
+                                  setPhysicalBasePrice("");
+                                  setPhysicalCommission("10");
+                                  setPhysicalSubastaId(subastas.length > 0 ? String(subastas[0].identificador) : "");
+                                  setPhysicalApprovalModalVisible(true);
+                                } else {
+                                  handleApproveProduct(p.identificador);
+                                }
+                              }}
+                              disabled={isModerating}
+                              className="flex-1 bg-emerald-950/45 border border-emerald-500/25 py-3 rounded-xl items-center justify-center"
+                            >
+                              <Text className="text-emerald-400 text-xs font-bold font-manrope-bold">
+                                {isInspected ? "Aprobar físicamente" : "Aprobar digitalmente"}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })
+            )}
           </ScrollView>
         )}
       </View>
@@ -1070,31 +1512,33 @@ export default function AdminAuctionsScreen() {
                         <View className="bg-neutral-950 border border-neutral-800 rounded-xl mt-1.5 p-2 max-h-48">
                           {productsLoading ? (
                             <ActivityIndicator size="small" color="#d8b4fe" className="py-4" />
-                          ) : products.length === 0 ? (
-                            <Text className="text-neutral-500 text-xs italic p-3 text-center">No hay artículos disponibles.</Text>
+                                                    ) : products.filter((p) => p.estadoBien === "aceptado").length === 0 ? (
+                            <Text className="text-neutral-500 text-xs italic p-3 text-center">No hay artículos aceptados disponibles.</Text>
                           ) : (
                             <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={true}>
-                              {products.map((p) => {
-                                const isSel = selectedProduct === String(p.identificador);
-                                return (
-                                  <TouchableOpacity
-                                    key={p.identificador}
-                                    onPress={() => {
-                                      setSelectedProduct(String(p.identificador));
-                                      setShowProductDropdown(false);
-                                    }}
-                                    className={`p-2.5 rounded-lg mb-1 flex-row justify-between items-center ${
-                                      isSel ? "bg-purple-950/40 border border-purple-900/40" : ""
-                                    }`}
-                                  >
-                                    <View className="flex-1 mr-2">
-                                      <Text className="text-white text-xs font-bold">{p.titulo}</Text>
-                                      <Text className="text-neutral-400 text-[9px] mt-0.5" numberOfLines={1}>{p.descripcionCompleta}</Text>
-                                    </View>
-                                    {isSel && <Check size={12} color="#d8b4fe" />}
-                                  </TouchableOpacity>
-                                );
-                              })}
+                              {products
+                                .filter((p) => p.estadoBien === "aceptado")
+                                .map((p) => {
+                                  const isSel = selectedProduct === String(p.identificador);
+                                  return (
+                                    <TouchableOpacity
+                                      key={p.identificador}
+                                      onPress={() => {
+                                        setSelectedProduct(String(p.identificador));
+                                        setShowProductDropdown(false);
+                                      }}
+                                      className={`p-2.5 rounded-lg mb-1 flex-row justify-between items-center ${
+                                        isSel ? "bg-purple-950/40 border border-purple-900/40" : ""
+                                      }`}
+                                    >
+                                      <View className="flex-1 mr-2">
+                                        <Text className="text-white text-xs font-bold">{p.titulo}</Text>
+                                        <Text className="text-neutral-400 text-[9px] mt-0.5" numberOfLines={1}>{p.descripcionCompleta}</Text>
+                                      </View>
+                                      {isSel && <Check size={12} color="#d8b4fe" />}
+                                    </TouchableOpacity>
+                                  );
+                                })}
                             </ScrollView>
                           )}
                         </View>
@@ -1289,6 +1733,214 @@ export default function AdminAuctionsScreen() {
             </ScrollView>
           </SafeAreaView>
         </LinearGradient>
+      </Modal>
+
+      {/* Physical Approval Modal */}
+      <Modal
+        visible={physicalApprovalModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          if (!isModerating) setPhysicalApprovalModalVisible(false);
+        }}
+      >
+        <View className="flex-1 bg-black/85 items-center justify-center p-6">
+          <View className="bg-neutral-900 border border-neutral-800 w-full rounded-3xl p-6 shadow-2xl max-h-[85%]">
+            <Text className="text-white text-lg font-bold mb-2 font-montserrat-bold">
+              Aprobar Físicamente
+            </Text>
+            <Text className="text-[#2dd4bf] text-xs font-semibold mb-4">
+              Artículo: {selectedProductForPhysicalApproval?.titulo}
+            </Text>
+
+            <ScrollView 
+              showsVerticalScrollIndicator={false} 
+              keyboardShouldPersistTaps="handled"
+              className="mb-4"
+            >
+              <View className="gap-4">
+                {/* Precio Base Input */}
+                <View>
+                  <Text className="text-purple-400 text-[10px] font-bold uppercase tracking-wider mb-2 ml-1">
+                    Precio Base (USD / ARS)
+                  </Text>
+                  <TextInput
+                    className="bg-neutral-950 border border-neutral-800 px-4 py-3 rounded-xl text-white text-sm font-manrope"
+                    keyboardType="numeric"
+                    placeholder="Ej: 500"
+                    placeholderTextColor="#525252"
+                    value={physicalBasePrice}
+                    onChangeText={setPhysicalBasePrice}
+                    editable={!isModerating}
+                  />
+                </View>
+
+                {/* Comisión Input */}
+                <View>
+                  <Text className="text-purple-400 text-[10px] font-bold uppercase tracking-wider mb-2 ml-1">
+                    Comisión Empresa (%)
+                  </Text>
+                  <TextInput
+                    className="bg-neutral-950 border border-neutral-800 px-4 py-3 rounded-xl text-white text-sm font-manrope"
+                    keyboardType="numeric"
+                    placeholder="Ej: 10"
+                    placeholderTextColor="#525252"
+                    value={physicalCommission}
+                    onChangeText={setPhysicalCommission}
+                    editable={!isModerating}
+                  />
+                </View>
+
+                {/* Subasta Selector */}
+                <View>
+                  <Text className="text-purple-400 text-[10px] font-bold uppercase tracking-wider mb-2 ml-1">
+                    Asignar a Subasta
+                  </Text>
+                  
+                  {subastas.length === 0 ? (
+                    <Text className="text-rose-400 text-xs italic p-2 bg-rose-500/10 border border-rose-500/20 rounded-xl">
+                      No hay subastas registradas en el sistema. Debes crear una subasta antes de poder aprobar físicamente este artículo.
+                    </Text>
+                  ) : (
+                    <View className="border border-neutral-800 bg-neutral-950/60 rounded-xl p-2 max-h-56">
+                      <ScrollView nestedScrollEnabled={true}>
+                        {subastas.map((s) => {
+                          const isSelected = physicalSubastaId === String(s.identificador);
+                          return (
+                            <TouchableOpacity
+                              key={s.identificador}
+                              onPress={() => setPhysicalSubastaId(String(s.identificador))}
+                              activeOpacity={0.8}
+                              className={`p-3 rounded-lg mb-2 flex-row justify-between items-center ${
+                                isSelected 
+                                  ? "bg-purple-900/50 border border-purple-500" 
+                                  : "bg-neutral-900 border border-transparent"
+                              }`}
+                            >
+                              <View className="flex-1 pr-2">
+                                <Text className="text-white text-xs font-bold font-manrope-bold">
+                                  Subasta #{s.identificador} {s.esColeccion === "si" || s.esColeccion === true ? `(${s.nombreColeccion})` : ""}
+                                </Text>
+                                <Text className="text-neutral-400 text-[10px] font-manrope mt-1">
+                                  {s.fecha} a las {s.hora} hs | {s.ubicacion || "Virtual"}
+                                </Text>
+                              </View>
+                              {isSelected && (
+                                <View className="w-4 h-4 rounded-full bg-purple-500 items-center justify-center">
+                                  <View className="w-2 h-2 rounded-full bg-white" />
+                                </View>
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* Modal Buttons */}
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={() => setPhysicalApprovalModalVisible(false)}
+                disabled={isModerating}
+                className="flex-1 bg-neutral-800 py-3.5 rounded-xl items-center"
+              >
+                <Text className="text-neutral-300 font-bold text-xs uppercase tracking-wider">Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                onPress={handleApprovePhysicalProductSubmit}
+                disabled={isModerating || subastas.length === 0}
+                className={`flex-1 py-3.5 rounded-xl items-center justify-center ${
+                  subastas.length === 0 ? "bg-neutral-800" : "bg-emerald-700"
+                }`}
+              >
+                {isModerating ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className="text-white font-bold text-xs uppercase tracking-wider">Aprobar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Rejection Reason Modal */}
+      <Modal
+        visible={moderationReasonModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setModerationReasonModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/85 items-center justify-center p-6">
+          <View className="bg-neutral-900 border border-neutral-800 w-full rounded-3xl p-6 shadow-2xl">
+            <Text className="text-white text-lg font-bold mb-4 font-montserrat-bold">Rechazar Artículo</Text>
+            <Text className="text-neutral-400 text-xs mb-3 font-manrope">
+              Especifica el motivo del rechazo. Esta explicación se guardará en el historial y se le notificará al dueño.
+            </Text>
+            <TextInput
+              className="bg-neutral-950 border border-neutral-800 p-4 text-white text-xs rounded-xl mb-4 font-manrope"
+              style={{ minHeight: 80, textAlignVertical: "top" }}
+              placeholder="Ej: El artículo presenta marcas o daños que reducen su calidad por debajo del estándar..."
+              placeholderTextColor="#525252"
+              multiline
+              numberOfLines={3}
+              value={rejectionReason}
+              onChangeText={setRejectionReason}
+              editable={!isModerating}
+            />
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={() => setModerationReasonModalVisible(false)}
+                disabled={isModerating}
+                className="flex-1 bg-neutral-800 py-3 rounded-xl items-center"
+              >
+                <Text className="text-neutral-300 font-bold text-xs uppercase tracking-wider">Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleRejectProductSubmit}
+                disabled={isModerating}
+                className="flex-1 bg-rose-700 py-3 rounded-xl items-center"
+              >
+                {isModerating ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className="text-white font-bold text-xs uppercase tracking-wider">Rechazar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Full screen photo viewer Modal */}
+      <Modal
+        visible={selectedPhotoUrl !== null}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedPhotoUrl(null)}
+      >
+        <Pressable
+          className="flex-1 bg-black/95 justify-center items-center p-4"
+          onPress={() => setSelectedPhotoUrl(null)}
+        >
+          {selectedPhotoUrl && (
+            <Image
+              source={{ uri: selectedPhotoUrl }}
+              className="w-full h-4/5"
+              resizeMode="contain"
+            />
+          )}
+          <TouchableOpacity
+            onPress={() => setSelectedPhotoUrl(null)}
+            className="absolute top-12 right-6 w-10 h-10 items-center justify-center bg-neutral-900 rounded-full border border-neutral-800"
+          >
+            <X size={20} color="white" />
+          </TouchableOpacity>
+        </Pressable>
       </Modal>
     </LinearGradient>
   );

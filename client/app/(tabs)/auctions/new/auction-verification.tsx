@@ -23,7 +23,6 @@ export default function AuctionVerificationScreen() {
       locations={[0, 0.6, 1]}
       style={{ flex: 1 }}
     >
-      <Stack.Screen options={{ headerShown: false, presentation: "fullScreenModal" }} />
       <StatusBar style="light" />
       
       <View style={{ flex: 1 }}>
@@ -62,14 +61,14 @@ export default function AuctionVerificationScreen() {
             className="bg-neutral-900 border border-neutral-800 p-8 w-full shadow-2xl shadow-black/50"
             style={{ borderRadius: 32 }}
           >
-            <View className="flex-row items-center gap-2 mb-6">
+             <View className="flex-row items-center gap-2 mb-6">
               {isRejected ? (
                 <AlertCircle size={24} color="#f87171" strokeWidth={2.5} />
               ) : (
                 <HelpCircle size={24} color="#2dd4bf" strokeWidth={2.5} />
               )}
               <Text className="text-white text-xl font-bold tracking-wide">
-                {isRejected ? "Solicitud Rechazada" : "Solicitud en Revisión"}
+                {isRejected ? "Solicitud Rechazada" : status === "inspeccionado" ? "Envío Físico Requerido" : "Solicitud en Revisión"}
               </Text>
             </View>
 
@@ -89,6 +88,20 @@ export default function AuctionVerificationScreen() {
                 </View>
                 <Text className="text-neutral-400 text-xs leading-5">
                   De acuerdo con nuestras políticas, el artículo será devuelto a la dirección de remitente declarada. Recuerda que los costos de envío y devolución correrán por tu cuenta.
+                </Text>
+              </View>
+            ) : status === "inspeccionado" ? (
+              <View className="mb-8">
+                <Text className="text-teal-400 font-bold text-xs uppercase tracking-wider mb-2">
+                  Instrucciones de Envío:
+                </Text>
+                <View className="bg-teal-950/20 border border-teal-500/20 p-4 rounded-xl mb-4">
+                  <Text className="text-teal-200 text-sm leading-6">
+                    Por favor, envíe el artículo físicamente a nuestra sede central ubicada en <Text className="font-bold">Lima 700</Text> para proceder con la tasación física y la aprobación definitiva.
+                  </Text>
+                </View>
+                <Text className="text-neutral-400 text-xs leading-5">
+                  Una vez que el artículo sea recibido en nuestro almacén, el martillero realizará el peritaje correspondiente y te notificaremos cuando la tasación física esté lista.
                 </Text>
               </View>
             ) : (

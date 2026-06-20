@@ -16,6 +16,7 @@ export default function AuctionAcceptedScreen() {
 
   const itemId = params.itemId ? Number(params.itemId) : 0;
   const subastaId = params.subastaId ? Number(params.subastaId) : 0;
+  const productoId = params.productoId ? Number(params.productoId) : 0;
   const title = params.title ? String(params.title) : "Artículo de Subasta";
   const precioBase = params.precioBase ? Number(params.precioBase) : 0;
   const comision = params.comision ? Number(params.comision) : 0;
@@ -26,6 +27,29 @@ export default function AuctionAcceptedScreen() {
   const [subastaLoading, setSubastaLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [estadoAceptacion, setEstadoAceptacion] = useState(initialEstadoAceptacion);
+  const [seguroData, setSeguroData] = useState<any>(null);
+  const [seguroLoading, setSeguroLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchInsuranceDetails = async () => {
+      if (!token || !productoId) return;
+      setSeguroLoading(true);
+      try {
+        const { data } = await api.GET("/productos/{id}/seguro", {
+          params: { path: { id: productoId } },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (data) {
+          setSeguroData(data);
+        }
+      } catch (err) {
+        console.warn("Could not fetch insurance policy:", err);
+      } finally {
+        setSeguroLoading(false);
+      }
+    };
+    fetchInsuranceDetails();
+  }, [token, productoId]);
 
   useEffect(() => {
     const fetchSubastaDetails = async () => {
@@ -88,7 +112,6 @@ export default function AuctionAcceptedScreen() {
       colors={["#000000", "#171717", "#0f766e", "#2dd4bf"]}
       style={{ flex: 1 }}
     >
-      <Stack.Screen options={{ headerShown: false, presentation: "modal" }} />
       <StatusBar style="light" />
       
       <ScrollView
@@ -229,6 +252,35 @@ export default function AuctionAcceptedScreen() {
           <Text className="text-neutral-400 text-center text-xs leading-5 px-2">
             La póliza ha sido emitida por la empresa sobre el valor base de la pieza y se mantendrá activa mientras esté en el depósito ({deposito}) y durante la subasta.
           </Text>
+
+          {seguroLoading ? (
+            <ActivityIndicator size="small" color="#2dd4bf" className="mt-3" />
+          ) : seguroData ? (
+            <View className="border-t border-neutral-800/80 pt-3 mt-3 gap-2">
+              <View className="flex-row justify-between items-center px-1">
+                <Text className="text-neutral-400 text-xs font-manrope">Póliza N°:</Text>
+                <Text className="text-emerald-400 text-xs font-bold font-mono">
+                  {seguroData.seguroObj?.nroPoliza || seguroData.seguro || "No registrada"}
+                </Text>
+              </View>
+              {seguroData.seguroObj?.compania ? (
+                <View className="flex-row justify-between items-center px-1">
+                  <Text className="text-neutral-400 text-xs font-manrope">Aseguradora:</Text>
+                  <Text className="text-white text-xs font-semibold font-manrope">
+                    {seguroData.seguroObj.compania}
+                  </Text>
+                </View>
+              ) : null}
+              {seguroData.seguroObj?.importe ? (
+                <View className="flex-row justify-between items-center px-1">
+                  <Text className="text-neutral-400 text-xs font-manrope">Monto Asegurado:</Text>
+                  <Text className="text-white text-xs font-semibold font-manrope">
+                    ${seguroData.seguroObj.importe.toLocaleString("es-AR")}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
         </View>
 
         {/* Botones de Acción */}

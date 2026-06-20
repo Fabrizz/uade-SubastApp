@@ -59,10 +59,32 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           const { label, Icon } = tabConfig;
           const isActive = state.index === index;
 
+          const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!event.defaultPrevented) {
+              if (isActive) {
+                if (route.name === "auctions") {
+                  if (!subastaActiva) {
+                    navigation.navigate("auctions", { screen: "index" });
+                  }
+                } else {
+                  navigation.navigate(route.name, { screen: "index" });
+                }
+              } else {
+                navigation.navigate(route.name);
+              }
+            }
+          };
+
           return (
             <Pressable
               key={route.key}
-              onPress={() => navigation.navigate(route.name)}
+              onPress={onPress}
               className="items-center flex-1 rounded-2xl pb-1 pt-1.5 gap-1"
               style={
                 isActive

@@ -89,7 +89,10 @@ export const useSubastaStore = create<SubastaStore>((set, get) => ({
 
       // 3. Catalog
       const { data: catalogoPage } = await api.GET('/api/v1/subastas/{id}/catalogo/items', {
-        params: { path: { id: subastaId } },
+        params: {
+          path: { id: subastaId },
+          query: { pageable: {} }
+        },
         headers: authHeaders(token),
       });
       const catalogo = (catalogoPage as any)?.content ?? catalogoPage ?? [];
@@ -133,7 +136,10 @@ export const useSubastaStore = create<SubastaStore>((set, get) => ({
           if (event.tipo === 'ITEM_SUBASTADO') {
             // Re-fetch catalog
             const { data: catalogoPage } = await api.GET('/api/v1/subastas/{id}/catalogo/items', {
-              params: { path: { id: subastaId } },
+              params: {
+                path: { id: subastaId },
+                query: { pageable: {} }
+              },
               headers: authHeaders(token),
             });
             const newCatalogo = (catalogoPage as any)?.content ?? catalogoPage ?? [];

@@ -16,17 +16,42 @@ export default function AuctionsScreen() {
 
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [catalogStatuses, setCatalogStatuses] = useState<Record<number, string>>({});
 
   const fetchMyProducts = useCallback(async () => {
     if (!token || !user?.id) return;
     setLoading(true);
     try {
       const { data } = await api.GET("/api/v1/duenios/{id}/productos", {
-        params: { path: { id: user.id } },
+        params: {
+          path: { id: user.id },
+          query: { pageable: {} }
+        },
         headers: { Authorization: `Bearer ${token}` },
       });
       if (data) {
-        setProducts((data as any).content ?? data ?? []);
+        const content = (data as any).content ?? data ?? [];
+        setProducts(content);
+
+        // Fetch catalog items for products in 'aceptado' state to see if they accepted proposal
+        const acceptedProds = content.filter((p: any) => p.estadoBien === "aceptado");
+        const catalogMap: Record<number, string> = {};
+        await Promise.all(
+          acceptedProds.map(async (p: any) => {
+            try {
+              const { data: itemData } = await api.GET("/api/v1/subastas/catalogo/items/producto/{productoId}", {
+                params: { path: { productoId: p.identificador } },
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (itemData && itemData.estadoAceptacion) {
+                catalogMap[p.identificador] = itemData.estadoAceptacion;
+              }
+            } catch (err) {
+              console.warn(`Could not fetch catalog item for product ${p.identificador}`, err);
+            }
+          })
+        );
+        setCatalogStatuses(catalogMap);
       }
     } catch (err: any) {
       console.warn("Error fetching owner products, user probably has no owner profile yet:", err);
@@ -57,6 +82,10 @@ export default function AuctionsScreen() {
       return { text: "INSPECCIONADO", style: "text-blue-400 bg-blue-500/10 border-blue-500/20" };
     }
     if (state === "aceptado") {
+      const catStatus = catalogStatuses[prod.identificador];
+      if (catStatus === "aceptado") {
+        return { text: "ACEPTADA", style: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" };
+      }
       return { text: "PROPUESTA RECIBIDA", style: "text-purple-400 bg-purple-500/10 border-purple-500/20" };
     }
     if (state === "rechazado") {

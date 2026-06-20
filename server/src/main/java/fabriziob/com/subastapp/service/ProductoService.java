@@ -24,12 +24,16 @@ import fabriziob.com.subastapp.entity.Persona;
 import fabriziob.com.subastapp.entity.Producto;
 import fabriziob.com.subastapp.entity.ProductoExtra;
 import fabriziob.com.subastapp.entity.enums.EstadoBien;
+import fabriziob.com.subastapp.entity.Empleado;
 import fabriziob.com.subastapp.repository.DuenioRepository;
+import fabriziob.com.subastapp.repository.EmpleadoRepository;
 import fabriziob.com.subastapp.repository.FotoRepository;
 import fabriziob.com.subastapp.repository.ProductoExtraRepository;
 import fabriziob.com.subastapp.repository.ProductoRepository;
+import fabriziob.com.subastapp.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +44,9 @@ public class ProductoService {
     private final ProductoExtraRepository productoExtraRepository;
     private final DuenioRepository duenioRepository;
     private final FotoRepository fotoRepository;
+    private final NotificacionService notificacionService;
+    private final UserRepository userRepository;
+    private final EmpleadoRepository empleadoRepository;
 
     @Transactional(readOnly = true)
     public Page<ProductoResponse> listar(Pageable pageable) {
@@ -55,14 +62,45 @@ public class ProductoService {
 
     public ProductoResponse crear(ProductoRequest req, List<MultipartFile> imagenes) throws IOException {
         Integer duenioId = null;
+        Persona persona = null;
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof Persona) {
-            duenioId = ((Persona) principal).getIdentificador();
+            persona = (Persona) principal;
+            duenioId = persona.getIdentificador();
+        } else if (principal instanceof UserDetails) {
+            String email = ((UserDetails) principal).getUsername();
+            persona = userRepository.findByPersonaExtra_Email(email).orElse(null);
+            if (persona != null) {
+                duenioId = persona.getIdentificador();
+            }
+        } else if (principal instanceof String) {
+            String email = (String) principal;
+            persona = userRepository.findByPersonaExtra_Email(email).orElse(null);
+            if (persona != null) {
+                duenioId = persona.getIdentificador();
+            }
         }
         
         Duenio duenio = null;
         if (duenioId != null) {
             duenio = duenioRepository.findById(duenioId).orElse(null);
+        }
+        if (duenio == null && persona != null) {
+            // Registrar como Duenio en caliente si no existe para evitar productos huérfanos
+            Empleado verificador = empleadoRepository.findById(1).orElse(null);
+            if (verificador == null) {
+                verificador = empleadoRepository.findAll().stream().findFirst().orElse(null);
+            }
+            if (verificador != null) {
+                duenio = Duenio.builder()
+                        .persona(persona)
+                        .verificacionFinanciera("si")
+                        .verificacionJudicial("si")
+                        .calificacionRiesgo(1)
+                        .verificador(verificador)
+                        .build();
+                duenio = duenioRepository.save(duenio);
+            }
         }
         if (duenio == null) {
             duenio = duenioRepository.findAll().stream().findFirst().orElse(null);
@@ -80,8 +118,6 @@ public class ProductoService {
                 .duenio(duenio)
                 .fotosIds(new ArrayList<>())
                 .build();
-
-        producto = productoRepository.save(producto);
 
         // cantidadPiezas: la constraint chkCantPiezas exige > 1.
         // Solo aplica cuando esPiezaMultiple = true; de lo contrario debe ser null.
@@ -105,14 +141,17 @@ public class ProductoService {
                 .deposito(req.getDeposito() != null ? req.getDeposito() : "Depósito Central")
                 .build();
 
-        productoExtraRepository.save(extra);
         producto.setProductoExtra(extra);
+        producto = productoRepository.save(producto);
 
+        List<Integer> fotoIds = new java.util.ArrayList<>();
         if (imagenes != null && !imagenes.isEmpty()) {
-            saveImagesForProduct(producto, imagenes);
+            fotoIds = saveImagesForProduct(producto, imagenes);
         }
 
-        return toResponse(producto);
+        ProductoResponse response = toResponse(producto);
+        response.setFotosIds(fotoIds);
+        return response;
     }
 
     public ProductoResponse patch(Integer id, ProductoUpdateRequest req) {
@@ -161,6 +200,46 @@ public class ProductoService {
             productoExtraRepository.save(extra);
         }
 
+        if (req.getEstadoBien() != null && p.getDuenio() != null) {
+            Integer duenioId = p.getDuenio().getIdentificador();
+            String titulo = extra != null && extra.getTitulo() != null ? extra.getTitulo() : p.getDescripcionCompleta();
+            if (req.getEstadoBien() == EstadoBien.inspeccionado) {
+                notificacionService.notificarCliente(
+                    duenioId,
+                    WsNotificacionService.Tipo.info,
+                    "envio",
+                    "Envío requerido: " + titulo,
+                    "Tu artículo ha sido aprobado digitalmente. Por favor, envíalo a nuestro almacén en Lima 700 para la inspección física final."
+                );
+            } else if (req.getEstadoBien() == EstadoBien.rechazado) {
+                String motivo = req.getMotivoRechazo() != null ? req.getMotivoRechazo() : "No cumple con las políticas de calidad.";
+                notificacionService.notificarCliente(
+                    duenioId,
+                    WsNotificacionService.Tipo.warning,
+                    "subasta",
+                    "Artículo rechazado: " + titulo,
+                    "Tu solicitud de subasta fue rechazada. Motivo: " + motivo
+                );
+            } else if (req.getEstadoBien() == EstadoBien.aceptado) {
+                notificacionService.notificarCliente(
+                    duenioId,
+                    WsNotificacionService.Tipo.info,
+                    "subasta",
+                    "Propuesta comercial recibida: " + titulo,
+                    "Tu artículo superó la inspección física y ya tienes una propuesta comercial con precio base y comisión disponible para tu revisión."
+                );
+            } else if (req.getEstadoBien() == EstadoBien.devuelto) {
+                String motivo = req.getMotivoRechazo() != null ? req.getMotivoRechazo() : "No cumple con los requisitos de tasación física.";
+                notificacionService.notificarCliente(
+                    duenioId,
+                    WsNotificacionService.Tipo.warning,
+                    "subasta",
+                    "Artículo devuelto: " + titulo,
+                    "Tu artículo no superó la inspección física y será devuelto. Motivo: " + motivo
+                );
+            }
+        }
+
         return toResponse(p);
     }
 
@@ -183,13 +262,6 @@ public class ProductoService {
                 ids.add(foto.getIdentificador());
             }
         }
-        List<Integer> currentPhotos = p.getFotosIds();
-        if (currentPhotos == null) {
-            currentPhotos = new ArrayList<>();
-        }
-        currentPhotos.addAll(ids);
-        p.setFotosIds(currentPhotos);
-        productoRepository.save(p);
         return ids;
     }
 

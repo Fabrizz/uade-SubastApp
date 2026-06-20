@@ -63,8 +63,9 @@ public class Producto {
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "fotos", joinColumns = @JoinColumn(name = "producto"))
     @Column(name = "identificador")
+    @org.hibernate.annotations.Immutable
     private List<Integer> fotosIds;
 
-    @OneToOne(mappedBy = "producto", fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "producto", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private ProductoExtra productoExtra;
 }

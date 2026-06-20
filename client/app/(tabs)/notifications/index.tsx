@@ -2,6 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { AlertTriangle, Bell, Trophy, WifiOff, WifiSync, X } from "lucide-react-native";
 import React from "react";
+import { useRouter } from "expo-router";
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 import HeaderComp from "@/components/HeaderComp";
@@ -36,6 +37,7 @@ function getIconBg(type: WsNotification["type"]) {
 }
 
 export default function NotificationsScreen() {
+  const router = useRouter();
   const { notifications, removeNotification, isConnected, isConnecting, connectionError } = useWebSocket();
 
   return (
@@ -82,35 +84,43 @@ export default function NotificationsScreen() {
             {notifications.map((notif) => (
               <View
                 key={notif.id}
-                className="flex-row items-start bg-[#1a1a1a] p-4 shadow-lg shadow-black/20"
+                className="flex-row items-stretch bg-[#1a1a1a] shadow-lg shadow-black/20"
                 style={{ borderRadius: 20 }}
               >
-                <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${getIconBg(notif.type)}`}>
-                  {getIcon(notif.type)}
-                </View>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => router.push({ pathname: "/(tabs)/notifications/[id]", params: { id: String(notif.id) } })}
+                  className="flex-1 flex-row items-start p-4"
+                >
+                  <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${getIconBg(notif.type)}`}>
+                    {getIcon(notif.type)}
+                  </View>
 
-                <View className="flex-1 mt-1">
-                  <View className="flex-row items-center justify-between mb-1">
-                    <Text className="text-white font-bold text-base tracking-wide flex-1" numberOfLines={1}>
-                      {notif.title}
-                    </Text>
-                    <Text className="text-neutral-500 text-xs font-semibold ml-2">
-                      {formatDate(notif.createdAt)}
+                  <View className="flex-1 mt-1">
+                    <View className="flex-row items-center justify-between mb-1">
+                      <Text className="text-white font-bold text-base tracking-wide flex-1" numberOfLines={1}>
+                        {notif.title}
+                      </Text>
+                      <Text className="text-neutral-500 text-xs font-semibold ml-2">
+                        {formatDate(notif.createdAt)}
+                      </Text>
+                    </View>
+                    <Text className="text-neutral-400 text-sm leading-5 pr-4" numberOfLines={2}>
+                      {notif.description}
                     </Text>
                   </View>
-                  <Text className="text-neutral-400 text-sm leading-5 pr-4" numberOfLines={2}>
-                    {notif.description}
-                  </Text>
-                </View>
-
-                <TouchableOpacity
-                  onPress={() => removeNotification(notif.id)}
-                  activeOpacity={0.6}
-                  className="mt-1 p-1 ml-1"
-                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                >
-                  <X size={18} color="#525252" strokeWidth={2.5} />
                 </TouchableOpacity>
+
+                <View className="justify-start pt-4 pr-3">
+                  <TouchableOpacity
+                    onPress={() => removeNotification(notif.id)}
+                    activeOpacity={0.6}
+                    className="p-2"
+                    hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                  >
+                    <X size={18} color="#525252" strokeWidth={2.5} />
+                  </TouchableOpacity>
+                </View>
               </View>
             ))}
           </View>

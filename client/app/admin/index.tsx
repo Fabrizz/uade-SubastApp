@@ -1,7 +1,7 @@
 import { useAuth } from '@/context/auth';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { BarChart2, ChevronRight, CreditCard, Gavel, Shield, UserMinus, UserPlus, Users } from 'lucide-react-native';
+import { ArrowLeft, BarChart2, ChevronRight, CreditCard, Gavel, Shield, UserMinus, UserPlus, Users } from 'lucide-react-native';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,6 +26,19 @@ export default function AdminIndex() {
 
           {/* Header */}
           <View className="flex-row items-center gap-3 mb-6">
+            <TouchableOpacity
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/(tabs)/profile");
+                }
+              }}
+              activeOpacity={0.7}
+              className="w-10 h-10 items-center justify-center bg-neutral-900/60 rounded-full border border-neutral-800"
+            >
+              <ArrowLeft size={20} color="#d8b4fe" />
+            </TouchableOpacity>
             <View className="bg-purple-950 rounded-full p-2">
               <Shield size={24} color="#d8b4fe" />
             </View>
