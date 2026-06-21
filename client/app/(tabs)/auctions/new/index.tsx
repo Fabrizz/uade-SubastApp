@@ -30,6 +30,7 @@ export default function RequestAuctionScreen() {
   const [name, setName] = useState("");
   const [shortDesc, setShortDesc] = useState("");
   const [longDesc, setLongDesc] = useState("");
+  const [esObraDeArte, setEsObraDeArte] = useState(false);
   const [artista, setArtista] = useState("");
   const [fechaCreacion, setFechaCreacion] = useState("");
   const [historia, setHistoria] = useState("");
@@ -168,10 +169,10 @@ export default function RequestAuctionScreen() {
         declaracionPropiedad: true,
         esPiezaMultiple: false,
         cantidadPiezas: 1,
-        esObraDeArte: !!artista || !!fechaCreacion || !!historia,
-        artista: artista.trim() || undefined,
-        fechaCreacionObra: parsedFechaCreacionObra,
-        historia: extraHistoria + (historia.trim() || ""),
+        esObraDeArte: esObraDeArte,
+        artista: esObraDeArte ? (artista.trim() || undefined) : undefined,
+        fechaCreacionObra: esObraDeArte ? parsedFechaCreacionObra : undefined,
+        historia: esObraDeArte ? (extraHistoria + (historia.trim() || "")) : "",
         deposito: "Sede Central",
       };
 
@@ -437,53 +438,71 @@ export default function RequestAuctionScreen() {
               />
             </View>
 
-            {/* Campos de Artista, Fecha e Historia para Obras/Objetos especiales según TPO */}
-            <View>
-              <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
-                Artista o Diseñador (Opcional)
+            {/* Switch para indicar si es Arte/Diseñador */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => !isSubmitting && setEsObraDeArte(!esObraDeArte)}
+              className={`flex-row items-center gap-3 p-4 bg-neutral-900 border rounded-2xl ${esObraDeArte ? "border-teal-500/40" : "border-neutral-800"}`}
+            >
+              <View className={`w-5 h-5 rounded-md border items-center justify-center ${esObraDeArte ? "bg-teal-500 border-teal-500" : "border-neutral-600 bg-neutral-800"}`}>
+                {esObraDeArte && <Check size={12} color="black" strokeWidth={3} />}
+              </View>
+              <Text className="flex-1 text-white text-xs font-bold font-manrope">
+                ¿Es una obra de arte o pieza de diseñador?
               </Text>
-              <TextInput
-                className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
-                style={{ borderRadius: 12 }}
-                placeholder="Ej. Pablo Picasso, Rolex, Desconocido"
-                placeholderTextColor="#a3a3a3"
-                value={artista}
-                onChangeText={setArtista}
-                editable={!isSubmitting}
-              />
-            </View>
+            </TouchableOpacity>
 
-            <View>
-              <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
-                Fecha o Año de Creación (Opcional)
-              </Text>
-              <TextInput
-                className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
-                style={{ borderRadius: 12 }}
-                placeholder="Ej. 1950, Siglo XIX"
-                placeholderTextColor="#a3a3a3"
-                value={fechaCreacion}
-                onChangeText={setFechaCreacion}
-                editable={!isSubmitting}
-              />
-            </View>
+            {/* Campos condicionales para Arte */}
+            {esObraDeArte && (
+              <View className="gap-5">
+                <View>
+                  <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
+                    Artista o Diseñador (Opcional)
+                  </Text>
+                  <TextInput
+                    className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
+                    style={{ borderRadius: 12 }}
+                    placeholder="Ej. Pablo Picasso, Rolex, Desconocido"
+                    placeholderTextColor="#a3a3a3"
+                    value={artista}
+                    onChangeText={setArtista}
+                    editable={!isSubmitting}
+                  />
+                </View>
 
-            <View>
-              <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
-                Historia / Datos de interés (Opcional)
-              </Text>
-              <TextInput
-                className="bg-[#383838] border border-[#555555] p-4 text-white text-base"
-                style={{ borderRadius: 16, minHeight: 80, textAlignVertical: "top" }}
-                placeholder="Contexto histórico, dueños anteriores, procedencia..."
-                placeholderTextColor="#a3a3a3"
-                multiline
-                numberOfLines={3}
-                value={historia}
-                onChangeText={setHistoria}
-                editable={!isSubmitting}
-              />
-            </View>
+                <View>
+                  <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
+                    Fecha o Año de Creación (Opcional)
+                  </Text>
+                  <TextInput
+                    className="h-[50px] bg-[#383838] border border-[#555555] px-4 text-white text-base"
+                    style={{ borderRadius: 12 }}
+                    placeholder="Ej. 1950, Siglo XIX"
+                    placeholderTextColor="#a3a3a3"
+                    value={fechaCreacion}
+                    onChangeText={setFechaCreacion}
+                    editable={!isSubmitting}
+                  />
+                </View>
+
+                <View>
+                  <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-2 ml-1">
+                    Historia / Datos de interés (Opcional)
+                  </Text>
+                  <TextInput
+                    className="bg-[#383838] border border-[#555555] p-4 text-white text-base"
+                    style={{ borderRadius: 16, minHeight: 80, textAlignVertical: "top" }}
+                    placeholder="Contexto histórico, dueños anteriores, procedencia..."
+                    placeholderTextColor="#a3a3a3"
+                    multiline
+                    numberOfLines={3}
+                    value={historia}
+                    onChangeText={setHistoria}
+                    editable={!isSubmitting}
+                  />
+                </View>
+              </View>
+            )}
           </View>
 
           {/* ── Declaraciones juradas obligatorias (TPO-DAI) ── */}
