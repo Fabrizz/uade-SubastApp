@@ -21,6 +21,7 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
+  FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -441,29 +442,22 @@ export default function AuctionDetailScreen() {
           {/* Image Carousel */}
           <View className="px-4 mb-5 relative">
             <View style={{ width: "100%", height: 250, borderRadius: 24, overflow: 'hidden' }}>
-              <ScrollView 
-                horizontal 
-                pagingEnabled 
+              <FlatList
+                data={catalogImages.length > 0 ? catalogImages : [CATEGORY_IMAGES[catKey] || CATEGORY_IMAGES.comun]}
+                horizontal
+                pagingEnabled
                 showsHorizontalScrollIndicator={false}
-                style={{ width: "100%", height: 250 }}
-              >
-                {catalogImages.length > 0 ? (
-                  catalogImages.map((uri, idx) => (
-                    <Image
-                      key={idx}
-                      source={{ uri }}
-                      style={{ width: Dimensions.get('window').width - 32, height: 250 }}
-                      resizeMode="cover"
-                    />
-                  ))
-                ) : (
+                keyExtractor={(_, idx) => idx.toString()}
+                renderItem={({ item }) => (
                   <Image
-                    source={{ uri: CATEGORY_IMAGES[catKey] || CATEGORY_IMAGES.comun }}
+                    source={{ uri: item }}
                     style={{ width: Dimensions.get('window').width - 32, height: 250 }}
                     resizeMode="cover"
                   />
                 )}
-              </ScrollView>
+                style={{ width: "100%", height: 250 }}
+                removeClippedSubviews={false}
+              />
               {loadingCatalogImages && (
                 <View className="absolute inset-0 items-center justify-center bg-black/40">
                   <ActivityIndicator size="large" color="white" />

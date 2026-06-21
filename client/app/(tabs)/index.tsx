@@ -14,9 +14,11 @@ import {
   Image,
   Platform,
   ScrollView,
+  FlatList,
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   View,
   Dimensions,
 } from "react-native";
@@ -72,7 +74,7 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive, token }: 
       try {
         const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
         const { data: itemsPage } = await api.GET("/api/v1/subastas/{id}/catalogo/items", {
-          params: { path: { id: subasta.identificador }, query: { pageable: { page: 0, size: 10 } } },
+          params: { path: { id: subasta.identificador }, query: { pageable: { page: 0, size: 5 } } },
           headers
         });
         const items = itemsPage?.content || [];
@@ -125,8 +127,9 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive, token }: 
   };
 
   return (
-    <View
-      className={`bg-neutral-900 rounded-2xl overflow-hidden mb-5 ${isLive ? "border-2 border-purple-500" : ""}`}
+    <Pressable
+      onPress={handlePress}
+      className={`mb-5 rounded-2xl ${isLive ? "border-2 border-purple-500" : ""}`}
       style={
         isLive
           ? {
@@ -135,10 +138,12 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive, token }: 
             shadowOpacity: 0.6,
             shadowRadius: 16,
             elevation: 10,
+            backgroundColor: "#171717",
           }
-          : undefined
+          : { elevation: 0, backgroundColor: "#171717" }
       }
     >
+      <View className="rounded-2xl overflow-hidden">
       {/* banner: subasta actual */}
       {isLive && (
         <View className="flex-row items-center gap-1 px-3 py-2 bg-purple-700 justify-center">
@@ -151,32 +156,22 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive, token }: 
 
       {/* imagen en carrousel */}
       <View className="relative">
-        <ScrollView 
-          horizontal 
-          pagingEnabled 
+        <FlatList
+          data={catalogImages.length > 0 ? catalogImages : [imageUrl]}
+          horizontal
+          pagingEnabled
           showsHorizontalScrollIndicator={false}
-          style={{ width: CARD_WIDTH, height: 220 }}
-        >
-          {catalogImages.length > 0 ? (
-            catalogImages.map((uri, idx) => (
-              <TouchableOpacity key={idx} activeOpacity={0.9} onPress={handlePress}>
-                <Image
-                  source={{ uri }}
-                  style={{ width: CARD_WIDTH, height: 220 }}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-            ))
-          ) : (
-            <TouchableOpacity activeOpacity={0.9} onPress={handlePress}>
-              <Image
-                source={{ uri: imageUrl }}
-                style={{ width: CARD_WIDTH, height: 220 }}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
+          keyExtractor={(_, idx) => idx.toString()}
+          renderItem={({ item }) => (
+            <Image
+              source={{ uri: item }}
+              style={{ width: CARD_WIDTH, height: 220 }}
+              resizeMode="cover"
+            />
           )}
-        </ScrollView>
+          style={{ width: CARD_WIDTH, height: 220 }}
+          removeClippedSubviews={false}
+        />
         {loadingImages && (
           <View className="absolute inset-0 items-center justify-center bg-black/20">
              <ActivityIndicator size="small" color="white" />
@@ -201,60 +196,59 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive, token }: 
         )}
       </View>
 
-      <TouchableOpacity activeOpacity={0.9} onPress={handlePress}>
-        {/* Banner: necesita registrarse / categoría insuficiente */}
-        {(!isAuthenticated || categoryInsufficient) && (
-          <View
-            className={`flex-row items-center gap-2 px-3 py-2.5 ${
-              !isAuthenticated ? "bg-sky-500/10" : "bg-amber-500/10"
-            }`}
-          >
+      {/* Banner: necesita registrarse / categoría insuficiente */}
+      {(!isAuthenticated || categoryInsufficient) && (
+        <View
+          className={`flex-row items-center gap-2 px-3 py-2.5 ${
+            !isAuthenticated ? "bg-sky-500/10" : "bg-amber-500/10"
+          }`}
+        >
+          {!isAuthenticated
+            ? <LogIn size={15} color="#38bdf8" />
+            : <Lock size={15} color="#fbbf24" />}
+          <Text className={`flex-1 text-xs font-manrope-semibold ${!isAuthenticated ? "text-sky-300" : "text-amber-300"}`}>
             {!isAuthenticated
-              ? <LogIn size={15} color="#38bdf8" />
-              : <Lock size={15} color="#fbbf24" />}
-            <Text className={`flex-1 text-xs font-manrope-semibold ${!isAuthenticated ? "text-sky-300" : "text-amber-300"}`}>
-              {!isAuthenticated
-                ? "Necesitás registrarte e iniciar sesión para pujar."
-                : `Categoría ${subasta.categoria?.toUpperCase()} — necesitás subir de nivel para pujar.`}
-            </Text>
-          </View>
-        )}
-
-        {/* info */}
-        <View className="px-4 pt-2 pb-1">
-          <View className="flex-row justify-between items-start mb-1">
-            <Text className="text-white text-base flex-1 mr-3 font-manrope-bold">
-              {title}
-            </Text>
-            <View className="items-end">
-              <Text className="text-teal-400 text-base font-manrope-bold">
-                {subasta.moneda || "USD"}
-              </Text>
-            </View>
-          </View>
-          <Text className="text-neutral-500 text-xs leading-4 mb-3 font-manrope">
-            Subasta en vivo en {subasta.ubicacion || "Ubicación virtual"}. Capacidad para {subasta.capacidadAsistentes || "múltiples"} asistentes.
+              ? "Necesitás registrarte e iniciar sesión para pujar."
+              : `Categoría ${subasta.categoria?.toUpperCase()} — necesitás subir de nivel para pujar.`}
           </Text>
         </View>
+      )}
 
-        {/* Ver Más / Continuar */}
-        <View className="px-4 pb-4">
-          <View
-            className={
-              isLive
-                ? "flex-row items-center justify-center gap-2 rounded-xl bg-purple-600"
-                : "flex-row items-center justify-center gap-2 rounded-xl bg-purple-950/40 border border-purple-800/40"
-            }
-            style={{ height: 34 }}
-          >
-            <Text className={`text-sm tracking-wide font-manrope-bold ${isLive ? "text-white" : "text-purple-300"}`}>
-              {isLive ? "Continuar" : subasta.estado === "cerrada" ? "Ver Detalles" : "Ver Más"}
+      {/* info */}
+      <View className="px-4 pt-2 pb-1">
+        <View className="flex-row justify-between items-start mb-1">
+          <Text className="text-white text-base flex-1 mr-3 font-manrope-bold">
+            {title}
+          </Text>
+          <View className="items-end">
+            <Text className="text-teal-400 text-base font-manrope-bold">
+              {subasta.moneda || "USD"}
             </Text>
-            <ArrowRight size={16} color={isLive ? "white" : "#d8b4fe"} />
           </View>
         </View>
-      </TouchableOpacity>
-    </View>
+        <Text className="text-neutral-500 text-xs leading-4 mb-3 font-manrope">
+          Subasta en vivo en {subasta.ubicacion || "Ubicación virtual"}. Capacidad para {subasta.capacidadAsistentes || "múltiples"} asistentes.
+        </Text>
+      </View>
+
+      {/* Ver Más / Continuar */}
+      <View className="px-4 pb-4">
+        <View
+          className={
+            isLive
+              ? "flex-row items-center justify-center gap-2 rounded-xl bg-purple-600"
+              : "flex-row items-center justify-center gap-2 rounded-xl bg-purple-950/40 border border-purple-800/40"
+          }
+          style={{ height: 34 }}
+        >
+          <Text className={`text-sm tracking-wide font-manrope-bold ${isLive ? "text-white" : "text-purple-300"}`}>
+            {isLive ? "Continuar" : subasta.estado === "cerrada" ? "Ver Detalles" : "Ver Más"}
+          </Text>
+          <ArrowRight size={16} color={isLive ? "white" : "#d8b4fe"} />
+        </View>
+      </View>
+      </View>
+    </Pressable>
   );
 }
 
@@ -379,6 +373,7 @@ export default function Home() {
           paddingTop: 20,
         }}
         showsVerticalScrollIndicator={false}
+        removeClippedSubviews={false}
       >
         <Text className="text-white text-lg mb-4 font-montserrat-bold">
           {category === "terminadas" ? "Subastas finalizadas" : "Subastas activas"}
