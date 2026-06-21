@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AsistenteResponse {
     private Integer identificador;
+    private Integer subastaId;
     private Integer numeroPostor;
     private Integer clienteId;
     private String clienteNombre;

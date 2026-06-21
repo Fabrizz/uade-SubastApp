@@ -27,6 +27,7 @@ Spring Boot 4, Java 25, PostgreSQL via Spring Data JPA, Flyway for migrations, S
 - `entity/` — JPA entities; `entity/enums/` for enum types used by entities and DTOs (e.g. `EstadoSubasta`, `CategoriaSubasta`, `Moneda`, `TipoMedioPago`).
 - `repository/` — Spring Data JPA repositories, one per entity.
 - `config/` — security (`SecurityConfig`, `AuthenticationConfig`, `JwtAuthenticationFilter`, `JwtService`), WebSocket (`WebSocketConfig`), OpenAPI (`OpenApiConfig`), and `FixAdminsConfig`.
+- `security/` — `@PreAuthorize` ownership-check beans (e.g. `NotificacionSecurity`), one per resource that needs per-record authorization beyond a simple role/path check. See "Auth & Authorization" below.
 - `exception/` — custom exceptions (e.g. `UserDuplicateException`).
 
 ### Controllers and springdoc-openapi
@@ -41,9 +42,22 @@ Some controller methods are still stubs (`return null;`) pending implementation 
 
 Migrations live in `src/main/resources/db/migration` as `V<n>__description.sql` and are **written by hand**, not generated — there is no `ddl-auto` schema generation (`spring.jpa.hibernate.ddl-auto=validate`). When changing an entity's schema, add a new `V<next>__...sql` migration file rather than editing an existing one. Migration numbers are sequential and never reused.
 
-### Auth
+### Auth & Authorization
 
 JWT bearer tokens (`io.jsonwebtoken`/jjwt). `JwtAuthenticationFilter` validates the `Authorization: Bearer <token>` header on REST requests; `WebSocketConfig`'s `ChannelInterceptor` does the equivalent validation on the STOMP `CONNECT` frame (reading the `Authorization` native header) since WebSocket auth can't go through the normal servlet filter chain.
+
+**Roles.** `Persona` (the `UserDetails` implementation) derives `GrantedAuthority`s from its linked `Cliente.categoria` in `getAuthorities()`: `ROLE_<CATEGORIA>` uppercased (`ROLE_ADMIN`, `ROLE_COMUN`, `ROLE_ORO`, ...), plus `ROLE_ADMITIDO_*` and `ROLE_ESTADO_*`. There's no separate roles table — promoting a user to admin is just setting `categoria = admin` on their `Cliente` row. `JwtAuthenticationFilter` attaches these authorities to the `Authentication` object on every authenticated request, so `hasRole("ADMIN")` and `@PreAuthorize` role checks work without any extra wiring.
+
+Two authorization mechanisms are used, depending on the shape of the check:
+
+1. **Path/role-based — `SecurityConfig`'s `authorizeHttpRequests`.** Use this when access only depends on the route shape and/or role, not on which specific resource is being touched (e.g. "anyone can `GET /api/v1/paises`, only admins can `POST`/`DELETE` it"). Add `HttpMethod`-scoped `requestMatchers(...)` before the trailing `anyRequest().authenticated()` — always scope to a specific `HttpMethod` when permitting/restricting a path that also has other verbs mapped on it, otherwise you accidentally open/lock every verb on that path.
+
+2. **Ownership-based — `@PreAuthorize` + a security bean in `security/`.** Use this when a non-admin caller may only touch *their own* resource, and ownership can't be determined from the request alone (e.g. "a user can read notification #42 only if they're its `destinatario`"). Pattern (see `security/NotificacionSecurity.java`):
+   - A `@Component("xSecurity")` bean with a method like `isOwner(resourceId, personaId)` that does the DB lookup (e.g. `existsByIdentificadorAndDestinatario_Identificador`).
+   - `@PreAuthorize("hasRole('ADMIN') or @xSecurity.isOwner(#id, principal.identificador)")` on the controller method — `principal` resolves to the authenticated `Persona`, so `principal.identificador` is the caller's own ID. Admins always bypass the ownership check.
+   - If the resource's owner ID is already present in the request itself (e.g. a `destinatarioId` query param), skip the DB lookup and compare directly in the SpEL expression instead: `hasRole('ADMIN') or #destinatarioId == principal.identificador`.
+
+   `@EnableMethodSecurity` is already enabled on `SecurityConfig`, so `@PreAuthorize` works on any `@RestController` method without further setup.
 
 ### WebSocket / STOMP
 

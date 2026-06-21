@@ -1,25 +1,26 @@
+import HeaderComp from "@/components/HeaderComp";
+import { CategoryPill } from "@/components/ui/CategoryPill";
+import { useAuth } from "@/context/auth";
+import { useWebSocket } from "@/context/websocket";
+import { api, API_BASE } from "@/lib/api";
+import { getBidBounds, useSubastaStore } from "@/lib/subastas.store";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, FileText, Hammer, Info, MapPin, Clock, Lock } from "lucide-react-native";
-import React, { useState, useEffect } from "react";
+import { Clock, FileText, Gavel, Hammer, Info, Lock, LogIn, MapPin } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Image,
-  Platform,
+  Modal,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Modal,
-  Pressable,
-  ActivityIndicator,
-  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/context/auth";
-import { useWebSocket } from "@/context/websocket";
-import { useSubastaStore, getBidBounds } from "@/lib/subastas.store";
-import { api, API_BASE } from "@/lib/api";
 
 const CATEGORY_RANKS: Record<string, number> = {
   comun: 1,
@@ -38,7 +39,7 @@ const CATEGORY_IMAGES: Record<string, string> = {
 };
 
 function canAccessSubasta(userCategory?: string, subastaCategoria?: string): boolean {
-  if (!userCategory) return false;
+  if (!userCategory) return true;
   if (userCategory === "admin") return true;
   const userRank = CATEGORY_RANKS[userCategory.toLowerCase()] ?? 0;
   const subastaRank = CATEGORY_RANKS[subastaCategoria?.toLowerCase() ?? ""] ?? 0;
@@ -63,6 +64,7 @@ export default function AuctionDetailScreen() {
     isPlacingBid,
     error: storeError,
     joinSubasta,
+    checkAsistencia,
     leaveSubasta,
     placePuja,
     clearError,
@@ -87,25 +89,28 @@ export default function AuctionDetailScreen() {
   // 1. Fetch preview subasta, catalog, and payments on mount
   useEffect(() => {
     async function loadInitialData() {
-      if (!id || !token || !user?.id) return;
+      if (!id) return;
       setLoadingPreview(true);
       try {
+        const authHeaders = token ? { Authorization: `Bearer ${token}` } : undefined;
         const [resSubasta, resCatalog, resPayments] = await Promise.all([
           api.GET("/api/v1/subastas/{id}", {
             params: { path: { id: Number(id) } },
-            headers: { Authorization: `Bearer ${token}` }
+            headers: authHeaders
           }),
           api.GET("/api/v1/subastas/{id}/catalogo/items", {
             params: {
               path: { id: Number(id) },
               query: { pageable: {} }
             },
-            headers: { Authorization: `Bearer ${token}` }
+            headers: authHeaders
           }),
-          api.GET("/api/v1/clientes/{id}/medios-pago", {
-            params: { path: { id: user.id } },
-            headers: { Authorization: `Bearer ${token}` }
-          })
+          token && user?.id
+            ? api.GET("/api/v1/clientes/{id}/medios-pago", {
+                params: { path: { id: user.id } },
+                headers: authHeaders
+              })
+            : Promise.resolve({ data: undefined } as any)
         ]);
 
         if (resSubasta.data) {
@@ -127,16 +132,22 @@ export default function AuctionDetailScreen() {
 
     loadInitialData();
 
+    // Rehydrate join state if the client already has an active asistencia
+    // for this subasta (e.g. after an app restart), instead of requiring "Unirse" again.
+    if (id && token && user?.id) {
+      checkAsistencia(Number(id), token, user.id, subscribeToTopic);
+    }
+
     return () => {
-      leaveSubasta();
+      leaveSubasta(token ?? undefined);
     };
-  }, [id, token, user?.id, leaveSubasta]);
+  }, [id, token, user?.id, leaveSubasta, checkAsistencia, subscribeToTopic]);
 
   // 2. Fetch full product details for the current active item
   useEffect(() => {
     async function loadActiveProduct() {
       const activeItem = subasta ? itemActual : (previewCatalog[0] || null);
-      if (!activeItem?.productoId || !token) {
+      if (!activeItem?.productoId) {
         setActiveProduct(null);
         return;
       }
@@ -144,7 +155,7 @@ export default function AuctionDetailScreen() {
       try {
         const { data } = await api.GET("/productos/{id}", {
           params: { path: { id: activeItem.productoId } },
-          headers: { Authorization: `Bearer ${token}` }
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined
         });
         if (data) {
           setActiveProduct(data);
@@ -171,39 +182,25 @@ export default function AuctionDetailScreen() {
   const currentSubasta = isJoined ? subasta : previewSubasta;
   const currentCatalog = isJoined ? catalogo : previewCatalog;
 
-  const isGated = !canAccessSubasta(user?.category, currentSubasta?.categoria);
-
-  // 4. Render access denied screen if user fails category ranks gating
-  if (!loadingPreview && currentSubasta && isGated) {
-    return (
-      <View className="flex-1 bg-[#121212] justify-center items-center px-6">
-        <Lock size={60} color="#ef4444" className="mb-6" />
-        <Text className="text-white text-2xl font-montserrat-bold mb-2 text-center">
-          Acceso Restringido
-        </Text>
-        <Text className="text-neutral-400 text-sm font-manrope text-center mb-8">
-          Esta subasta requiere categoría{" "}
-          <Text className="text-teal-400 font-bold uppercase">{currentSubasta.categoria}</Text> o superior. Tu categoría actual es{" "}
-          <Text className="text-red-500 font-bold uppercase">{user?.category || "comun"}</Text>.
-        </Text>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="w-full bg-neutral-900 border border-neutral-700 py-3.5 rounded-2xl items-center"
-        >
-          <Text className="text-white font-manrope-bold text-base">Volver al Inicio</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  // Anyone can preview the auction; these only gate the actual join/pujar action.
+  const isAuthenticated = !!token;
+  const categoryInsufficient = isAuthenticated && !canAccessSubasta(user?.category, currentSubasta?.categoria);
+  // subasta (Zustand) is rehydrated app-wide by the SubastaRehydrator on login/app start,
+  // so this catches "already attending elsewhere" even on the first subasta screen opened.
+  const otherSubastaId = subasta?.identificador ?? null;
+  const attendingElsewhere = isAuthenticated && !isJoined && otherSubastaId !== null && otherSubastaId !== Number(id);
 
   const handleJoin = async () => {
-    if (!token || !user?.id || !id) return;
+    if (!token || !user?.id) {
+      router.push("/auth/login");
+      return;
+    }
+    if (!id || categoryInsufficient) return;
 
-    // Single active subasta check
-    if (subasta !== null && subasta.identificador !== Number(id)) {
+    if (otherSubastaId !== null && otherSubastaId !== Number(id)) {
       Alert.alert(
         "Cambiar de subasta",
-        `Ya estás participando en la subasta de la colección "${subasta.nombreColeccion || "otra"}". ¿Deseas abandonarla e ingresar a esta subasta?`,
+        `Ya estás participando en la subasta "${subasta?.nombreColeccion || "otra subasta"}". ¿Deseas abandonarla e ingresar a esta subasta?`,
         [
           { text: "Cancelar", style: "cancel" },
           {
@@ -220,7 +217,7 @@ export default function AuctionDetailScreen() {
   };
 
   const handleAbandon = () => {
-    leaveSubasta();
+    leaveSubasta(token ?? undefined);
     setBidAmount("");
     setValidationError(null);
   };
@@ -306,6 +303,18 @@ export default function AuctionDetailScreen() {
 
   return (
     <View className="flex-1 bg-[#1c1c1c]">
+      <HeaderComp
+        back
+        backFallback="/(tabs)/auctions"
+        outlet={
+          <View className={`px-4 py-1.5 rounded-xl ${isJoined ? "bg-red-600" : "bg-neutral-800"}`}>
+            <Text className="text-white text-xs tracking-widest font-manrope-bold uppercase">
+              {isJoined ? "LIVE" : "PREVIO"}
+            </Text>
+          </View>
+        }
+      />
+
       {loadingPreview ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#7c3aed" />
@@ -314,35 +323,11 @@ export default function AuctionDetailScreen() {
       ) : currentSubasta ? (
         <ScrollView
           contentContainerStyle={{
-            paddingTop: Math.max(insets.top, Platform.OS === "ios" ? 50 : 20),
+            paddingTop: 16,
             paddingBottom: Math.max(insets.bottom, 20) + 80,
           }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header: Logo + LIVE badge */}
-          <View className="flex-row justify-between items-center px-4 mb-4 mt-2">
-            <View className="flex-row items-center gap-2">
-              <TouchableOpacity onPress={() => router.back()} className="mr-1">
-                <ChevronLeft size={28} color="white" />
-              </TouchableOpacity>
-              <View className="items-center justify-center p-1">
-                <Image
-                  source={require("@/assets/images/logo.png")}
-                  style={{ width: 32, height: 32 }}
-                  resizeMode="contain"
-                />
-              </View>
-              <Text className="text-white text-xl tracking-wide ml-1 font-montserrat-bold">
-                SubastApp
-              </Text>
-            </View>
-            <View className={`px-4 py-1.5 rounded-xl ${isJoined ? "bg-red-600" : "bg-neutral-800"}`}>
-              <Text className="text-white text-xs tracking-widest font-manrope-bold uppercase">
-                {isJoined ? "LIVE" : "PREVIO"}
-              </Text>
-            </View>
-          </View>
-
           {/* Title Section */}
           <View className="px-4 mb-4">
             <Text className="text-white text-3xl mb-1 font-montserrat-bold">
@@ -352,14 +337,40 @@ export default function AuctionDetailScreen() {
               <Text className="text-white text-sm font-manrope-semibold flex-1 mr-3">
                 {isJoined && itemActual ? itemActual.productoDescripcion : "Bienes varios en subasta"}
               </Text>
-              <Text className="text-[#b8860b] text-2xl font-montserrat-extrabold uppercase">
-                {currentSubasta.categoria}
-              </Text>
+              <CategoryPill category={catKey as any} size="lg" />
             </View>
             <Text className="text-fuchsia-500 text-[10px] tracking-widest uppercase font-manrope-bold">
               {currentSubasta.fecha} - {currentSubasta.ubicacion}
             </Text>
           </View>
+
+          {/* Banner: necesita iniciar sesión / categoría insuficiente */}
+          {(!isAuthenticated || categoryInsufficient) && !isJoined && (
+            <View
+              className={`flex-row items-center gap-2 mx-4 mb-4 px-3 py-2.5 rounded-xl border ${
+                !isAuthenticated ? "bg-sky-500/10 border-sky-500/25" : "bg-amber-500/10 border-amber-500/25"
+              }`}
+            >
+              {!isAuthenticated
+                ? <LogIn size={15} color="#38bdf8" />
+                : <Lock size={15} color="#fbbf24" />}
+              <Text className={`flex-1 text-xs font-manrope-semibold ${!isAuthenticated ? "text-sky-300" : "text-amber-300"}`}>
+                {!isAuthenticated
+                  ? "Necesitás iniciar sesión para participar y pujar en esta subasta."
+                  : `Categoría ${currentSubasta.categoria?.toUpperCase()} — tu categoría actual (${user?.category?.toUpperCase() || "COMÚN"}) no te permite pujar.`}
+              </Text>
+            </View>
+          )}
+
+          {/* Banner: ya estás en otra subasta */}
+          {attendingElsewhere && (
+            <View className="flex-row items-center gap-2 mx-4 mb-4 px-3 py-2.5 rounded-xl border bg-fuchsia-500/10 border-fuchsia-500/25">
+              <Gavel size={15} color="#e879f9" />
+              <Text className="flex-1 text-xs font-manrope-semibold text-fuchsia-300">
+                Ya estás participando en otra subasta. Unirte a esta la reemplazará.
+              </Text>
+            </View>
+          )}
 
           {/* Image */}
           <View className="px-4 mb-5 relative">
@@ -391,22 +402,39 @@ export default function AuctionDetailScreen() {
                 </View>
                 <TouchableOpacity
                   onPress={handleJoin}
-                  disabled={isStoreLoading}
+                  disabled={isStoreLoading || categoryInsufficient}
                   activeOpacity={0.8}
                   className="flex-[2] mr-3 rounded-2xl overflow-hidden"
                 >
                   <LinearGradient
-                    colors={["#4ade80", "#2dd4bf"]} // Green to teal gradient
+                    colors={categoryInsufficient ? ["#4b5563", "#4b5563"] : ["#4ade80", "#2dd4bf"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    className="py-3.5 flex-row items-center justify-center gap-2"
+                    style={{
+                      flex: 1,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      paddingVertical: 14,
+                    }}
                   >
                     {isStoreLoading ? (
                       <ActivityIndicator size="small" color="white" />
+                    ) : !isAuthenticated ? (
+                      <>
+                        <LogIn size={20} color="black" />
+                        <Text className="text-black text-xl font-manrope-bold">Iniciar Sesión</Text>
+                      </>
+                    ) : categoryInsufficient ? (
+                      <>
+                        <Lock size={20} color="#d1d5db" />
+                        <Text className="text-neutral-300 text-xl font-manrope-bold">Bloqueado</Text>
+                      </>
                     ) : (
                       <>
-                        <Hammer size={20} color="white" style={{ transform: [{ rotate: '-45deg' }] }} />
-                        <Text className="text-white text-lg font-manrope-bold">Unirse</Text>
+                        <Gavel size={20} color="black" />
+                        <Text className="text-black text-xl font-manrope-bold">Unirse</Text>
                       </>
                     )}
                   </LinearGradient>
@@ -452,7 +480,14 @@ export default function AuctionDetailScreen() {
                       colors={isPlacingBid ? ["#4b5563", "#4b5563"] : ["#00c9b1", "#2dd4bf"]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
-                      className="py-4 flex-row items-center justify-center gap-2"
+                      style={{
+                        flex: 1,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        paddingVertical: 16,
+                      }}
                     >
                       {isPlacingBid ? (
                         <ActivityIndicator size="small" color="white" />

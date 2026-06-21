@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,10 +36,11 @@ public class NotificacionController {
             @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
             @ApiResponse(responseCode = "404", description = "Persona no encontrada", content = @Content)
     })
+    @PreAuthorize("hasRole('ADMIN') or #destinatarioId == principal.identificador")
     @GetMapping
     public ResponseEntity<Page<NotificacionResponse>> getAll(
             @Parameter(description = "ID del destinatario", required = true, example = "1") @RequestParam Integer destinatarioId,
-            @Parameter(description = "Filtrar por tipo (info, exito, advertencia, error, subasta, pago, envio)") @RequestParam(required = false) String tipo,
+            @Parameter(description = "Filtrar por tipo (texto libre, p. ej. info, exito, advertencia, error, subasta, pago, envio, categoria, puja, multa)") @RequestParam(required = false) String tipo,
             @Parameter(description = "Filtrar por estado de lectura") @RequestParam(required = false) Boolean leida,
             @PageableDefault(size = 20, sort = "fecha") Pageable pageable) {
         return ResponseEntity.ok(notificacionService.getAll(destinatarioId, tipo, leida, pageable));
@@ -51,6 +53,7 @@ public class NotificacionController {
             @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
             @ApiResponse(responseCode = "404", description = "Notificación no encontrada", content = @Content)
     })
+    @PreAuthorize("hasRole('ADMIN') or @notificacionSecurity.isOwner(#id, principal.identificador)")
     @GetMapping("/{id}")
     public ResponseEntity<NotificacionResponse> getById(
             @Parameter(description = "ID de la notificación", required = true, example = "1") @PathVariable Integer id) {
@@ -64,6 +67,7 @@ public class NotificacionController {
             @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
             @ApiResponse(responseCode = "404", description = "Notificación no encontrada", content = @Content)
     })
+    @PreAuthorize("hasRole('ADMIN') or @notificacionSecurity.isOwner(#id, principal.identificador)")
     @PatchMapping("/{id}/leer")
     public ResponseEntity<NotificacionResponse> marcarLeida(
             @Parameter(description = "ID de la notificación", required = true, example = "1") @PathVariable Integer id) {

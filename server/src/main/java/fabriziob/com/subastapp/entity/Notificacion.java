@@ -49,7 +49,7 @@ public class Notificacion {
     @Column(name = "imagen", length = 500)
     private String imagen;
 
-    @Column(name = "tipo", nullable = false, length = 30)
+    @Column(name = "tipo", nullable = false, columnDefinition = "TEXT")
     private String tipo;
 
     @Builder.Default

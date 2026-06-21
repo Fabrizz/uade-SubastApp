@@ -39,6 +39,25 @@ function getPaymentMethodLabel(method: any): string {
   return "Medio de pago";
 }
 
+// Small secondary line per method type: titular/expiry for cards, account type/alias for
+// bank accounts, certified amount/expiry for checks — the currency badge is rendered separately.
+function getPaymentMethodDetails(method: any): string {
+  const parts: string[] = [];
+  if (method.tipo === "tarjeta_credito" && method.tarjeta) {
+    if (method.tarjeta.titular) parts.push(method.tarjeta.titular);
+    if (method.tarjeta.vencimiento) parts.push(`Vence ${method.tarjeta.vencimiento}`);
+    if (method.tarjeta.esInternacional) parts.push("Internacional");
+  } else if (method.tipo === "cuenta_bancaria" && method.cuenta) {
+    parts.push(method.cuenta.tipoDeCuenta === "cuenta_corriente" ? "Cuenta corriente" : "Caja de ahorro");
+    if (method.cuenta.alias) parts.push(`Alias: ${method.cuenta.alias}`);
+    if (method.cuenta.esExterior) parts.push("Exterior");
+  } else if (method.tipo === "cheque" && method.cheque) {
+    if (method.cheque.montoCertificado != null) parts.push(`Monto: ${method.cheque.montoCertificado.toLocaleString()}`);
+    if (method.cheque.fechaVencimiento) parts.push(`Vence ${method.cheque.fechaVencimiento}`);
+  }
+  return parts.join("  ·  ");
+}
+
 export default function PaymentMethodsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -170,6 +189,7 @@ export default function PaymentMethodsScreen() {
         ) : (
           methods.map((method) => {
             const { Icon, color } = getPaymentMethodIcon(method);
+            const details = getPaymentMethodDetails(method);
             return (
               <View
                 key={method.identificador}
@@ -180,9 +200,25 @@ export default function PaymentMethodsScreen() {
                     <View className="w-10 h-10 rounded-xl bg-[#383838] border border-[#555555] items-center justify-center mr-4">
                       <Icon size={20} color={color} />
                     </View>
-                    <Text className="text-white font-bold text-base flex-1" numberOfLines={1}>
-                      {getPaymentMethodLabel(method)}
-                    </Text>
+                    <View className="flex-1">
+                      <View className="flex-row items-center gap-2">
+                        {method.moneda && (
+                          <View className="bg-teal-500/15 border border-teal-500/30 px-1.5 py-0.5 rounded-md">
+                            <Text className="text-teal-400 text-[9px] font-bold uppercase">
+                              {method.moneda}
+                            </Text>
+                          </View>
+                        )}
+                        <Text className="text-white font-bold text-base flex-1" numberOfLines={1}>
+                          {getPaymentMethodLabel(method)}
+                        </Text>
+                      </View>
+                      {!!details && (
+                        <Text className="text-neutral-400 text-xs mt-1" numberOfLines={1}>
+                          {details}
+                        </Text>
+                      )}
+                    </View>
                   </View>
 
                   {method.activo ? (

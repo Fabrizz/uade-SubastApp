@@ -1,11 +1,12 @@
 import { useAuth } from "@/context/auth";
-import { useWebSocket } from "@/context/websocket";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
+import { useRouter } from "expo-router";
 import { ArrowUpRight, Bell, Gavel, House, User } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useNotificacionesStore } from "@/lib/notificaciones.store";
 import { useSubastaStore } from "@/lib/subastas.store";
 
 const TABS: Record<string, { label: string; Icon: typeof House }> = {
@@ -17,9 +18,9 @@ const TABS: Record<string, { label: string; Icon: typeof House }> = {
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { hasPaymentMethod, isAuthenticated } = useAuth();
-  const { notifications } = useWebSocket();
-  const notifCount = notifications.length;
+  const notifCount = useNotificacionesStore((s) => s.notifications.length);
   const subastaActiva = useSubastaStore((s) => s.subasta);
   const showSubastaBanner = isAuthenticated && subastaActiva !== null;
 
@@ -41,11 +42,14 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       }}
     >
       {showSubastaBanner && (
-        <View className="bg-[#6b267e]/70 overflow-hidden flex-row px-2 gap-1 flex items-center justify-center">
+        <Pressable
+          onPress={() => router.push({ pathname: "/auctions/[id]", params: { id: String(subastaActiva.identificador) } })}
+          className="bg-[#6b267e]/70 overflow-hidden flex-row px-2 gap-1 flex items-center justify-center"
+        >
           <View className="h-1.5 w-1.5 rounded-full bg-white animate-ping mr-0.5"></View>
-          <Text className="text-white font-semibold text-xs py-0.5">Estas conectado a una subasta</Text>
+          <Text className="text-white font-semibold text-xs py-1">Estas conectado a una subasta</Text>
           <ArrowUpRight color="white" size={12} />
-        </View>
+        </Pressable>
       )}
       <View
         style={{ paddingBottom: insets.bottom - 12 }}

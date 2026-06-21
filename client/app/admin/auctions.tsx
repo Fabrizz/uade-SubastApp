@@ -18,7 +18,7 @@ import {
   Image,
   Pressable,
 } from "react-native";
-import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Color mappings matching overall design
 const TIER_COLOR: Record<string, string> = {
@@ -1111,7 +1111,7 @@ export default function AdminAuctionsScreen() {
         }}
       >
         <LinearGradient colors={["#000000", "#180120"]} style={{ flex: 1 }}>
-          <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}>
             {/* Modal Header */}
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-neutral-800">
               <TouchableOpacity
@@ -1358,7 +1358,7 @@ export default function AdminAuctionsScreen() {
                 </TouchableOpacity>
               </View>
             </ScrollView>
-          </SafeAreaView>
+          </View>
         </LinearGradient>
       </Modal>
 
@@ -1375,7 +1375,7 @@ export default function AdminAuctionsScreen() {
         }}
       >
         <LinearGradient colors={["#000000", "#180120"]} style={{ flex: 1 }}>
-          <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}>
             {/* Modal Header */}
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-neutral-800">
               <TouchableOpacity
@@ -1720,7 +1720,7 @@ export default function AdminAuctionsScreen() {
                 )}
               </View>
             </ScrollView>
-          </SafeAreaView>
+          </View>
         </LinearGradient>
       </Modal>
 

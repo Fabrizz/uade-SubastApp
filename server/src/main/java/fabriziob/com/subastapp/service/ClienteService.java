@@ -25,7 +25,8 @@ public class ClienteService {
     private final ClienteRepository clienteRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
-    private final WsNotificacionService wsNotificacionService;
+    private final NotificacionService notificacionService;
+    private final AsistenteService asistenteService;
 
     @Transactional(readOnly = true)
     public Cliente findById(Integer id) {
@@ -88,10 +89,12 @@ public class ClienteService {
         if (extra != null)
             extra.setCategoriaBase(nueva);
 
-        String email = cliente.getPersona().getPersonaExtra().getEmail();
-        wsNotificacionService.enviar(
-                email,
-                WsNotificacionService.Tipo.category_update,
+        // Un cambio de categoría puede dejarlo sin elegibilidad para la subasta en la
+        // que está; lo desconectamos y la elegibilidad se vuelve a validar al reingresar.
+        asistenteService.desconectarDeSubastaActiva(id);
+
+        notificacionService.notificarCliente(id,
+                WsNotificacionService.Tipo.category_update, "categoria",
                 "Categoría actualizada",
                 "Tu categoría fue actualizada a " + nueva.name());
 

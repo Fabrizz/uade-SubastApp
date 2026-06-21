@@ -58,10 +58,32 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req -> req
+                        // Permitir CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/actuator/**").hasRole("ADMIN")
+                        // [AUTH]
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        // [PAISES]
+                        .requestMatchers(HttpMethod.GET, "/api/v1/paises", "/api/v1/paises/*").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/paises").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/paises/*").hasRole("ADMIN")
+                        // [SUBASTAS]
+                        // Browsing subastas/catálogo/productos is public; precios are stripped
+                        // for unauthenticated requests in the service layer (see CatalogoService).
+                        .requestMatchers(HttpMethod.GET, "/api/v1/subastas").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/subastas/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/subastas/*/catalogo").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/subastas/*/catalogo/items").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/subastas/*/catalogo/items/*").permitAll()
+                        // [CLIENTES]
+                        .requestMatchers("/api/v1/clientes/*").authenticated()
+                        // [PRODUCTOS]
+                        .requestMatchers(HttpMethod.GET, "/productos/*").permitAll()
+                        .requestMatchers("/productos/*/fotos/*/content").permitAll()
+                        // [ERROR]
+                        .requestMatchers("/error").permitAll()
+                        // [WS] (Auth en WebSocketConfig)
+                        .requestMatchers("/api/v1/ws/**").permitAll()
+                        // [DOCS]
                         .requestMatchers(
                                 "/api-docs/**",
                                 "/api-docs/swagger-config",
@@ -69,10 +91,9 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/docs")
                         .permitAll()
-                        .requestMatchers("/error").permitAll()
-                        .requestMatchers("/productos/*/fotos/*/content").permitAll()
-                        .requestMatchers("/api/v1/ws/**").permitAll()
-                        .requestMatchers("/api/v1/paises").permitAll()
+                        // [ACTUATOR]
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
                 .authenticationProvider(authenticationProvider)

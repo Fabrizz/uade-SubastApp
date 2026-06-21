@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+import { useNotificacionesStore } from '@/lib/notificaciones.store';
 import type { components } from '@/types/api';
 import * as SecureStore from 'expo-secure-store';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -155,6 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setUser(null);
     setHasPaymentMethod(true);
+    useNotificacionesStore.getState().clearNotifications();
   }, []);
 
   const scheduleExpiration = useCallback((tok: string) => {
@@ -190,6 +192,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           scheduleExpiration(storedToken);
           if (fresh.category !== 'admin' && fresh.id) {
             setHasPaymentMethod(await fetchHasPaymentMethod(storedToken, fresh.id));
+          }
+          if (fresh.id) {
+            useNotificacionesStore.getState().fetchRecientes(storedToken, fresh.id);
           }
         } else if (storedToken) {
           await Promise.all([
@@ -232,6 +237,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (fresh.category !== 'admin' && fresh.id) {
       setHasPaymentMethod(await fetchHasPaymentMethod(data.accessToken, fresh.id));
     }
+    if (fresh.id) {
+      useNotificacionesStore.getState().fetchRecientes(data.accessToken, fresh.id);
+    }
   }, [persistSession]);
 
   const logout = useCallback(async () => {
@@ -255,6 +263,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await persistSession(data.accessToken, fresh);
     if (fresh.category !== 'admin' && fresh.id) {
       setHasPaymentMethod(await fetchHasPaymentMethod(data.accessToken, fresh.id));
+    }
+    if (fresh.id) {
+      useNotificacionesStore.getState().fetchRecientes(data.accessToken, fresh.id);
     }
   }, [persistSession]);
 
