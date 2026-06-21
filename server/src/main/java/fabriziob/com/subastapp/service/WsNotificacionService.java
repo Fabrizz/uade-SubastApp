@@ -19,7 +19,7 @@ public class WsNotificacionService {
     private final ClienteRepository clienteRepository;
 
     public enum Tipo {
-        warning, success, info, category_update
+        warning, success, info, category_update, pujo_update
     }
 
     public void enviar(String email, Tipo tipo, String title, String description) {
@@ -40,5 +40,6 @@ public class WsNotificacionService {
         enviar(email, tipo, title, description);
     }
 
-    public record WsPayload(String id, Tipo type, String title, String description, String createdAt) {}
+    public record WsPayload(String id, Tipo type, String title, String description, String createdAt) {
+    }
 }

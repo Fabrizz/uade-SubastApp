@@ -15,6 +15,7 @@ export default function HeaderComp({
   className = "",
   inline = false,
   back = false,
+  backFallback = "/admin",
 }: {
   children?: React.ReactNode
   outlet?: React.ReactNode
@@ -22,6 +23,7 @@ export default function HeaderComp({
   className?: string
   back?: boolean
   inline?: boolean
+  backFallback?: string
 }) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -44,7 +46,7 @@ export default function HeaderComp({
                 if (router.canGoBack()) {
                   router.back();
                 } else {
-                  router.replace("/admin");
+                  router.replace(backFallback as any);
                 }
               }}
               activeOpacity={0.7}
@@ -80,9 +82,9 @@ export default function HeaderComp({
           <TouchableOpacity
             onPress={() => router.replace("/(tabs)/profile")}
           >
-            <View className="flex-row items-center gap-2.5">
+            <View className="flex-row items-center gap-2">
               <AvatarInitials name={user.name ?? user.email} size={36} />
-              <View className="items-end">
+              <View>
                 <Text className="text-white text-sm font-montserrat-bold" numberOfLines={1}>
                   {user.name ?? user.email}
                 </Text>

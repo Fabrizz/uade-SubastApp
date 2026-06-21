@@ -313,7 +313,7 @@ export default function AddBankAccountScreen() {
                     params: { path: { id: personaId } },
                     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
                     body: {
-                      moneda: "ARS",
+                      moneda: isExterior ? "USD" : "ARS",
                       titular: accountName,
                       banco: bankName,
                       cbu: cbu,

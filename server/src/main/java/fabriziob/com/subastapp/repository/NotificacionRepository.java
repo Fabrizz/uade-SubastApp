@@ -15,6 +15,8 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Inte
 
     Page<Notificacion> findByDestinatario_Identificador(Integer personaId, Pageable pageable);
 
+    boolean existsByIdentificadorAndDestinatario_Identificador(Integer identificador, Integer personaId);
+
     Page<Notificacion> findByDestinatario_IdentificadorAndLeida(Integer personaId, Boolean leida, Pageable pageable);
 
     Page<Notificacion> findByDestinatario_IdentificadorAndTipo(Integer personaId, String tipo, Pageable pageable);

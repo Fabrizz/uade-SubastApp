@@ -112,8 +112,8 @@ public class PujoService {
                 validarRangoPuje(req.getImporte(), item, subasta);
 
                 // El nuevo importe debe ser mayor al mejor pujo actual
-                BigDecimal mejorActual = pujoRepository.findMaxImporteByItem(itemId)
-                                .orElse(BigDecimal.ZERO);
+                Optional<Pujo> pujoAnterior = pujoRepository.findTopByItem_IdentificadorOrderByImporteDesc(itemId);
+                BigDecimal mejorActual = pujoAnterior.map(Pujo::getImporte).orElse(BigDecimal.ZERO);
                 if (req.getImporte().compareTo(mejorActual) <= 0)
                         throw new IllegalArgumentException(
                                         "El importe debe ser mayor al mejor pujo actual: " + mejorActual);
@@ -128,6 +128,25 @@ public class PujoService {
 
                 PujoResponse response = toResponse(nuevo);
                 messagingTemplate.convertAndSend("/topic/subastas/" + subastaId + "/pujas", response);
+
+                // Avisar al postor anterior que fue superado (si no es el mismo cliente)
+                pujoAnterior.ifPresent(anterior -> {
+                        Cliente clienteAnterior = anterior.getAsistente() != null
+                                        ? anterior.getAsistente().getCliente()
+                                        : null;
+                        if (clienteAnterior != null
+                                        && !clienteAnterior.getIdentificador().equals(cliente.getIdentificador())) {
+                                notificacionService.notificarCliente(clienteAnterior.getIdentificador(),
+                                                WsNotificacionService.Tipo.pujo_update, "puja",
+                                                "Te superaron en una puja",
+                                                "Tu puja de " + anterior.getImporte() + " por \""
+                                                                + (item.getProducto() != null
+                                                                                ? item.getProducto().getDescripcionCatalogo()
+                                                                                : "un ítem")
+                                                                + "\" fue superada por " + req.getImporte() + ".");
+                        }
+                });
+
                 return response;
         }
 

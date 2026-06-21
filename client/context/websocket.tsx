@@ -1,35 +1,16 @@
 import { API_BASE } from '@/lib/api';
+import { useNotificacionesStore, WsNotification, WsNotificationTypeObj } from '@/lib/notificaciones.store';
+import { useSubastaStore } from '@/lib/subastas.store';
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useAuth } from './auth';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export const WsNotificationTypeObj = {
-  warning: 'warning',
-  success: 'success',
-  info: 'info',
-  category_update: 'category_update',
-} as const;
-
-export type WsNotificationType = typeof WsNotificationTypeObj[keyof typeof WsNotificationTypeObj];
-
-// Field names must match the Spring Boot notification DTO
-export type WsNotification = {
-  id: number | string;
-  type: WsNotificationType;
-  title: string;
-  description: string;
-  createdAt: string; // ISO 8601
-};
-
 interface WebSocketContextValue {
   isConnected: boolean;
   isConnecting: boolean;
   connectionError: string | null;
-  notifications: WsNotification[];
-  removeNotification: (id: number | string) => void;
-  clearNotifications: () => void;
   subscribeToTopic: (topic: string, callback: (msg: IMessage) => void) => () => void;
 }
 
@@ -50,7 +31,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<WsNotification[]>([]);
 
   useEffect(() => {
     if (!isAuthenticated || !token) {
@@ -83,9 +63,15 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         client.subscribe('/user/queue/notificaciones', (msg: IMessage) => {
           try {
             const notif: WsNotification = JSON.parse(msg.body);
-            setNotifications((prev) => [notif, ...prev]);
+            useNotificacionesStore.getState().addNotification(notif);
             if (notif.type === WsNotificationTypeObj.category_update) {
               refreshUser();
+              // The category change may have made the backend kick us out of the subasta
+              // we were in (see ClienteService/CategoriaService) — drop the local session
+              // too so the auction screen falls back to preview mode immediately.
+              if (useSubastaStore.getState().subasta) {
+                useSubastaStore.getState().leaveSubasta(token);
+              }
             }
           } catch {
             // malformed message — ignore
@@ -139,12 +125,6 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isAuthenticated, token]);
 
-  const removeNotification = useCallback((id: number | string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  }, []);
-
-  const clearNotifications = useCallback(() => setNotifications([]), []);
-
   const subscribeToTopic = useCallback((topic: string, callback: (msg: IMessage) => void) => {
     topicCallbacksRef.current.set(topic, callback);
     if (clientRef.current?.connected) {
@@ -162,7 +142,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <WebSocketContext.Provider value={{ isConnected, isConnecting, connectionError, notifications, removeNotification, clearNotifications, subscribeToTopic }}>
+    <WebSocketContext.Provider value={{ isConnected, isConnecting, connectionError, subscribeToTopic }}>
       {children}
     </WebSocketContext.Provider>
   );

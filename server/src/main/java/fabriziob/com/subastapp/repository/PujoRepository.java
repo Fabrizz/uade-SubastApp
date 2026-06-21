@@ -58,6 +58,10 @@ public interface PujoRepository extends JpaRepository<Pujo, Integer> {
             """)
     Optional<BigDecimal> findMaxImporteByItem(@Param("itemId") Integer itemId);
 
+    // Pujo líder actual de un item (antes de insertar uno nuevo) — usado para saber a quién
+    // notificar "te superaron" cuando llega una puja más alta.
+    Optional<Pujo> findTopByItem_IdentificadorOrderByImporteDesc(Integer itemId);
+
     /**
      * Suma de pujos ganadores del cliente cuya venta aún no está confirmada,
      * en la moneda de las subastas correspondientes. Se usa para calcular la

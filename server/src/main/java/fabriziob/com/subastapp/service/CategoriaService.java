@@ -36,10 +36,14 @@ public class CategoriaService {
     private final MedioPagoTarjetaRepository tarjetaRepository;
     private final RegistroDeSubastaRepository registroRepository;
     private final PujoRepository pujoRepository;
+    private final AsistenteService asistenteService;
+    private final NotificacionService notificacionService;
 
     public Cliente recalcular(Integer clienteId) {
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado: " + clienteId));
+
+        ClienteCategoria anterior = cliente.getCategoria();
 
         int puntaje = puntajeDiversidad(clienteId) + puntajeActividad(clienteId);
 
@@ -49,9 +53,21 @@ public class CategoriaService {
                 ? extra.getCategoriaBase()
                 : cliente.getCategoria();
 
-        cliente.setCategoria(ClienteCategoria.mejorEntre(base, candidata));
+        ClienteCategoria nueva = ClienteCategoria.mejorEntre(base, candidata);
+        cliente.setCategoria(nueva);
         if (extra != null)
             extra.setPuntaje(puntaje);
+
+        if (nueva != anterior) {
+            // Un cambio de categoría puede dejarlo sin elegibilidad para la subasta en la
+            // que está; lo desconectamos y la elegibilidad se vuelve a validar al reingresar.
+            asistenteService.desconectarDeSubastaActiva(clienteId);
+
+            notificacionService.notificarCliente(clienteId,
+                    WsNotificacionService.Tipo.category_update, "categoria",
+                    "Categoría actualizada",
+                    "Tu categoría fue actualizada a " + nueva.name());
+        }
 
         return cliente;
     }

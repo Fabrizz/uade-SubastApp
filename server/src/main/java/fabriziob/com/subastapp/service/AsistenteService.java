@@ -99,6 +99,21 @@ public class AsistenteService {
                 return toResponse(asistencia.getAsistente(), asistencia);
         }
 
+        /**
+         * Asistencia activa del cliente en CUALQUIER subasta (regla "una sola subasta a la vez"),
+         * sin necesidad de conocer de antemano el subastaId. Útil para rehidratar el estado
+         * de sesión del cliente al abrir la app.
+         */
+        @Transactional(readOnly = true)
+        public AsistenteResponse getAsistenciaActivaDelCliente(Integer clienteId) {
+                AsistenciaActual asistencia = asistenciaActualRepository
+                                .findByAsistente_Cliente_IdentificadorAndEstado(clienteId, ESTADO_ACTIVO)
+                                .stream().findFirst()
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "El cliente " + clienteId + " no tiene asistencia activa en ninguna subasta"));
+                return toResponse(asistencia.getAsistente(), asistencia);
+        }
+
         @Transactional(readOnly = true)
         public Page<AsistenteResponse> getAsistentes(Integer subastaId, Pageable pageable) {
                 if (!subastaRepository.existsById(subastaId))
@@ -136,6 +151,21 @@ public class AsistenteService {
                                 });
         }
 
+        /**
+         * Finaliza cualquier asistencia activa del cliente (en cualquier subasta), sin
+         * notificar por su cuenta. Se usa cuando un cambio de categoría debe forzar la
+         * salida — la elegibilidad se vuelve a validar en el próximo "unirse".
+         */
+        public void desconectarDeSubastaActiva(Integer clienteId) {
+                asistenciaActualRepository
+                                .findByAsistente_Cliente_IdentificadorAndEstado(clienteId, ESTADO_ACTIVO)
+                                .forEach(a -> {
+                                        a.setEstado(ESTADO_FINALIZADO);
+                                        a.setFechaHoraSalida(LocalDateTime.now());
+                                        asistenciaActualRepository.save(a);
+                                });
+        }
+
         // ─── helpers ───────────────────────────────────────────────────────────
 
         /**
@@ -158,6 +188,7 @@ public class AsistenteService {
                 Cliente cliente = asistente.getCliente();
                 return AsistenteResponse.builder()
                                 .identificador(asistente.getIdentificador())
+                                .subastaId(asistente.getSubasta() != null ? asistente.getSubasta().getIdentificador() : null)
                                 .numeroPostor(asistente.getNumeroPostor())
                                 .clienteId(cliente != null ? cliente.getIdentificador() : null)
                                 .clienteNombre(cliente != null && cliente.getPersona() != null

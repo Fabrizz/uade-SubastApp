@@ -1,12 +1,24 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
-import { AlertTriangle, Bell, Trophy, WifiOff, WifiSync, X } from "lucide-react-native";
+import { AlertTriangle, Bell, Gavel, Trophy, WifiOff, WifiSync, X } from "lucide-react-native";
 import React from "react";
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 import HeaderComp from "@/components/HeaderComp";
+import { CategoryPill } from "@/components/ui/CategoryPill";
 import ScrollViewPad from "@/components/ui/ScrollViewPad";
-import { useWebSocket, WsNotification } from "@/context/websocket";
+import { UserCategory } from "@/context/auth";
+import { useWebSocket } from "@/context/websocket";
+import { useNotificacionesStore, WsNotification } from "@/lib/notificaciones.store";
+
+const CATEGORY_KEYS: UserCategory[] = ["comun", "especial", "plata", "oro", "platino", "admin"];
+
+// category_update descriptions end in "...actualizada a ORO" — pull the category name
+// out so we can render the real CategoryPill instead of repeating it as plain text.
+function extractCategory(description: string): UserCategory | null {
+  const lastWord = description.trim().split(/\s+/).pop()?.toLowerCase().replace(/[.,]+$/, "");
+  return CATEGORY_KEYS.find((c) => c === lastWord) ?? null;
+}
 
 function formatDate(iso: string): string {
   const date = new Date(iso);
@@ -22,6 +34,7 @@ function getIcon(type: WsNotification["type"]) {
     case "warning": return <AlertTriangle size={22} color="#f43f5e" />;
     case "success": return <Trophy size={22} color="#10b981" />;
     case "category_update": return <Trophy size={22} color="#a78bfa" />;
+    case "pujo_update": return <Gavel size={22} color="#fb923c" />;
     default: return <Bell size={22} color="#2dd4bf" />;
   }
 }
@@ -31,12 +44,14 @@ function getIconBg(type: WsNotification["type"]) {
     case "warning": return "bg-rose-500/10";
     case "success": return "bg-emerald-500/10";
     case "category_update": return "bg-violet-500/10";
+    case "pujo_update": return "bg-orange-500/10";
     default: return "bg-teal-500/10";
   }
 }
 
 export default function NotificationsScreen() {
-  const { notifications, removeNotification, isConnected, isConnecting, connectionError } = useWebSocket();
+  const { isConnected, isConnecting, connectionError } = useWebSocket();
+  const { notifications, removeNotification } = useNotificacionesStore();
 
   return (
     <LinearGradient
@@ -79,44 +94,50 @@ export default function NotificationsScreen() {
           </View>
         ) : (
           <View className="gap-3">
-            {notifications.map((notif) => (
-              <View
-                key={notif.id}
-                className="flex-row items-stretch bg-[#1a1a1a] shadow-lg shadow-black/20"
-                style={{ borderRadius: 20 }}
-              >
-                <View className="flex-1 flex-row items-start p-4">
-                  <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${getIconBg(notif.type)}`}>
-                    {getIcon(notif.type)}
-                  </View>
+            {notifications.map((notif) => {
+              const newCategory = notif.type === "category_update" ? extractCategory(notif.description) : null;
 
-                  <View className="flex-1 mt-1">
-                    <View className="flex-row items-center justify-between mb-1">
-                      <Text className="text-white font-bold text-base tracking-wide flex-1" numberOfLines={1}>
+              return (
+                <View
+                  key={notif.id}
+                  className="flex-row items-stretch bg-[#1a1a1a] shadow-lg shadow-black/20"
+                  style={{ borderRadius: 20 }}
+                >
+                  <View className="flex-1 flex-row items-start p-4">
+                    <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${getIconBg(notif.type)}`}>
+                      {getIcon(notif.type)}
+                    </View>
+
+                    <View className="flex-1 mt-1">
+                      <Text className="text-white font-bold text-base tracking-wide" numberOfLines={1}>
                         {notif.title}
                       </Text>
-                      <Text className="text-neutral-500 text-xs font-semibold ml-2">
+                      <Text className="text-neutral-500 text-xs font-semibold mb-1.5">
                         {formatDate(notif.createdAt)}
                       </Text>
+                      {newCategory ? (
+                        <CategoryPill category={newCategory} size="sm" />
+                      ) : (
+                        <Text className="text-neutral-400 text-sm leading-5 pr-4" numberOfLines={2}>
+                          {notif.description}
+                        </Text>
+                      )}
                     </View>
-                    <Text className="text-neutral-400 text-sm leading-5 pr-4" numberOfLines={2}>
-                      {notif.description}
-                    </Text>
+                  </View>
+
+                  <View className="justify-start pt-4 pr-3">
+                    <TouchableOpacity
+                      onPress={() => removeNotification(notif.id)}
+                      activeOpacity={0.6}
+                      className="p-2"
+                      hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                    >
+                      <X size={18} color="#525252" strokeWidth={2.5} />
+                    </TouchableOpacity>
                   </View>
                 </View>
-
-                <View className="justify-start pt-4 pr-3">
-                  <TouchableOpacity
-                    onPress={() => removeNotification(notif.id)}
-                    activeOpacity={0.6}
-                    className="p-2"
-                    hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                  >
-                    <X size={18} color="#525252" strokeWidth={2.5} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
 

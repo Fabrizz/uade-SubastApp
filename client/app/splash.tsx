@@ -29,7 +29,7 @@ export default function SplashScreenController() {
   const ready = loaded && !isLoading;
 
   useEffect(() => {
-    if (ready) SplashScreen.hideAsync();
+    if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
 
   if (ready) return null;

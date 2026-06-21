@@ -30,3 +30,42 @@ export const api = createClient<paths>({
     return params.toString();
   }
 });
+
+const TRACE_MAX_LEN = 200;
+
+function truncateTrace(body: unknown): string {
+  if (body === undefined) return "";
+  const text = (typeof body === "string" ? body : JSON.stringify(body)).replace(/\s*\n\s*/g, "");
+  return text.length > TRACE_MAX_LEN ? `${text.slice(0, TRACE_MAX_LEN)}…` : text;
+}
+
+// Logs every outgoing request, plus every non-2xx response and network failure, so API
+// activity is visible in the console without each call site adding its own logging.
+api.use({
+  onRequest({ request }) {
+    console.log(`[REQUEST] [${request.method}] ${request.url}`);
+    return request;
+  },
+  async onResponse({ request, response }) {
+    let body: unknown;
+    try {
+      body = await response.clone().json();
+    } catch {
+      try {
+        body = await response.clone().text();
+      } catch {
+        body = undefined;
+      }
+    }
+    console.log(`[RESPONSE] [${response.status}] ${request.method} ${request.url} ${truncateTrace(body)}`);
+
+    if (!response.ok) {
+      const label = response.status === 401 ? "401 Unauthorized" : `${response.status} ${response.statusText}`;
+      console.log(`[error] [api] ${label} — ${request.method} ${request.url}`, truncateTrace(body));
+    }
+    return response;
+  },
+  onError({ request, error }) {
+    console.log(`[error] [api] network error — ${request.method} ${request.url}`, truncateTrace(error instanceof Error ? error.message : error));
+  },
+});

@@ -18,9 +18,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 
+import fabriziob.com.subastapp.controller.subasta.AsistenteResponse;
 import fabriziob.com.subastapp.entity.Cliente;
 import fabriziob.com.subastapp.entity.ClienteExtra;
+import fabriziob.com.subastapp.service.AsistenteService;
 import fabriziob.com.subastapp.service.CategoriaService;
 import fabriziob.com.subastapp.service.ClienteService;
 import fabriziob.com.subastapp.service.MedioPagoService;
@@ -46,6 +49,7 @@ public class ClienteController {
         private final ClienteService clienteService;
         private final MedioPagoService medioPagoService;
         private final CategoriaService categoriaService;
+        private final AsistenteService asistenteService;
 
         @Operation(summary = "Listar clientes", description = "Devuelve todos los clientes paginados")
         @ApiResponses({
@@ -70,6 +74,19 @@ public class ClienteController {
         @GetMapping("/{id}")
         public ResponseEntity<ClienteResponse> getById(@PathVariable Integer id) {
                 return ResponseEntity.ok(toResponse(clienteService.findById(id)));
+        }
+
+        @Operation(summary = "Obtener asistencia actual del cliente", description = "Devuelve la subasta en vivo a la que el cliente está asistiendo actualmente, si existe (regla: una sola subasta a la vez)")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Asistencia activa encontrada"),
+                        @ApiResponse(responseCode = "401", description = R_401, content = @Content),
+                        @ApiResponse(responseCode = "403", description = R_403, content = @Content),
+                        @ApiResponse(responseCode = "404", description = "El cliente no tiene asistencia activa en ninguna subasta", content = @Content)
+        })
+        @PreAuthorize("hasRole('ADMIN') or (principal.cliente != null and principal.cliente.identificador == #id)")
+        @GetMapping("/{id}/asistencia-actual")
+        public ResponseEntity<AsistenteResponse> getAsistenciaActual(@PathVariable Integer id) {
+                return ResponseEntity.ok(asistenteService.getAsistenciaActivaDelCliente(id));
         }
 
         /////////////////////////////////////////////// Estado de usuario

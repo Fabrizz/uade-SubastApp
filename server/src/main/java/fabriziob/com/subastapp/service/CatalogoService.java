@@ -5,6 +5,9 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +41,7 @@ public class CatalogoService {
         private final SubastaRepository subastaRepository;
         private final EmpleadoRepository empleadoRepository;
         private final ProductoRepository productoRepository;
+        private final NotificacionService notificacionService;
 
         // ─── lecturas ──────────────────────────────────────────────────────────
 
@@ -128,7 +132,7 @@ public class CatalogoService {
                 
                 if (req.getEstadoAceptacion() != null) {
                         item.setEstadoAceptacion(req.getEstadoAceptacion());
-                        
+
                         // Update the product's EstadoBien as appropriate
                         if (item.getProducto() != null) {
                                 Producto p = item.getProducto();
@@ -142,6 +146,18 @@ public class CatalogoService {
                                         }
                                 }
                                 productoRepository.save(p);
+
+                                if (req.getEstadoAceptacion() == EstadoAceptacionItem.aceptado && p.getDuenio() != null) {
+                                        String titulo = p.getProductoExtra() != null && p.getProductoExtra().getTitulo() != null
+                                                        ? p.getProductoExtra().getTitulo()
+                                                        : p.getDescripcionCompleta();
+                                        notificacionService.notificarCliente(
+                                                        p.getDuenio().getIdentificador(),
+                                                        WsNotificacionService.Tipo.success,
+                                                        "subasta",
+                                                        "¡Tu artículo fue aceptado para subastar!",
+                                                        "\"" + titulo + "\" fue aceptado y se incluyó en el catálogo de la subasta.");
+                                }
                         }
                 }
                 
@@ -193,6 +209,11 @@ public class CatalogoService {
                                         "El item " + item.getIdentificador() + " no pertenece a la subasta " + subastaId);
         }
 
+        private boolean isAuthenticated() {
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                return auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken);
+        }
+
         private CatalogoResponse toCatalogoResponse(Catalogo c) {
                 List<ItemCatalogoResponse> items = c.getItems() == null ? List.of()
                                 : c.getItems().stream().map(this::toItemResponse).toList();
@@ -215,14 +236,16 @@ public class CatalogoService {
                 Integer subastaId = (catalogo != null && catalogo.getSubasta() != null)
                                 ? catalogo.getSubasta().getIdentificador() : null;
 
+                boolean mostrarPrecios = isAuthenticated();
+
                 return ItemCatalogoResponse.builder()
                                 .identificador(i.getIdentificador())
                                 .catalogoId(catalogo != null ? catalogo.getIdentificador() : null)
                                 .subastaId(subastaId)
                                 .productoId(producto != null ? producto.getIdentificador() : null)
                                 .productoDescripcion(producto != null ? producto.getDescripcionCatalogo() : null)
-                                .precioBase(i.getPrecioBase())
-                                .comision(i.getComision())
+                                .precioBase(mostrarPrecios ? i.getPrecioBase() : null)
+                                .comision(mostrarPrecios ? i.getComision() : null)
                                 .subastado(i.getSubastado())
                                 .estadoAceptacion(i.getEstadoAceptacion())
                                 .build();
