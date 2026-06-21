@@ -18,6 +18,7 @@ export type WsNotification = {
   title: string;
   description: string;
   createdAt: string; // ISO 8601
+  accion?: string;   // deep-link hint, e.g. "/subastas/5/registro/3"
 };
 
 // Best-effort mapping from the free-form persisted `Notificacion.tipo` (used server-side for
@@ -73,6 +74,7 @@ export const useNotificacionesStore = create<NotificacionesStore>((set) => ({
         title: n.titulo ?? "",
         description: n.descripcion ?? "",
         createdAt: n.fecha ?? new Date().toISOString(),
+        accion: n.accion ?? undefined,
       }));
       set({ notifications: mapped, loaded: true });
     } catch {

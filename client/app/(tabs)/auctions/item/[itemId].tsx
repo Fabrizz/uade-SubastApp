@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, MapPin } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
-import { Image, Platform, ScrollView, StatusBar, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Image, Platform, ScrollView, StatusBar, Text, TouchableOpacity, View, ActivityIndicator, Dimensions, FlatList } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/auth";
 import { api, API_BASE } from "@/lib/api";
@@ -54,6 +54,9 @@ export default function ItemDetailScreen() {
 
   const history = product?.historia || (params.history as string) || "";
 
+  const { width: windowWidth } = Dimensions.get('window');
+  const CARD_WIDTH = windowWidth - 40; // minus horizontal padding
+
   return (
     <View className="flex-1 bg-[#121212]">
       <StatusBar barStyle="light-content" />
@@ -89,24 +92,56 @@ export default function ItemDetailScreen() {
           <View className="w-10" />
         </View>
 
+        {/* Art Badge */}
+        {product?.esObraDeArte && (
+          <View className="self-start bg-[#9102A2]/10 border border-[#9102A2]/30 px-3 py-1 rounded-full mb-3 ml-1">
+            <Text className="text-[#d946ef] text-[10px] font-extrabold tracking-widest uppercase">
+              Pieza Única de Arte / Diseño
+            </Text>
+          </View>
+        )}
+
         {/* Title */}
         <Text className="text-white text-3xl font-extrabold mb-6 px-1 font-montserrat-bold">
           {title}
         </Text>
 
-        {/* Item Image */}
-        <View className="mb-6 rounded-[32px] overflow-hidden shadow-2xl shadow-black/80 relative">
-          <Image
-            source={{ uri: imageUri }}
-            style={{ width: "100%", height: 260 }}
-            resizeMode="cover"
-          />
-          {loading && (
-            <View className="absolute inset-0 bg-black/40 items-center justify-center">
-              <ActivityIndicator size="large" color="#9102A2" />
-            </View>
-          )}
-        </View>
+        {/* Item Image Carousel */}
+        {product?.fotosIds && product.fotosIds.length > 0 ? (
+          <View className="mb-6 rounded-[32px] overflow-hidden shadow-2xl shadow-black/80 relative" style={{ height: 260 }}>
+            <FlatList
+              data={product.fotosIds}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.toString()}
+              renderItem={({ item: fotoId }) => (
+                <Image
+                  source={{ uri: `${API_BASE}/productos/${itemId}/fotos/${fotoId}/content` }}
+                  style={{ width: CARD_WIDTH, height: 260 }}
+                  resizeMode="cover"
+                />
+              )}
+              windowSize={2}
+              initialNumToRender={1}
+              maxToRenderPerBatch={1}
+              removeClippedSubviews={false}
+            />
+          </View>
+        ) : (
+          <View className="mb-6 rounded-[32px] overflow-hidden shadow-2xl shadow-black/80 relative">
+            <Image
+              source={{ uri: imageUri }}
+              style={{ width: "100%", height: 260 }}
+              resizeMode="cover"
+            />
+            {loading && (
+              <View className="absolute inset-0 bg-black/40 items-center justify-center">
+                <ActivityIndicator size="large" color="#9102A2" />
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Description Card */}
         <View className="bg-[#181818] border border-neutral-900 p-6 mb-6 rounded-[28px]">
@@ -117,6 +152,33 @@ export default function ItemDetailScreen() {
             {description}
           </Text>
         </View>
+
+        {/* Art Info Card */}
+        {product?.esObraDeArte && (product.artista || product.fechaCreacionObra) ? (
+          <View className="bg-[#181818] border border-neutral-900 p-6 mb-6 rounded-[28px] flex-row gap-6">
+            {product.artista ? (
+              <View className="flex-1">
+                <Text className="text-neutral-400 text-xs font-bold uppercase tracking-wider mb-1">
+                  Artista / Creador
+                </Text>
+                <Text className="text-white text-base font-bold font-manrope-bold">
+                  {product.artista}
+                </Text>
+              </View>
+            ) : null}
+
+            {product.fechaCreacionObra ? (
+              <View className="flex-1">
+                <Text className="text-neutral-400 text-xs font-bold uppercase tracking-wider mb-1">
+                  Año / Época
+                </Text>
+                <Text className="text-white text-base font-bold font-manrope-bold">
+                  {product.fechaCreacionObra.split("-")[0] || product.fechaCreacionObra}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         {/* Shipping Location Card */}
         <View className="bg-[#181818] border border-neutral-900 p-5 rounded-[24px] flex-row items-center justify-between shadow-xl shadow-black/30">

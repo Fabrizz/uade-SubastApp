@@ -1425,7 +1425,7 @@ export interface paths {
         };
         /**
          * Estadísticas globales por categoría
-         * @description Devuelve participación y recaudación agrupadas por categoría (comun, especial, plata, oro, platino)
+         * @description Devuelve participación por categoría (comun, especial, plata, oro, platino) y la recaudación desglosada por moneda (ARS, USD)
          */
         get: operations["getEstadisticasCategorias"];
         put?: never;
@@ -1456,6 +1456,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/estadisticas/clientes/{id}/pujos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pujos cronológicos de un cliente
+         * @description Devuelve todas las pujas del cliente, en orden cronológico, con su importe y moneda (ARS, USD) — pensado para graficar la evolución de los montos pujados
+         */
+        get: operations["getPujosCronologicos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/estadisticas/clientes/{id}/participaciones": {
         parameters: {
             query?: never;
@@ -1465,9 +1485,29 @@ export interface paths {
         };
         /**
          * Participaciones de un cliente
-         * @description Devuelve cantidad de subastas asistidas, subastas donde pujó al menos una vez y subastas ganadas
+         * @description Devuelve cantidad de subastas asistidas, subastas donde pujó al menos una vez, subastas ganadas, y los importes ofertados/pagados/promedio desglosados por moneda (ARS, USD)
          */
         get: operations["getParticipaciones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/estadisticas/clientes/{id}/historico": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Histórico mensual de pujas de un cliente
+         * @description Devuelve, agrupado por mes y moneda (ARS, USD), la cantidad de pujas, el importe ofertado, el importe ganado y las subastas ganadas del cliente
+         */
+        get: operations["getHistoricoMensual"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2233,38 +2273,38 @@ export interface components {
             inadmitido?: boolean;
         };
         PageProductoResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ProductoResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageableObject: {
             /** Format: int64 */
             offset?: number;
-            /** Format: int32 */
-            pageSize?: number;
+            paged?: boolean;
+            sort?: components["schemas"]["SortObject"];
+            unpaged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
-            sort?: components["schemas"]["SortObject"];
-            paged?: boolean;
-            unpaged?: boolean;
+            /** Format: int32 */
+            pageSize?: number;
         };
         SortObject: {
             empty?: boolean;
-            unsorted?: boolean;
             sorted?: boolean;
+            unsorted?: boolean;
         };
         ProductoSeguroResponse: {
             seguroObj?: components["schemas"]["Seguro"];
@@ -2284,129 +2324,129 @@ export interface components {
             sort?: string[];
         };
         PageSubastaResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SubastaResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageRegistroDeSubastaResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["RegistroDeSubastaResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageItemCatalogoResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ItemCatalogoResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageAsistenteResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["AsistenteResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageSubastadorResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SubastadorResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PagePersonaResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PersonaResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PagePaisResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PaisResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PaisResponse: {
@@ -2419,21 +2459,21 @@ export interface components {
             idiomas?: string;
         };
         PageNotificacionResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["NotificacionResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         GlobalSubastasResponse: {
@@ -2454,6 +2494,12 @@ export interface components {
             totalSubastas?: number;
             /** Format: int64 */
             totalParticipantes?: number;
+            porMoneda?: components["schemas"]["CategoriaMonedaResponse"][];
+        };
+        CategoriaMonedaResponse: {
+            moneda?: components["schemas"]["Moneda"];
+            /** Format: int64 */
+            totalSubastas?: number;
             totalRecaudado?: number;
             promedioRecaudadoPorSubasta?: number;
         };
@@ -2466,8 +2512,16 @@ export interface components {
             itemCatalogoId?: number;
             productoDescripcion?: string;
             monto?: number;
+            moneda?: components["schemas"]["Moneda"];
             /** Format: date-time */
             fecha?: string;
+            ganado?: boolean;
+        };
+        PujoMontoResponse: {
+            /** Format: int32 */
+            orden?: number;
+            importe?: number;
+            moneda?: components["schemas"]["Moneda"];
             ganado?: boolean;
         };
         ClienteParticipacionesResponse: {
@@ -2480,80 +2534,94 @@ export interface components {
             subastasConPuja?: number;
             /** Format: int64 */
             subastasGanadas?: number;
+            porMoneda?: components["schemas"]["ImporteMonedaResponse"][];
+        };
+        ImporteMonedaResponse: {
+            moneda?: components["schemas"]["Moneda"];
             importeTotalOfertado?: number;
             importeTotalPagado?: number;
             pujoPromedio?: number;
         };
-        PageSectorResponse: {
+        ClienteHistoricoResponse: {
+            periodo?: string;
+            moneda?: components["schemas"]["Moneda"];
             /** Format: int64 */
-            totalElements?: number;
+            cantidadPujas?: number;
+            importeOfertado?: number;
+            importeGanado?: number;
+            /** Format: int64 */
+            subastasGanadas?: number;
+        };
+        PageSectorResponse: {
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SectorResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageEmpleadoResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["EmpleadoResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageDuenioResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["DuenioResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         PageClienteResponse: {
-            /** Format: int64 */
-            totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+            /** Format: int64 */
+            totalElements?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ClienteResponse"][];
             /** Format: int32 */
             number?: number;
-            pageable?: components["schemas"]["PageableObject"];
             first?: boolean;
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
             sort?: components["schemas"]["SortObject"];
+            pageable?: components["schemas"]["PageableObject"];
             empty?: boolean;
         };
         Link: {
@@ -6721,7 +6789,7 @@ export interface operations {
                  * @example 1
                  */
                 destinatarioId: number;
-                /** @description Filtrar por tipo (info, exito, advertencia, error, subasta, pago, envio) */
+                /** @description Filtrar por tipo (texto libre, p. ej. info, exito, advertencia, error, subasta, pago, envio, categoria, puja, multa) */
                 tipo?: string;
                 /** @description Filtrar por estado de lectura */
                 leida?: boolean;
@@ -6959,6 +7027,53 @@ export interface operations {
             };
         };
     };
+    getPujosCronologicos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description ID del cliente
+                 * @example 1
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pujas en orden cronológico */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PujoMontoResponse"][];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin permisos */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Cliente no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getParticipaciones: {
         parameters: {
             query?: never;
@@ -6981,6 +7096,53 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ClienteParticipacionesResponse"];
+                };
+            };
+            /** @description No autenticado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin permisos */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Cliente no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getHistoricoMensual: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description ID del cliente
+                 * @example 1
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Histórico mensual de pujas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClienteHistoricoResponse"][];
                 };
             };
             /** @description No autenticado */

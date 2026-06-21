@@ -1,11 +1,11 @@
 package fabriziob.com.subastapp.controller.estatisticas;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -17,7 +17,7 @@ public class ClienteParticipacionesResponse {
     private Long subastasAsistidas;
     private Long subastasConPuja;
     private Long subastasGanadas;
-    private BigDecimal importeTotalOfertado;
-    private BigDecimal importeTotalPagado;
-    private BigDecimal pujoPromedio;
+    // Los importes se desglosan por moneda porque cada subasta es ARS o USD; sumarlos
+    // mezclados daría un total sin sentido.
+    private List<ImporteMonedaResponse> porMoneda;
 }

@@ -30,7 +30,7 @@ public class EstadisticasController {
 
     private final EstadisticasService estadisticasService;
 
-    @Operation(summary = "Participaciones de un cliente", description = "Devuelve cantidad de subastas asistidas, subastas donde pujó al menos una vez y subastas ganadas")
+    @Operation(summary = "Participaciones de un cliente", description = "Devuelve cantidad de subastas asistidas, subastas donde pujó al menos una vez, subastas ganadas, y los importes ofertados/pagados/promedio desglosados por moneda (ARS, USD)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Estadísticas de participación"),
             @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
@@ -41,6 +41,32 @@ public class EstadisticasController {
     public ResponseEntity<ClienteParticipacionesResponse> getParticipaciones(
             @Parameter(description = "ID del cliente", required = true, example = "1") @PathVariable Integer id) {
         return ResponseEntity.ok(estadisticasService.getParticipaciones(id));
+    }
+
+    @Operation(summary = "Histórico mensual de pujas de un cliente", description = "Devuelve, agrupado por mes y moneda (ARS, USD), la cantidad de pujas, el importe ofertado, el importe ganado y las subastas ganadas del cliente")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Histórico mensual de pujas"),
+            @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Cliente no encontrado", content = @Content)
+    })
+    @GetMapping("/clientes/{id}/historico")
+    public ResponseEntity<List<ClienteHistoricoResponse>> getHistoricoMensual(
+            @Parameter(description = "ID del cliente", required = true, example = "1") @PathVariable Integer id) {
+        return ResponseEntity.ok(estadisticasService.getHistoricoMensual(id));
+    }
+
+    @Operation(summary = "Pujos cronológicos de un cliente", description = "Devuelve todas las pujas del cliente, en orden cronológico, con su importe y moneda (ARS, USD) — pensado para graficar la evolución de los montos pujados")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Pujas en orden cronológico"),
+            @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Cliente no encontrado", content = @Content)
+    })
+    @GetMapping("/clientes/{id}/pujos")
+    public ResponseEntity<List<PujoMontoResponse>> getPujosCronologicos(
+            @Parameter(description = "ID del cliente", required = true, example = "1") @PathVariable Integer id) {
+        return ResponseEntity.ok(estadisticasService.getPujosCronologicos(id));
     }
 
     @Operation(summary = "Pujos de un cliente en una subasta específica", description = "Devuelve el historial de pujos de un cliente dentro de una subasta puntual")
@@ -57,7 +83,7 @@ public class EstadisticasController {
         return ResponseEntity.ok(estadisticasService.getPujosPorSubasta(id, idSubasta));
     }
 
-    @Operation(summary = "Estadísticas globales por categoría", description = "Devuelve participación y recaudación agrupadas por categoría (comun, especial, plata, oro, platino)")
+    @Operation(summary = "Estadísticas globales por categoría", description = "Devuelve participación por categoría (comun, especial, plata, oro, platino) y la recaudación desglosada por moneda (ARS, USD)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Estadísticas por categoría"),
             @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),

@@ -1,4 +1,5 @@
 import HeaderComp from "@/components/HeaderComp";
+import { ExternalLink } from "@/components/external-link";
 import { CategoryPill } from "@/components/ui/CategoryPill";
 import { useAuth } from "@/context/auth";
 import { useWebSocket } from "@/context/websocket";
@@ -6,7 +7,7 @@ import { api, API_BASE } from "@/lib/api";
 import { getBidBounds, useSubastaStore } from "@/lib/subastas.store";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Clock, FileText, Gavel, Hammer, Info, Lock, LogIn, MapPin } from "lucide-react-native";
+import { Clock, FileText, Gavel, Hammer, Info, Lock, LogIn, MapPin, Video } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -19,6 +20,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Dimensions,
+  FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -85,6 +88,10 @@ export default function AuctionDetailScreen() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Catalog images for the carousel
+  const [catalogImages, setCatalogImages] = useState<string[]>([]);
+  const [loadingCatalogImages, setLoadingCatalogImages] = useState(true);
 
   // 1. Fetch preview subasta, catalog, and payments on mount
   useEffect(() => {
@@ -169,10 +176,10 @@ export default function AuctionDetailScreen() {
     loadActiveProduct();
   }, [itemActual, previewCatalog, subasta, token]);
 
-  // 3. Handle bid errors from the store
+  // 3. Handle errors from the store (joining or bidding)
   useEffect(() => {
     if (storeError) {
-      Alert.alert("Error de puja", storeError, [
+      Alert.alert("Error", storeError, [
         { text: "Aceptar", onPress: () => clearError() }
       ]);
     }
@@ -181,6 +188,45 @@ export default function AuctionDetailScreen() {
   const isJoined = subasta?.identificador === Number(id);
   const currentSubasta = isJoined ? subasta : previewSubasta;
   const currentCatalog = isJoined ? catalogo : previewCatalog;
+
+  // Fetch catalog images once currentCatalog is available
+  useEffect(() => {
+    async function loadCatalogImages() {
+      if (!currentCatalog || currentCatalog.length === 0) {
+        setCatalogImages([]);
+        setLoadingCatalogImages(false);
+        return;
+      }
+      setLoadingCatalogImages(true);
+      try {
+        const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+        // Limit to 10 images to avoid too many requests
+        const itemsToFetch = currentCatalog.slice(0, 10);
+        const images = await Promise.all(itemsToFetch.map(async (item) => {
+          if (!item.productoId) return null;
+          try {
+            const { data: prod } = await api.GET("/productos/{id}", {
+              params: { path: { id: item.productoId } },
+              headers
+            });
+            if (prod?.fotosIds && prod.fotosIds.length > 0) {
+              return `${API_BASE}/productos/${prod.identificador}/fotos/${prod.fotosIds[0]}/content`;
+            }
+          } catch (e) {
+            // ignore
+          }
+          return null;
+        }));
+        const validImages = images.filter(Boolean) as string[];
+        setCatalogImages(validImages);
+      } catch (err) {
+        console.error("Error loading catalog images:", err);
+      } finally {
+        setLoadingCatalogImages(false);
+      }
+    }
+    loadCatalogImages();
+  }, [currentCatalog, token]);
 
   // Anyone can preview the auction; these only gate the actual join/pujar action.
   const isAuthenticated = !!token;
@@ -196,6 +242,20 @@ export default function AuctionDetailScreen() {
       return;
     }
     if (!id || categoryInsufficient) return;
+
+    // Block if user has a pending fine or is suspended
+    if (user?.estadoOperativo === "inhabilitado" || (user?.multaPendiente ?? 0) > 0) {
+      const fineStr = user?.multaPendiente ? ` de $${user.multaPendiente.toLocaleString("es-AR")}` : "";
+      Alert.alert(
+        "Cuenta inhabilitada",
+        `Tenés una multa pendiente${fineStr}. Saldá la deuda desde tu perfil para volver a participar.`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Ir a Perfil", onPress: () => router.push("/(tabs)/profile") },
+        ]
+      );
+      return;
+    }
 
     if (otherSubastaId !== null && otherSubastaId !== Number(id)) {
       Alert.alert(
@@ -220,6 +280,7 @@ export default function AuctionDetailScreen() {
     leaveSubasta(token ?? undefined);
     setBidAmount("");
     setValidationError(null);
+    router.replace("/(tabs)/auctions");
   };
 
   // Payment methods checks
@@ -307,10 +368,16 @@ export default function AuctionDetailScreen() {
         back
         backFallback="/(tabs)/auctions"
         outlet={
-          <View className={`px-4 py-1.5 rounded-xl ${isJoined ? "bg-red-600" : "bg-neutral-800"}`}>
-            <Text className="text-white text-xs tracking-widest font-manrope-bold uppercase">
-              {isJoined ? "LIVE" : "PREVIO"}
-            </Text>
+          <View className="flex-row items-center justify-center gap-2">
+            <ExternalLink href="https://youtube.com" asChild>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                className="gap-2 px-3 py-2 items-center flex-row justify-center bg-neutral-900/60 rounded-full border border-neutral-800"
+              >
+                <Video size={18} color="#f87171" />
+                <Text className="text-[#f87171] font-semibold">En vivo</Text>
+              </TouchableOpacity>
+            </ExternalLink>
           </View>
         }
       />
@@ -372,13 +439,32 @@ export default function AuctionDetailScreen() {
             </View>
           )}
 
-          {/* Image */}
+          {/* Image Carousel */}
           <View className="px-4 mb-5 relative">
-            <Image
-              source={{ uri: subastaImage }}
-              style={{ width: "100%", height: 250, borderRadius: 24 }}
-              resizeMode="cover"
-            />
+            <View style={{ width: "100%", height: 250, borderRadius: 24, overflow: 'hidden' }}>
+              <FlatList
+                data={catalogImages.length > 0 ? catalogImages : [CATEGORY_IMAGES[catKey] || CATEGORY_IMAGES.comun]}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(_, idx) => idx.toString()}
+                renderItem={({ item }) => (
+                  <Image
+                    source={{ uri: item }}
+                    style={{ width: Dimensions.get('window').width - 32, height: 250 }}
+                    resizeMode="cover"
+                  />
+                )}
+                style={{ width: "100%", height: 250 }}
+                removeClippedSubviews={false}
+              />
+              {loadingCatalogImages && (
+                <View className="absolute inset-0 items-center justify-center bg-black/40">
+                  <ActivityIndicator size="large" color="white" />
+                </View>
+              )}
+            </View>
+            
             {isJoined && (
               <View className="absolute top-4 right-8 flex-row items-center bg-[#2dd4bf] px-3.5 py-1.5 rounded-full gap-1.5 shadow-lg shadow-black/40">
                 <View className="bg-red-500 rounded-full w-5 h-5 items-center justify-center">

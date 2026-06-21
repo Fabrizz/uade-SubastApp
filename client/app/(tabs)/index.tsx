@@ -3,7 +3,7 @@ import { CategoryPill } from "@/components/ui/CategoryPill";
 import { CuentaRegresiva } from "@/components/ui/CuentaRegresiva";
 import ScrollViewPad from "@/components/ui/ScrollViewPad";
 import { useAuth } from "@/context/auth";
-import { api } from "@/lib/api";
+import { api, API_BASE } from "@/lib/api";
 import { useSubastaStore } from "@/lib/subastas.store";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -14,10 +14,13 @@ import {
   Image,
   Platform,
   ScrollView,
+  FlatList,
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   View,
+  Dimensions,
 } from "react-native";
 
 // ─── tipos y categorías ───────────────────────────────────────────────────────
@@ -55,9 +58,58 @@ interface AuctionCardProps {
   userCategory?: string;
   isAuthenticated: boolean;
   isLive: boolean;
+  token?: string | null;
 }
 
-function AuctionCard({ subasta, userCategory, isAuthenticated, isLive }: AuctionCardProps) {
+function AuctionCard({ subasta, userCategory, isAuthenticated, isLive, token }: AuctionCardProps) {
+  const { width: windowWidth } = Dimensions.get('window');
+  const CARD_WIDTH = windowWidth - 32;
+
+  const [catalogImages, setCatalogImages] = useState<string[]>([]);
+  const [loadingImages, setLoadingImages] = useState(true);
+
+  useEffect(() => {
+    async function loadImages() {
+      setLoadingImages(true);
+      try {
+        const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+        const { data: itemsPage } = await api.GET("/api/v1/subastas/{id}/catalogo/items", {
+          params: { path: { id: subasta.identificador }, query: { pageable: { page: 0, size: 5 } } },
+          headers
+        });
+        const items = itemsPage?.content || [];
+        
+        if (items.length > 0) {
+          const images = await Promise.all(items.map(async (item) => {
+            if (!item.productoId) return null;
+            try {
+              const { data: prod } = await api.GET("/productos/{id}", {
+                params: { path: { id: item.productoId } },
+                headers
+              });
+              if (prod?.fotosIds && prod.fotosIds.length > 0) {
+                return `${API_BASE}/productos/${prod.identificador}/fotos/${prod.fotosIds[0]}/content`;
+              }
+            } catch (e) {
+               // ignore single product error
+            }
+            return null;
+          }));
+          
+          const validImages = images.filter(Boolean) as string[];
+          if (validImages.length > 0) {
+            setCatalogImages(validImages);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading auction images:", err);
+      } finally {
+        setLoadingImages(false);
+      }
+    }
+    loadImages();
+  }, [subasta.identificador, token]);
+
   const router = useRouter();
   const catKey = (subasta.categoria || "comun").toLowerCase();
   const imageUrl = CATEGORY_IMAGES[catKey] || CATEGORY_IMAGES.comun;
@@ -75,10 +127,9 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive }: Auction
   };
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.9}
+    <Pressable
       onPress={handlePress}
-      className={`bg-neutral-900 rounded-2xl overflow-hidden mb-5 ${isLive ? "border-2 border-purple-500" : ""}`}
+      className={`mb-5 rounded-2xl ${isLive ? "border-2 border-purple-500" : ""}`}
       style={
         isLive
           ? {
@@ -87,10 +138,12 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive }: Auction
             shadowOpacity: 0.6,
             shadowRadius: 16,
             elevation: 10,
+            backgroundColor: "#171717",
           }
-          : undefined
+          : { elevation: 0, backgroundColor: "#171717" }
       }
     >
+      <View className="rounded-2xl overflow-hidden">
       {/* banner: subasta actual */}
       {isLive && (
         <View className="flex-row items-center gap-1 px-3 py-2 bg-purple-700 justify-center">
@@ -101,13 +154,30 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive }: Auction
         </View>
       )}
 
-      {/* imagen */}
+      {/* imagen en carrousel */}
       <View className="relative">
-        <Image
-          source={{ uri: imageUrl }}
-          style={{ width: "100%", height: 220 }}
-          resizeMode="cover"
+        <FlatList
+          data={catalogImages.length > 0 ? catalogImages : [imageUrl]}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(_, idx) => idx.toString()}
+          renderItem={({ item }) => (
+            <Image
+              source={{ uri: item }}
+              style={{ width: CARD_WIDTH, height: 220 }}
+              resizeMode="cover"
+            />
+          )}
+          style={{ width: CARD_WIDTH, height: 220 }}
+          removeClippedSubviews={false}
         />
+        {loadingImages && (
+          <View className="absolute inset-0 items-center justify-center bg-black/20">
+             <ActivityIndicator size="small" color="white" />
+          </View>
+        )}
+        
         {/* tier badge */}
         <View className="absolute top-3 left-3">
           <CategoryPill category={catKey as any} size="md" />
@@ -177,7 +247,8 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive }: Auction
           <ArrowRight size={16} color={isLive ? "white" : "#d8b4fe"} />
         </View>
       </View>
-    </TouchableOpacity>
+      </View>
+    </Pressable>
   );
 }
 
@@ -302,6 +373,7 @@ export default function Home() {
           paddingTop: 20,
         }}
         showsVerticalScrollIndicator={false}
+        removeClippedSubviews={false}
       >
         <Text className="text-white text-lg mb-4 font-montserrat-bold">
           {category === "terminadas" ? "Subastas finalizadas" : "Subastas activas"}
@@ -324,6 +396,7 @@ export default function Home() {
               userCategory={user?.category}
               isAuthenticated={!!token}
               isLive={subasta.identificador === subastaActivaId}
+              token={token}
             />
           ))
         )}

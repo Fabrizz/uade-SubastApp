@@ -34,7 +34,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       tint="dark"
       className="absolute right-0 bottom-0 left-0 overflow-hidden
         pb-0 shadow-black/20 border-t border-[#333333]/80"
-      experimentalBlurMethod="dimezisBlurView"
+      //experimentalBlurMethod="dimezisBlurView"
       style={{
         shadowOffset: { width: 0, height: -4 },
         shadowRadius: 24,
@@ -74,7 +74,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
               if (isActive) {
                 if (route.name === "auctions") {
                   if (!subastaActiva) {
-                    navigation.navigate("auctions", { screen: "index" });
+                    router.navigate("/(tabs)/auctions");
                   }
                 } else {
                   navigation.navigate(route.name, { screen: "index" });
