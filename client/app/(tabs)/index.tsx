@@ -3,7 +3,7 @@ import { CategoryPill } from "@/components/ui/CategoryPill";
 import { CuentaRegresiva } from "@/components/ui/CuentaRegresiva";
 import ScrollViewPad from "@/components/ui/ScrollViewPad";
 import { useAuth } from "@/context/auth";
-import { api } from "@/lib/api";
+import { api, API_BASE } from "@/lib/api";
 import { useSubastaStore } from "@/lib/subastas.store";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -18,6 +18,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Dimensions,
 } from "react-native";
 
 // ─── tipos y categorías ───────────────────────────────────────────────────────
@@ -55,9 +56,58 @@ interface AuctionCardProps {
   userCategory?: string;
   isAuthenticated: boolean;
   isLive: boolean;
+  token?: string | null;
 }
 
-function AuctionCard({ subasta, userCategory, isAuthenticated, isLive }: AuctionCardProps) {
+function AuctionCard({ subasta, userCategory, isAuthenticated, isLive, token }: AuctionCardProps) {
+  const { width: windowWidth } = Dimensions.get('window');
+  const CARD_WIDTH = windowWidth - 32;
+
+  const [catalogImages, setCatalogImages] = useState<string[]>([]);
+  const [loadingImages, setLoadingImages] = useState(true);
+
+  useEffect(() => {
+    async function loadImages() {
+      setLoadingImages(true);
+      try {
+        const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+        const { data: itemsPage } = await api.GET("/api/v1/subastas/{id}/catalogo/items", {
+          params: { path: { id: subasta.identificador }, query: { pageable: { page: 0, size: 10 } } },
+          headers
+        });
+        const items = itemsPage?.content || [];
+        
+        if (items.length > 0) {
+          const images = await Promise.all(items.map(async (item) => {
+            if (!item.productoId) return null;
+            try {
+              const { data: prod } = await api.GET("/productos/{id}", {
+                params: { path: { id: item.productoId } },
+                headers
+              });
+              if (prod?.fotosIds && prod.fotosIds.length > 0) {
+                return `${API_BASE}/productos/${prod.identificador}/fotos/${prod.fotosIds[0]}/content`;
+              }
+            } catch (e) {
+               // ignore single product error
+            }
+            return null;
+          }));
+          
+          const validImages = images.filter(Boolean) as string[];
+          if (validImages.length > 0) {
+            setCatalogImages(validImages);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading auction images:", err);
+      } finally {
+        setLoadingImages(false);
+      }
+    }
+    loadImages();
+  }, [subasta.identificador, token]);
+
   const router = useRouter();
   const catKey = (subasta.categoria || "comun").toLowerCase();
   const imageUrl = CATEGORY_IMAGES[catKey] || CATEGORY_IMAGES.comun;
@@ -75,9 +125,7 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive }: Auction
   };
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={handlePress}
+    <View
       className={`bg-neutral-900 rounded-2xl overflow-hidden mb-5 ${isLive ? "border-2 border-purple-500" : ""}`}
       style={
         isLive
@@ -101,13 +149,40 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive }: Auction
         </View>
       )}
 
-      {/* imagen */}
+      {/* imagen en carrousel */}
       <View className="relative">
-        <Image
-          source={{ uri: imageUrl }}
-          style={{ width: "100%", height: 220 }}
-          resizeMode="cover"
-        />
+        <ScrollView 
+          horizontal 
+          pagingEnabled 
+          showsHorizontalScrollIndicator={false}
+          style={{ width: CARD_WIDTH, height: 220 }}
+        >
+          {catalogImages.length > 0 ? (
+            catalogImages.map((uri, idx) => (
+              <TouchableOpacity key={idx} activeOpacity={0.9} onPress={handlePress}>
+                <Image
+                  source={{ uri }}
+                  style={{ width: CARD_WIDTH, height: 220 }}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <TouchableOpacity activeOpacity={0.9} onPress={handlePress}>
+              <Image
+                source={{ uri: imageUrl }}
+                style={{ width: CARD_WIDTH, height: 220 }}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+        {loadingImages && (
+          <View className="absolute inset-0 items-center justify-center bg-black/20">
+             <ActivityIndicator size="small" color="white" />
+          </View>
+        )}
+        
         {/* tier badge */}
         <View className="absolute top-3 left-3">
           <CategoryPill category={catKey as any} size="md" />
@@ -126,58 +201,60 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive }: Auction
         )}
       </View>
 
-      {/* Banner: necesita registrarse / categoría insuficiente */}
-      {(!isAuthenticated || categoryInsufficient) && (
-        <View
-          className={`flex-row items-center gap-2 px-3 py-2.5 ${
-            !isAuthenticated ? "bg-sky-500/10" : "bg-amber-500/10"
-          }`}
-        >
-          {!isAuthenticated
-            ? <LogIn size={15} color="#38bdf8" />
-            : <Lock size={15} color="#fbbf24" />}
-          <Text className={`flex-1 text-xs font-manrope-semibold ${!isAuthenticated ? "text-sky-300" : "text-amber-300"}`}>
+      <TouchableOpacity activeOpacity={0.9} onPress={handlePress}>
+        {/* Banner: necesita registrarse / categoría insuficiente */}
+        {(!isAuthenticated || categoryInsufficient) && (
+          <View
+            className={`flex-row items-center gap-2 px-3 py-2.5 ${
+              !isAuthenticated ? "bg-sky-500/10" : "bg-amber-500/10"
+            }`}
+          >
             {!isAuthenticated
-              ? "Necesitás registrarte e iniciar sesión para pujar."
-              : `Categoría ${subasta.categoria?.toUpperCase()} — necesitás subir de nivel para pujar.`}
-          </Text>
-        </View>
-      )}
-
-      {/* info */}
-      <View className="px-4 pt-2 pb-1">
-        <View className="flex-row justify-between items-start mb-1">
-          <Text className="text-white text-base flex-1 mr-3 font-manrope-bold">
-            {title}
-          </Text>
-          <View className="items-end">
-            <Text className="text-teal-400 text-base font-manrope-bold">
-              {subasta.moneda || "USD"}
+              ? <LogIn size={15} color="#38bdf8" />
+              : <Lock size={15} color="#fbbf24" />}
+            <Text className={`flex-1 text-xs font-manrope-semibold ${!isAuthenticated ? "text-sky-300" : "text-amber-300"}`}>
+              {!isAuthenticated
+                ? "Necesitás registrarte e iniciar sesión para pujar."
+                : `Categoría ${subasta.categoria?.toUpperCase()} — necesitás subir de nivel para pujar.`}
             </Text>
           </View>
-        </View>
-        <Text className="text-neutral-500 text-xs leading-4 mb-3 font-manrope">
-          Subasta en vivo en {subasta.ubicacion || "Ubicación virtual"}. Capacidad para {subasta.capacidadAsistentes || "múltiples"} asistentes.
-        </Text>
-      </View>
+        )}
 
-      {/* Ver Más / Continuar */}
-      <View className="px-4 pb-4">
-        <View
-          className={
-            isLive
-              ? "flex-row items-center justify-center gap-2 rounded-xl bg-purple-600"
-              : "flex-row items-center justify-center gap-2 rounded-xl bg-purple-950/40 border border-purple-800/40"
-          }
-          style={{ height: 34 }}
-        >
-          <Text className={`text-sm tracking-wide font-manrope-bold ${isLive ? "text-white" : "text-purple-300"}`}>
-            {isLive ? "Continuar" : subasta.estado === "cerrada" ? "Ver Detalles" : "Ver Más"}
+        {/* info */}
+        <View className="px-4 pt-2 pb-1">
+          <View className="flex-row justify-between items-start mb-1">
+            <Text className="text-white text-base flex-1 mr-3 font-manrope-bold">
+              {title}
+            </Text>
+            <View className="items-end">
+              <Text className="text-teal-400 text-base font-manrope-bold">
+                {subasta.moneda || "USD"}
+              </Text>
+            </View>
+          </View>
+          <Text className="text-neutral-500 text-xs leading-4 mb-3 font-manrope">
+            Subasta en vivo en {subasta.ubicacion || "Ubicación virtual"}. Capacidad para {subasta.capacidadAsistentes || "múltiples"} asistentes.
           </Text>
-          <ArrowRight size={16} color={isLive ? "white" : "#d8b4fe"} />
         </View>
-      </View>
-    </TouchableOpacity>
+
+        {/* Ver Más / Continuar */}
+        <View className="px-4 pb-4">
+          <View
+            className={
+              isLive
+                ? "flex-row items-center justify-center gap-2 rounded-xl bg-purple-600"
+                : "flex-row items-center justify-center gap-2 rounded-xl bg-purple-950/40 border border-purple-800/40"
+            }
+            style={{ height: 34 }}
+          >
+            <Text className={`text-sm tracking-wide font-manrope-bold ${isLive ? "text-white" : "text-purple-300"}`}>
+              {isLive ? "Continuar" : subasta.estado === "cerrada" ? "Ver Detalles" : "Ver Más"}
+            </Text>
+            <ArrowRight size={16} color={isLive ? "white" : "#d8b4fe"} />
+          </View>
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -324,6 +401,7 @@ export default function Home() {
               userCategory={user?.category}
               isAuthenticated={!!token}
               isLive={subasta.identificador === subastaActivaId}
+              token={token}
             />
           ))
         )}

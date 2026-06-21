@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, MapPin } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
-import { Image, Platform, ScrollView, StatusBar, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Image, Platform, ScrollView, StatusBar, Text, TouchableOpacity, View, ActivityIndicator, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/auth";
 import { api, API_BASE } from "@/lib/api";
@@ -54,6 +54,9 @@ export default function ItemDetailScreen() {
 
   const history = product?.historia || (params.history as string) || "";
 
+  const { width: windowWidth } = Dimensions.get('window');
+  const CARD_WIDTH = windowWidth - 40; // minus horizontal padding
+
   return (
     <View className="flex-1 bg-[#121212]">
       <StatusBar barStyle="light-content" />
@@ -103,19 +106,34 @@ export default function ItemDetailScreen() {
           {title}
         </Text>
 
-        {/* Item Image */}
-        <View className="mb-6 rounded-[32px] overflow-hidden shadow-2xl shadow-black/80 relative">
-          <Image
-            source={{ uri: imageUri }}
-            style={{ width: "100%", height: 260 }}
-            resizeMode="cover"
-          />
-          {loading && (
-            <View className="absolute inset-0 bg-black/40 items-center justify-center">
-              <ActivityIndicator size="large" color="#9102A2" />
-            </View>
-          )}
-        </View>
+        {/* Item Image Carousel */}
+        {product?.fotosIds && product.fotosIds.length > 0 ? (
+          <View className="mb-6 rounded-[32px] overflow-hidden shadow-2xl shadow-black/80 relative" style={{ height: 260 }}>
+            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+              {product.fotosIds.map((fotoId) => (
+                <Image
+                  key={fotoId}
+                  source={{ uri: `${API_BASE}/productos/${itemId}/fotos/${fotoId}/content` }}
+                  style={{ width: CARD_WIDTH, height: 260 }}
+                  resizeMode="cover"
+                />
+              ))}
+            </ScrollView>
+          </View>
+        ) : (
+          <View className="mb-6 rounded-[32px] overflow-hidden shadow-2xl shadow-black/80 relative">
+            <Image
+              source={{ uri: imageUri }}
+              style={{ width: "100%", height: 260 }}
+              resizeMode="cover"
+            />
+            {loading && (
+              <View className="absolute inset-0 bg-black/40 items-center justify-center">
+                <ActivityIndicator size="large" color="#9102A2" />
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Description Card */}
         <View className="bg-[#181818] border border-neutral-900 p-6 mb-6 rounded-[28px]">
