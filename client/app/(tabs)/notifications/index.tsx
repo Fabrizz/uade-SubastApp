@@ -2,7 +2,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { AlertTriangle, Bell, Trophy, WifiOff, WifiSync, X } from "lucide-react-native";
 import React from "react";
-import { useRouter } from "expo-router";
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 import HeaderComp from "@/components/HeaderComp";
@@ -37,7 +36,6 @@ function getIconBg(type: WsNotification["type"]) {
 }
 
 export default function NotificationsScreen() {
-  const router = useRouter();
   const { notifications, removeNotification, isConnected, isConnecting, connectionError } = useWebSocket();
 
   return (
@@ -87,11 +85,7 @@ export default function NotificationsScreen() {
                 className="flex-row items-stretch bg-[#1a1a1a] shadow-lg shadow-black/20"
                 style={{ borderRadius: 20 }}
               >
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => router.push({ pathname: "/(tabs)/notifications/[id]", params: { id: String(notif.id) } })}
-                  className="flex-1 flex-row items-start p-4"
-                >
+                <View className="flex-1 flex-row items-start p-4">
                   <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${getIconBg(notif.type)}`}>
                     {getIcon(notif.type)}
                   </View>
@@ -109,7 +103,7 @@ export default function NotificationsScreen() {
                       {notif.description}
                     </Text>
                   </View>
-                </TouchableOpacity>
+                </View>
 
                 <View className="justify-start pt-4 pr-3">
                   <TouchableOpacity

@@ -1,9 +1,9 @@
-import { useAuth } from '@/context/auth';
+import HeaderComp from '@/components/HeaderComp';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, BarChart2, ChevronRight, CreditCard, Gavel, Shield, UserMinus, UserPlus, Users } from 'lucide-react-native';
+import { BarChart2, ChevronRight, CreditCard, Gavel, Shield, UserMinus, UserPlus, Users } from 'lucide-react-native';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SECTIONS = [
   { label: 'Admitir', description: 'Admitir nuevos usuarios', Icon: Shield, path: '/admin/admitir' },
@@ -16,42 +16,26 @@ const SECTIONS = [
 ] as const;
 
 export default function AdminIndex() {
-  const { user } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
     <LinearGradient colors={['#000000', '#3f0146', '#9102A2']} style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 24 }}>
-
-          {/* Header */}
-          <View className="flex-row items-center gap-3 mb-6">
-            <TouchableOpacity
-              onPress={() => {
-                if (router.canGoBack()) {
-                  router.back();
-                } else {
-                  router.replace("/(tabs)/profile");
-                }
-              }}
-              activeOpacity={0.7}
-              className="w-10 h-10 items-center justify-center bg-neutral-900/60 rounded-full border border-neutral-800"
-            >
-              <ArrowLeft size={20} color="#d8b4fe" />
-            </TouchableOpacity>
+      <HeaderComp
+        back
+        outlet={
+          <View className="flex-row items-center gap-3">
             <View className="bg-purple-950 rounded-full p-2">
               <Shield size={24} color="#d8b4fe" />
             </View>
-            <View>
-              <Text className="text-white text-2xl font-bold" style={{ fontFamily: 'Montserrat-Bold' }}>
-                Panel Admin
-              </Text>
-              <Text className="text-neutral-400 text-xs">{user?.email}</Text>
-            </View>
           </View>
+        }
+      />
 
-          {/* Sections */}
-          {SECTIONS.map(({ label, description, Icon, path }) => (
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 24 }}>
+
+        {/* Sections */}
+        {SECTIONS.map(({ label, description, Icon, path }) => (
             <TouchableOpacity
               key={label}
               onPress={() => router.push(path as any)}
@@ -69,8 +53,7 @@ export default function AdminIndex() {
             </TouchableOpacity>
           ))}
 
-        </ScrollView>
-      </SafeAreaView>
+      </ScrollView>
     </LinearGradient>
   );
 }

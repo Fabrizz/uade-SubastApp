@@ -1,12 +1,12 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { Stack, useRouter, useLocalSearchParams } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { ArrowLeft, Banknote, Calendar, Check, MapPin, Percent, ShieldCheck, X } from "lucide-react-native";
-import React, { useState, useEffect } from "react";
-import { Image, Platform, ScrollView, Text, TouchableOpacity, View, ActivityIndicator, Alert } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
+import { LinearGradient } from "expo-linear-gradient";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { ArrowLeft, Banknote, Calendar, Check, MapPin, Percent, ShieldCheck, X } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function AuctionAcceptedScreen() {
   const router = useRouter();

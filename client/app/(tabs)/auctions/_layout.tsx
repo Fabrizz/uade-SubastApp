@@ -22,7 +22,6 @@ export default function AuctionsLayout() {
       <Stack.Screen name="new/index" options={{ presentation: 'modal' }} />
       <Stack.Screen name="new/auction-accepted" options={{ presentation: 'modal' }} />
       <Stack.Screen name="new/auction-verification" options={{ presentation: 'fullScreenModal' }} />
-      <Stack.Screen name="new/verification-success" options={{ presentation: 'fullScreenModal' }} />
     </Stack>
   );
 }
