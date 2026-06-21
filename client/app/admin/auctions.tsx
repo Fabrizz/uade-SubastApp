@@ -91,6 +91,7 @@ export default function AdminAuctionsScreen() {
   const [physicalBasePrice, setPhysicalBasePrice] = useState("");
   const [physicalCommission, setPhysicalCommission] = useState("10");
   const [physicalSubastaId, setPhysicalSubastaId] = useState("");
+  const [physicalMoneda, setPhysicalMoneda] = useState<"ARS" | "USD">("ARS");
 
   // Quick Product/Owner Registration States
   const [newProductTitle, setNewProductTitle] = useState("");
@@ -355,6 +356,7 @@ export default function AdminAuctionsScreen() {
       setPhysicalBasePrice("");
       setPhysicalCommission("10");
       setPhysicalSubastaId("");
+      setPhysicalMoneda("ARS");
       
       await fetchProducts();
     } catch (err: any) {
@@ -676,6 +678,10 @@ export default function AdminAuctionsScreen() {
     const cat = (s.categoria || "").toLowerCase();
     return nameStr.includes(q) || loc.includes(q) || cat.includes(q);
   });
+
+  const physicalFilteredSubastas = subastas.filter(
+    (s) => (s.moneda || "ARS") === physicalMoneda
+  );
 
   return (
     <LinearGradient colors={["#000000", "#180120", "#3d0145"]} style={{ flex: 1 }}>
@@ -1077,7 +1083,10 @@ export default function AdminAuctionsScreen() {
                                   setSelectedProductForPhysicalApproval(p);
                                   setPhysicalBasePrice("");
                                   setPhysicalCommission("10");
-                                  setPhysicalSubastaId(subastas.length > 0 ? String(subastas[0].identificador) : "");
+                                  const defaultMoneda = "ARS";
+                                  setPhysicalMoneda(defaultMoneda);
+                                  const firstSubastaOfMoneda = subastas.find(s => (s.moneda || "ARS") === defaultMoneda);
+                                  setPhysicalSubastaId(firstSubastaOfMoneda ? String(firstSubastaOfMoneda.identificador) : "");
                                   setPhysicalApprovalModalVisible(true);
                                 } else {
                                   handleApproveProduct(p.identificador);
@@ -1751,7 +1760,7 @@ export default function AdminAuctionsScreen() {
                 {/* Precio Base Input */}
                 <View>
                   <Text className="text-purple-400 text-[10px] font-bold uppercase tracking-wider mb-2 ml-1">
-                    Precio Base (USD / ARS)
+                    Precio Base
                   </Text>
                   <TextInput
                     className="bg-neutral-950 border border-neutral-800 px-4 py-3 rounded-xl text-white text-sm font-manrope"
@@ -1762,6 +1771,37 @@ export default function AdminAuctionsScreen() {
                     onChangeText={setPhysicalBasePrice}
                     editable={!isModerating}
                   />
+                </View>
+
+                {/* Moneda Selector */}
+                <View>
+                  <Text className="text-purple-400 text-[10px] font-bold uppercase tracking-wider mb-2 ml-1">
+                    Moneda
+                  </Text>
+                  <View className="flex-row gap-2">
+                    {["ARS", "USD"].map((mon) => {
+                      const isActive = physicalMoneda === mon;
+                      return (
+                        <TouchableOpacity
+                          key={mon}
+                          onPress={() => {
+                            setPhysicalMoneda(mon as "ARS" | "USD");
+                            const firstSubastaOfMoneda = subastas.find(s => (s.moneda || "ARS") === mon);
+                            setPhysicalSubastaId(firstSubastaOfMoneda ? String(firstSubastaOfMoneda.identificador) : "");
+                          }}
+                          className={`flex-1 py-3 rounded-xl items-center border ${
+                            isActive
+                              ? "bg-purple-950/45 border-purple-500"
+                              : "bg-neutral-950 border-neutral-800"
+                          }`}
+                        >
+                          <Text className={`text-xs font-bold ${isActive ? "text-purple-400" : "text-neutral-400"}`}>
+                            {mon}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 </View>
 
                 {/* Comisión Input */}
@@ -1786,14 +1826,14 @@ export default function AdminAuctionsScreen() {
                     Asignar a Subasta
                   </Text>
                   
-                  {subastas.length === 0 ? (
+                  {physicalFilteredSubastas.length === 0 ? (
                     <Text className="text-rose-400 text-xs italic p-2 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-                      No hay subastas registradas en el sistema. Debes crear una subasta antes de poder aprobar físicamente este artículo.
+                      No hay subastas en {physicalMoneda} registradas en el sistema. Debes crear una subasta en esta moneda antes de poder aprobar físicamente este artículo.
                     </Text>
                   ) : (
                     <View className="border border-neutral-800 bg-neutral-950/60 rounded-xl p-2 max-h-56">
                       <ScrollView nestedScrollEnabled={true}>
-                        {subastas.map((s) => {
+                        {physicalFilteredSubastas.map((s) => {
                           const isSelected = physicalSubastaId === String(s.identificador);
                           return (
                             <TouchableOpacity
