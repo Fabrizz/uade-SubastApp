@@ -234,6 +234,7 @@ export default function AuctionDetailScreen() {
     leaveSubasta(token ?? undefined);
     setBidAmount("");
     setValidationError(null);
+    router.replace("/(tabs)/auctions");
   };
 
   // Payment methods checks

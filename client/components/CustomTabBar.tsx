@@ -74,7 +74,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
               if (isActive) {
                 if (route.name === "auctions") {
                   if (!subastaActiva) {
-                    navigation.navigate("auctions", { screen: "index" });
+                    router.navigate("/(tabs)/auctions");
                   }
                 } else {
                   navigation.navigate(route.name, { screen: "index" });

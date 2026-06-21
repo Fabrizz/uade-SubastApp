@@ -89,6 +89,15 @@ export default function ItemDetailScreen() {
           <View className="w-10" />
         </View>
 
+        {/* Art Badge */}
+        {product?.esObraDeArte && (
+          <View className="self-start bg-[#9102A2]/10 border border-[#9102A2]/30 px-3 py-1 rounded-full mb-3 ml-1">
+            <Text className="text-[#d946ef] text-[10px] font-extrabold tracking-widest uppercase">
+              Pieza Única de Arte / Diseño
+            </Text>
+          </View>
+        )}
+
         {/* Title */}
         <Text className="text-white text-3xl font-extrabold mb-6 px-1 font-montserrat-bold">
           {title}
@@ -117,6 +126,33 @@ export default function ItemDetailScreen() {
             {description}
           </Text>
         </View>
+
+        {/* Art Info Card */}
+        {product?.esObraDeArte && (product.artista || product.fechaCreacionObra) ? (
+          <View className="bg-[#181818] border border-neutral-900 p-6 mb-6 rounded-[28px] flex-row gap-6">
+            {product.artista ? (
+              <View className="flex-1">
+                <Text className="text-neutral-400 text-xs font-bold uppercase tracking-wider mb-1">
+                  Artista / Creador
+                </Text>
+                <Text className="text-white text-base font-bold font-manrope-bold">
+                  {product.artista}
+                </Text>
+              </View>
+            ) : null}
+
+            {product.fechaCreacionObra ? (
+              <View className="flex-1">
+                <Text className="text-neutral-400 text-xs font-bold uppercase tracking-wider mb-1">
+                  Año / Época
+                </Text>
+                <Text className="text-white text-base font-bold font-manrope-bold">
+                  {product.fechaCreacionObra.split("-")[0] || product.fechaCreacionObra}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         {/* Shipping Location Card */}
         <View className="bg-[#181818] border border-neutral-900 p-5 rounded-[24px] flex-row items-center justify-between shadow-xl shadow-black/30">

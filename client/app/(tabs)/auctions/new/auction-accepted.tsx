@@ -29,6 +29,29 @@ export default function AuctionAcceptedScreen() {
   const [estadoAceptacion, setEstadoAceptacion] = useState(initialEstadoAceptacion);
   const [seguroData, setSeguroData] = useState<any>(null);
   const [seguroLoading, setSeguroLoading] = useState(false);
+  const [product, setProduct] = useState<any>(null);
+  const [productLoading, setProductLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      if (!token || !productoId) return;
+      setProductLoading(true);
+      try {
+        const { data } = await api.GET("/productos/{id}", {
+          params: { path: { id: productoId } },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (data) {
+          setProduct(data);
+        }
+      } catch (err) {
+        console.warn("Could not fetch product details:", err);
+      } finally {
+        setProductLoading(false);
+      }
+    };
+    fetchProductDetails();
+  }, [token, productoId]);
 
   useEffect(() => {
     const fetchInsuranceDetails = async () => {
@@ -240,6 +263,44 @@ export default function AuctionAcceptedScreen() {
             </View>
           )}
         </View>
+
+        {/* Ficha técnica de Arte (si aplica) */}
+        {productLoading ? (
+          <ActivityIndicator size="small" color="#A14EBF" className="my-4" />
+        ) : product?.esObraDeArte ? (
+          <View className="bg-[#121212] border border-neutral-800 rounded-3xl p-6 mb-6">
+            <Text className="text-[#A14EBF] text-xs font-bold tracking-wider uppercase mb-4">
+              Especificaciones de Arte / Diseñador
+            </Text>
+            
+            {product.artista ? (
+              <View className="mb-4">
+                <Text className="text-neutral-400 text-xs">Artista / Diseñador</Text>
+                <Text className="text-white text-sm font-semibold mt-0.5">
+                  {product.artista}
+                </Text>
+              </View>
+            ) : null}
+
+            {product.fechaCreacionObra ? (
+              <View className="mb-4">
+                <Text className="text-neutral-400 text-xs">Fecha / Año de Creación</Text>
+                <Text className="text-white text-sm font-semibold mt-0.5">
+                  {product.fechaCreacionObra.split("-")[0] || product.fechaCreacionObra}
+                </Text>
+              </View>
+            ) : null}
+
+            {product.historia ? (
+              <View>
+                <Text className="text-neutral-400 text-xs mb-1">Historia y Contexto</Text>
+                <Text className="text-neutral-300 text-xs leading-5">
+                  {product.historia}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         {/* Póliza de Seguros */}
         <View className="bg-black/60 p-5 rounded-3xl mb-8">
