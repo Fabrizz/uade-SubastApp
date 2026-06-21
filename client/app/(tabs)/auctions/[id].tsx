@@ -197,6 +197,20 @@ export default function AuctionDetailScreen() {
     }
     if (!id || categoryInsufficient) return;
 
+    // Block if user has a pending fine or is suspended
+    if (user?.estadoOperativo === "inhabilitado" || (user?.multaPendiente ?? 0) > 0) {
+      const fineStr = user?.multaPendiente ? ` de $${user.multaPendiente.toLocaleString("es-AR")}` : "";
+      Alert.alert(
+        "Cuenta inhabilitada",
+        `Tenés una multa pendiente${fineStr}. Saldá la deuda desde tu perfil para volver a participar.`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Ir a Perfil", onPress: () => router.push("/(tabs)/profile") },
+        ]
+      );
+      return;
+    }
+
     if (otherSubastaId !== null && otherSubastaId !== Number(id)) {
       Alert.alert(
         "Cambiar de subasta",
