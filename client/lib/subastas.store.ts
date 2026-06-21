@@ -193,17 +193,61 @@ export const useSubastaStore = create<SubastaStore>((set, get) => ({
   _unsubscribe: null,
 
   joinSubasta: async (subastaId, token, clienteId, subscribe) => {
-    await get().leaveSubasta(token);
     set({ isLoading: true, error: null });
 
     try {
-      // Register as attendee (idempotent — backend returns existing record if already joined)
+      // 1. Get latest active session from the server to prevent desync
+      const { data: activeAsistente } = await api.GET('/api/v1/clientes/{id}/asistencia-actual', {
+        params: { path: { id: clienteId } },
+        headers: authHeaders(token),
+      });
+
+      // 2. If we are in another subasta (either locally or on the server), leave it first
+      const currentActiveSubastaId = activeAsistente?.subastaId || get().subasta?.identificador;
+      const currentActiveAsistenteId = activeAsistente?.identificador || get().asistente?.identificador;
+
+      if (currentActiveSubastaId && currentActiveSubastaId !== subastaId) {
+        // Unsubscribe from local WS
+        get()._unsubscribe?.();
+        // Clear local state
+        set({
+          subasta: null,
+          catalogo: [],
+          itemActual: null,
+          mejorPuja: 0,
+          pujas: [],
+          asistente: null,
+          _unsubscribe: null,
+        });
+
+        // Delete the attendance on the server
+        if (currentActiveAsistenteId) {
+          try {
+            await api.DELETE('/api/v1/subastas/{id}/asistentes/{idAsistente}', {
+              params: { path: { id: currentActiveSubastaId, idAsistente: currentActiveAsistenteId } },
+              headers: authHeaders(token),
+            });
+          } catch {
+            // best-effort
+          }
+        }
+      } else {
+        // Just clear the local subasta state if it's different, without deleting on server
+        if (get().subasta?.identificador !== subastaId) {
+          await get().leaveSubasta(); // call leaveSubasta without token so it doesn't delete on server
+        }
+      }
+
+      // 3. Register as attendee
       const { data: asistente, error: eAsistente } = await api.POST('/api/v1/subastas/{id}/asistentes', {
         params: { path: { id: subastaId } },
         headers: authHeaders(token),
         body: { clienteId },
       });
-      if (eAsistente || !asistente) throw new Error('No se pudo unir a la subasta');
+      if (eAsistente || !asistente) {
+        const errorMsg = (eAsistente as any)?.mensaje || 'No se pudo unir a la subasta';
+        throw new Error(errorMsg);
+      }
 
       await enterSubasta(set, subastaId, token, asistente, subscribe);
       set({ isLoading: false });
@@ -215,6 +259,8 @@ export const useSubastaStore = create<SubastaStore>((set, get) => ({
   // Checks whether the client already has an active asistencia for this subasta
   // (e.g. after an app restart) and rehydrates the session without re-registering.
   checkAsistencia: async (subastaId, token, clienteId, subscribe) => {
+    if (get().subasta?.identificador === subastaId) return;
+
     const { data: asistente } = await api.GET('/api/v1/subastas/{id}/asistentes/{idCliente}', {
       params: { path: { id: subastaId, idCliente: clienteId } },
       headers: authHeaders(token),
@@ -238,6 +284,8 @@ export const useSubastaStore = create<SubastaStore>((set, get) => ({
       headers: authHeaders(token),
     });
     if (!asistente?.subastaId) return; // no active asistencia anywhere
+
+    if (get().subasta?.identificador === asistente.subastaId) return;
 
     await get().leaveSubasta(token);
     try {
@@ -291,7 +339,10 @@ export const useSubastaStore = create<SubastaStore>((set, get) => ({
           body: { asistenteId: asistente.identificador, importe },
         },
       );
-      if (ePuja) throw new Error('Puja rechazada por el servidor');
+      if (ePuja) {
+        const errorMsg = (ePuja as any)?.mensaje || 'Puja rechazada por el servidor';
+        throw new Error(errorMsg);
+      }
       // WS broadcast will update mejorPuja + pujas list automatically
     } catch (e: any) {
       set({ error: e.message ?? 'No se pudo realizar la puja' });

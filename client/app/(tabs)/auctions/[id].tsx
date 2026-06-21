@@ -176,10 +176,10 @@ export default function AuctionDetailScreen() {
     loadActiveProduct();
   }, [itemActual, previewCatalog, subasta, token]);
 
-  // 3. Handle bid errors from the store
+  // 3. Handle errors from the store (joining or bidding)
   useEffect(() => {
     if (storeError) {
-      Alert.alert("Error de puja", storeError, [
+      Alert.alert("Error", storeError, [
         { text: "Aceptar", onPress: () => clearError() }
       ]);
     }
