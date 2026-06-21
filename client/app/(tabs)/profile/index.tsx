@@ -8,31 +8,35 @@ import type { components } from "@/types/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
+  AlertTriangle,
   ArrowRight,
   BarChart2,
   IdCard,
   LogOut,
   MapPin,
   Shield,
-  User
+  User,
 } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StatusBar,
   Text,
-  View
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type PersonaProfile = components["schemas"]["PersonaResponse"];
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, refreshUser } = useAuth();
 
   const [profile, setProfile] = useState<PersonaProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saldandoMulta, setSaldandoMulta] = useState(false);
 
   const loadProfile = useCallback(() => {
     const userId = user?.id ?? null;
@@ -60,6 +64,39 @@ export default function ProfileScreen() {
       loadProfile();
     }, [loadProfile])
   );
+
+  const handleSaldarMulta = () => {
+    if (!token || !user?.id) return;
+    const amount = user?.multaPendiente
+      ? `$${user.multaPendiente.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`
+      : "la multa";
+    Alert.alert(
+      "Saldar multa",
+      `¿Confirmás el pago de ${amount}? Tu cuenta será rehabilitada para participar en subastas.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Confirmar pago",
+          onPress: async () => {
+            setSaldandoMulta(true);
+            try {
+              const { error } = await api.PATCH("/api/v1/clientes/{id}/multa/saldar", {
+                params: { path: { id: user.id! } },
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (error) throw new Error("No se pudo saldar la multa.");
+              await refreshUser();
+              Alert.alert("Multa saldada", "Tu cuenta fue rehabilitada correctamente.");
+            } catch {
+              Alert.alert("Error", "No se pudo completar el pago de la multa.");
+            } finally {
+              setSaldandoMulta(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const nombre = profile?.nombre ?? user?.name ?? user?.email?.split("@")[0] ?? "—";
   const email = profile?.email ?? user?.email ?? "—";
@@ -134,6 +171,37 @@ export default function ProfileScreen() {
             </View>
           ))}
         </View>
+
+        {/* Banner de multa pendiente */}
+        {(user?.multaPendiente ?? 0) > 0 && (
+          <View className="bg-rose-500/10 border border-rose-500/25 rounded-2xl p-4 mb-5">
+            <View className="flex-row items-center gap-3 mb-2">
+              <AlertTriangle size={20} color="#f43f5e" />
+              <Text className="text-rose-400 font-manrope-bold text-sm flex-1">
+                Cuenta inhabilitada — Multa pendiente
+              </Text>
+            </View>
+            <Text className="text-neutral-400 text-xs font-manrope leading-4 mb-3">
+              Tu cuenta tiene una multa por incumplimiento de pago. Hasta que la saldés, no podrás participar en subastas.
+            </Text>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-rose-300 text-lg font-montserrat-bold">
+                ${(user?.multaPendiente ?? 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+              </Text>
+              <TouchableOpacity
+                onPress={handleSaldarMulta}
+                disabled={saldandoMulta}
+                className="bg-rose-500 px-4 py-2 rounded-xl"
+              >
+                {saldandoMulta ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className="text-white font-manrope-bold text-sm">Saldar multa</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Action Buttons */}
         {categoria === "admin" && (

@@ -10,6 +10,7 @@ import ScrollViewPad from "@/components/ui/ScrollViewPad";
 import { UserCategory } from "@/context/auth";
 import { useWebSocket } from "@/context/websocket";
 import { useNotificacionesStore, WsNotification } from "@/lib/notificaciones.store";
+import { useRouter } from "expo-router";
 
 const CATEGORY_KEYS: UserCategory[] = ["comun", "especial", "plata", "oro", "platino", "admin"];
 
@@ -49,9 +50,35 @@ function getIconBg(type: WsNotification["type"]) {
   }
 }
 
+// Maps an `accion` path from the backend notification to an Expo Router path.
+function useAccionNav() {
+  const router = useRouter();
+  return (accion: string | undefined) => {
+    if (!accion) return;
+
+    // /subastas/{id}/registro/{registroId}
+    const reg = accion.match(/\/subastas\/(\d+)\/registro\/(\d+)/);
+    if (reg) {
+      router.push({
+        pathname: "/auctions/compra/[registroId]",
+        params: { registroId: reg[2], subastaId: reg[1] },
+      });
+      return;
+    }
+
+    // /subastas/{id}/catalogo/items/{itemId} → open the auction
+    const item = accion.match(/\/subastas\/(\d+)/);
+    if (item) {
+      router.push({ pathname: "/auctions/[id]", params: { id: item[1] } });
+      return;
+    }
+  };
+}
+
 export default function NotificationsScreen() {
   const { isConnected, isConnecting, connectionError } = useWebSocket();
   const { notifications, removeNotification } = useNotificacionesStore();
+  const navigateAccion = useAccionNav();
 
   return (
     <LinearGradient
@@ -98,8 +125,10 @@ export default function NotificationsScreen() {
               const newCategory = notif.type === "category_update" ? extractCategory(notif.description) : null;
 
               return (
-                <View
+                <TouchableOpacity
                   key={notif.id}
+                  activeOpacity={notif.accion ? 0.7 : 1}
+                  onPress={() => navigateAccion(notif.accion)}
                   className="flex-row items-stretch bg-[#1a1a1a] shadow-lg shadow-black/20"
                   style={{ borderRadius: 20 }}
                 >
@@ -135,7 +164,7 @@ export default function NotificationsScreen() {
                       <X size={18} color="#525252" strokeWidth={2.5} />
                     </TouchableOpacity>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>

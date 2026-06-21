@@ -15,6 +15,8 @@ export interface User {
   name?: string;
   category?: UserCategory;
   id?: number;
+  estadoOperativo?: string;
+  multaPendiente?: number;
 }
 
 export type PreRegisterBody = components['schemas']['PreRegisterRequest'];
@@ -90,6 +92,25 @@ async function fetchHasPaymentMethod(tok: string, id: number): Promise<boolean> 
     return Array.isArray(data) && data.length > 0;
   } catch {
     return true;
+  }
+}
+
+async function syncCliente(tok: string, base: User): Promise<User> {
+  const id = base.id;
+  if (!id || base.category === 'admin') return base;
+  try {
+    const { data } = await api.GET('/api/v1/clientes/{id}', {
+      params: { path: { id } },
+      headers: { Authorization: `Bearer ${tok}` },
+    });
+    if (!data) return base;
+    return {
+      ...base,
+      estadoOperativo: data.estadoOperativo ?? base.estadoOperativo,
+      multaPendiente: data.multaPendiente ?? base.multaPendiente,
+    };
+  } catch {
+    return base;
   }
 }
 
@@ -184,7 +205,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const base: User = parsed
             ? { ...parsed, id: parsed.id ?? getTokenId(storedToken) ?? undefined }
             : { email: '', id: getTokenId(storedToken) ?? undefined };
-          const fresh = await syncPersona(storedToken, base);
+          const synced = await syncPersona(storedToken, base);
+          const fresh = await syncCliente(storedToken, synced);
           setToken(storedToken);
           setUser(fresh);
           if (fresh.name !== parsed?.name || fresh.category !== parsed?.category)
@@ -232,7 +254,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Credenciales incorrectas.');
     }
     const base: User = { email, category: data.categoria as UserCategory ?? undefined, id: getTokenId(data.accessToken) ?? undefined };
-    const fresh = await syncPersona(data.accessToken, base);
+    const synced = await syncPersona(data.accessToken, base);
+    const fresh = await syncCliente(data.accessToken, synced);
     await persistSession(data.accessToken, fresh);
     if (fresh.category !== 'admin' && fresh.id) {
       setHasPaymentMethod(await fetchHasPaymentMethod(data.accessToken, fresh.id));
@@ -259,7 +282,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('No se pudo completar el registro.');
     }
     const base: User = { email: body.email, category: data.categoria as UserCategory ?? undefined, id: getTokenId(data.accessToken) ?? undefined };
-    const fresh = await syncPersona(data.accessToken, base);
+    const synced = await syncPersona(data.accessToken, base);
+    const fresh = await syncCliente(data.accessToken, synced);
     await persistSession(data.accessToken, fresh);
     if (fresh.category !== 'admin' && fresh.id) {
       setHasPaymentMethod(await fetchHasPaymentMethod(data.accessToken, fresh.id));
@@ -271,7 +295,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     if (!token || !user) return;
-    const fresh = await syncPersona(token, user);
+    const synced = await syncPersona(token, user);
+    const fresh = await syncCliente(token, synced);
     setUser(fresh);
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh));
   }, [token, user]);
