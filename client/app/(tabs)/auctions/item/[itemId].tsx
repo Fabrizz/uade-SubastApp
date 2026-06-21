@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, MapPin } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
-import { Image, Platform, ScrollView, StatusBar, Text, TouchableOpacity, View, ActivityIndicator, Dimensions } from "react-native";
+import { Image, Platform, ScrollView, StatusBar, Text, TouchableOpacity, View, ActivityIndicator, Dimensions, FlatList } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/auth";
 import { api, API_BASE } from "@/lib/api";
@@ -109,16 +109,24 @@ export default function ItemDetailScreen() {
         {/* Item Image Carousel */}
         {product?.fotosIds && product.fotosIds.length > 0 ? (
           <View className="mb-6 rounded-[32px] overflow-hidden shadow-2xl shadow-black/80 relative" style={{ height: 260 }}>
-            <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
-              {product.fotosIds.map((fotoId) => (
+            <FlatList
+              data={product.fotosIds}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.toString()}
+              renderItem={({ item: fotoId }) => (
                 <Image
-                  key={fotoId}
                   source={{ uri: `${API_BASE}/productos/${itemId}/fotos/${fotoId}/content` }}
                   style={{ width: CARD_WIDTH, height: 260 }}
                   resizeMode="cover"
                 />
-              ))}
-            </ScrollView>
+              )}
+              windowSize={2}
+              initialNumToRender={1}
+              maxToRenderPerBatch={1}
+              removeClippedSubviews={false}
+            />
           </View>
         ) : (
           <View className="mb-6 rounded-[32px] overflow-hidden shadow-2xl shadow-black/80 relative">
