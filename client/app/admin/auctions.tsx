@@ -2,8 +2,7 @@ import HeaderComp from "@/components/HeaderComp";
 import { useAuth } from "@/context/auth";
 import { api, API_BASE } from "@/lib/api";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { ArrowLeft, Calendar, Clock, MapPin, Plus, Users, X, DollarSign, Check, Gavel, ChevronDown, ChevronUp, User } from "lucide-react-native";
+import { Calendar, Clock, MapPin, Plus, Users, X, DollarSign, Check, Gavel, ChevronDown, ChevronUp, User } from "lucide-react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -49,7 +48,6 @@ const getDefaultFutureDate = () => {
 };
 
 export default function AdminAuctionsScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { token, user } = useAuth();
 
@@ -683,22 +681,13 @@ export default function AdminAuctionsScreen() {
     <LinearGradient colors={["#000000", "#180120", "#3d0145"]} style={{ flex: 1 }}>
       {/* Header */}
       <HeaderComp
-        inline
+        back
         outlet={
           <View className="flex-row items-center gap-3">
-            <TouchableOpacity
-              onPress={() => {
-                if (router.canGoBack()) {
-                  router.back();
-                } else {
-                  router.replace("/admin");
-                }
-              }}
-              className="w-10 h-10 items-center justify-center bg-neutral-900/60 rounded-full border border-neutral-800"
-            >
-              <ArrowLeft size={20} color="#d8b4fe" />
-            </TouchableOpacity>
-            <View>
+            <View className="bg-purple-950 rounded-full p-2">
+              <Gavel size={20} color="#d8b4fe" />
+            </View>
+            <View style={{ flex: 1 }}>
               <Text className="text-white text-xl font-bold font-montserrat-bold">Subastas</Text>
               <Text className="text-neutral-400 text-[10px] uppercase font-manrope-semibold">Panel Admin</Text>
             </View>

@@ -212,7 +212,7 @@ export default function RequestAuctionScreen() {
         throw new Error(text || "Error en el servidor al registrar el producto.");
       }
 
-      router.replace("/(tabs)/auctions/new/verification-success" as any);
+      router.replace("/(tabs)/auctions/new/auction-verification" as any);
     } catch (err: any) {
       Alert.alert("Error", err.message || "Ocurrió un error al registrar el artículo.");
     } finally {

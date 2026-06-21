@@ -1,18 +1,18 @@
+import HeaderComp from '@/components/HeaderComp';
 import { useAuth } from '@/context/auth';
 import { api } from '@/lib/api';
 import type { components } from '@/types/api';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, CheckCircle, Clock, UserCheck, XCircle } from 'lucide-react-native';
+import { CheckCircle, Clock, UserCheck, XCircle } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Cliente = components['schemas']['ClienteResponse'];
 
 export default function AdminAdmitir() {
   const { token } = useAuth();
-  const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,35 +68,18 @@ export default function AdminAdmitir() {
 
   return (
     <LinearGradient colors={['#000000', '#3f0146', '#9102A2']} style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-
-        {/* Header */}
-        <View className="flex-row items-center px-6 pt-4 pb-4 gap-3">
-          <TouchableOpacity
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/admin");
-              }
-            }}
-            activeOpacity={0.7}
-            className="p-1 -ml-1"
-          >
-            <ArrowLeft size={22} color="white" />
-          </TouchableOpacity>
-          <View className="bg-purple-950 rounded-full p-2">
-            <UserCheck size={20} color="#d8b4fe" />
+      <HeaderComp
+        back
+        outlet={
+          <View className="flex-row items-center gap-3">
+            <View className="bg-purple-950 rounded-full p-2">
+              <UserCheck size={20} color="#d8b4fe" />
+            </View>
           </View>
-          <View className="flex-1">
-            <Text className="text-white text-xl font-bold" style={{ fontFamily: 'Montserrat-Bold' }}>
-              Admitir Clientes
-            </Text>
-            <Text className="text-neutral-400 text-xs">{clientes.length} clientes encontrados</Text>
-          </View>
-        </View>
+        }
+      />
 
-        {isLoading ? (
+      {isLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color="#d8b4fe" />
           </View>
@@ -111,7 +94,7 @@ export default function AdminAdmitir() {
           <FlatList
             data={clientes}
             keyExtractor={item => String(item.identificador)}
-            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 32 }}
             ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
             renderItem={({ item }) => {
               const admitido = item.admitido === 'si';
@@ -200,7 +183,6 @@ export default function AdminAdmitir() {
             }}
           />
         )}
-      </SafeAreaView>
     </LinearGradient>
   );
 }

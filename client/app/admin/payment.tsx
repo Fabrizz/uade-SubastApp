@@ -1,12 +1,12 @@
+import HeaderComp from '@/components/HeaderComp';
 import { useAuth } from '@/context/auth';
 import { api } from '@/lib/api';
 import type { components } from '@/types/api';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, CheckCircle, Clock, CreditCard, Landmark, FileText, XCircle } from 'lucide-react-native';
+import { CheckCircle, Clock, CreditCard, Landmark, FileText, XCircle } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type MedioPago = components['schemas']['MedioPagoResponse'] & {
   clientName?: string;
@@ -16,7 +16,7 @@ type MedioPago = components['schemas']['MedioPagoResponse'] & {
 
 export default function AdminPaymentApproval() {
   const { token } = useAuth();
-  const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [pendingMethods, setPendingMethods] = useState<MedioPago[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -150,33 +150,22 @@ export default function AdminPaymentApproval() {
 
   return (
     <LinearGradient colors={['#000000', '#3f0146', '#9102A2']} style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-
-        {/* Header */}
-        <View className="flex-row items-center px-6 pt-4 pb-4 gap-3">
-          <TouchableOpacity
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/admin");
-              }
-            }}
-            activeOpacity={0.7}
-            className="p-1 -ml-1"
-          >
-            <ArrowLeft size={22} color="white" />
-          </TouchableOpacity>
-          <View className="bg-purple-950 rounded-full p-2">
-            <CreditCard size={20} color="#d8b4fe" />
+      <HeaderComp
+        back
+        outlet={
+          <View className="flex-row items-center gap-3">
+            <View className="bg-purple-950 rounded-full p-2">
+              <CreditCard size={20} color="#d8b4fe" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text className="text-white text-xl font-bold font-montserrat-bold">
+                Aprobar Pagos
+              </Text>
+              <Text className="text-neutral-400 text-xs">{pendingMethods.length} pendientes de verificación</Text>
+            </View>
           </View>
-          <View className="flex-1">
-            <Text className="text-white text-xl font-bold" style={{ fontFamily: 'Montserrat-Bold' }}>
-              Aprobar Pagos
-            </Text>
-            <Text className="text-neutral-400 text-xs">{pendingMethods.length} pendientes de verificación</Text>
-          </View>
-        </View>
+        }
+      />
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
@@ -199,7 +188,7 @@ export default function AdminPaymentApproval() {
           <FlatList
             data={pendingMethods}
             keyExtractor={item => String(item.identificador)}
-            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 32 }}
             ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
             renderItem={({ item }) => {
               const cargando = procesando === item.identificador;
@@ -298,7 +287,6 @@ export default function AdminPaymentApproval() {
             }}
           />
         )}
-      </SafeAreaView>
     </LinearGradient>
   );
 }

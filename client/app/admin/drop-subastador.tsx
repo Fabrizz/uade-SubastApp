@@ -1,19 +1,19 @@
+import HeaderComp from '@/components/HeaderComp';
 import { useAuth } from '@/context/auth';
 import { api } from '@/lib/api';
 import type { components } from '@/types/api';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, Gavel, Trash2 } from 'lucide-react-native';
+import { Gavel, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Subastador = components['schemas']['SubastadorResponse'];
 type Cliente = components['schemas']['ClienteResponse'];
 
 export default function DropSubastador() {
   const { token } = useAuth();
-  const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [subastadores, setSubastadores] = useState<Subastador[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -77,31 +77,20 @@ export default function DropSubastador() {
 
   return (
     <LinearGradient colors={['#000000', '#3f0146', '#9102A2']} style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-
-        {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 12, gap: 12 }}>
-          <TouchableOpacity
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/admin");
-              }
-            }}
-            activeOpacity={0.7}
-            style={{ padding: 4, marginLeft: -4 }}
-          >
-            <ArrowLeft size={22} color="white" />
-          </TouchableOpacity>
-          <View style={{ backgroundColor: '#3b0764', borderRadius: 99, padding: 8 }}>
-            <Gavel size={20} color="#d8b4fe" />
+      <HeaderComp
+        back
+        outlet={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ backgroundColor: '#3b0764', borderRadius: 99, padding: 8 }}>
+              <Gavel size={20} color="#d8b4fe" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>Quitar Subastador</Text>
+              <Text style={{ color: '#737373', fontSize: 12 }}>{subastadores.length} subastadores</Text>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>Quitar Subastador</Text>
-            <Text style={{ color: '#737373', fontSize: 12 }}>{subastadores.length} subastadores</Text>
-          </View>
-        </View>
+        }
+      />
 
         {isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -125,7 +114,7 @@ export default function DropSubastador() {
           <FlatList
             data={subastadores}
             keyExtractor={item => String(item.identificador)}
-            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 32 }}
             ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
             renderItem={({ item }) => {
               const cliente = clienteMap[item.identificador ?? -1];
@@ -181,7 +170,6 @@ export default function DropSubastador() {
           />
         )}
 
-      </SafeAreaView>
     </LinearGradient>
   );
 }

@@ -2,6 +2,7 @@ import { AvatarInitials } from "@/components/ui/AvatarInitials";
 import { CategoryPill } from "@/components/ui/CategoryPill";
 import { useAuth } from "@/context/auth";
 import { router } from "expo-router";
+import { ArrowLeft } from "lucide-react-native";
 import { Platform, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SubastappLogo from "./logos/SubastappLogo";
@@ -13,11 +14,13 @@ export default function HeaderComp({
   action = null,
   className = "",
   inline = false,
+  back = false,
 }: {
   children?: React.ReactNode
   outlet?: React.ReactNode
   action?: React.ReactNode
   className?: string
+  back?: boolean
   inline?: boolean
 }) {
   const { user } = useAuth();
@@ -35,12 +38,27 @@ export default function HeaderComp({
       {/* logo + badge tier usuario */}
       <View className="flex-row justify-between items-center mb-3">
         {action}
+        {back && (
+            <TouchableOpacity
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/admin");
+                }
+              }}
+              activeOpacity={0.7}
+              className="w-10 h-10 items-center justify-center bg-neutral-900/60 rounded-full border border-neutral-800 mr-3"
+            >
+              <ArrowLeft size={22} color="white" />
+            </TouchableOpacity>
+        )}
         <TouchableOpacity
           onLongPress={() => router.replace("/admin")}
           onPress={() => router.replace("/")}
           delayLongPress={800}
           activeOpacity={1}
-          className="flex-row items-center gap-2"
+          className="flex-row items-center gap-2 flex justify-start mr-auto"
         >
           <View
             style={{

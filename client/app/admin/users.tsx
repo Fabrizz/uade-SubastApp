@@ -1,15 +1,14 @@
+import HeaderComp from '@/components/HeaderComp';
 import { useAuth } from '@/context/auth';
 import { api } from '@/lib/api';
 import type { components } from '@/types/api';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
 import {
-  ArrowLeft,
   Check,
   ChevronDown,
   ShieldOff,
   Users,
-  Zap,
+  Zap
 } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -20,7 +19,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Cliente = components['schemas']['ClienteResponse'];
 
@@ -227,7 +226,6 @@ function ClienteCard({
 
 export default function AdminUsers() {
   const { token } = useAuth();
-  const router = useRouter();
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -253,33 +251,25 @@ export default function AdminUsers() {
     setClientes(prev => prev.map(c => c.identificador === updated.identificador ? updated : c));
   }, []);
 
+  const insets = useSafeAreaInsets();
+
   return (
     <LinearGradient colors={['#000000', '#3f0146', '#9102A2']} style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-
-        {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 12, gap: 12 }}>
-          <TouchableOpacity
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/admin");
-              }
-            }}
-            activeOpacity={0.7}
-            style={{ padding: 4, marginLeft: -4 }}
-          >
-            <ArrowLeft size={22} color="white" />
-          </TouchableOpacity>
-          <View style={{ backgroundColor: '#3b0764', borderRadius: 99, padding: 8 }}>
-            <Users size={20} color="#d8b4fe" />
+      {/* Header */}
+      <HeaderComp
+        back
+        outlet={
+          <View className="flex-row items-center gap-3">
+            <View style={{ backgroundColor: '#3b0764', borderRadius: 99, padding: 8 }}>
+              <Users size={20} color="#d8b4fe" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>Usuarios</Text>
+              <Text style={{ color: '#737373', fontSize: 12 }}>{clientes.length} clientes</Text>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>Usuarios</Text>
-            <Text style={{ color: '#737373', fontSize: 12 }}>{clientes.length} clientes</Text>
-          </View>
-        </View>
+        }
+      />
 
         {isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -296,14 +286,12 @@ export default function AdminUsers() {
           <FlatList
             data={clientes}
             keyExtractor={item => String(item.identificador)}
-            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}
+            contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 24 }}
             renderItem={({ item }) => (
               <ClienteCard item={item} headers={headers} onUpdate={handleUpdate} />
             )}
           />
         )}
-
-      </SafeAreaView>
     </LinearGradient>
   );
 }

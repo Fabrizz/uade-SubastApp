@@ -13,7 +13,7 @@ import fabriziob.com.subastapp.entity.Producto;
 
 @Repository
 public interface ProductoRepository extends JpaRepository<Producto, Integer> {
-    @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.seguro WHERE p.identificador = :id")
+    @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.seguroObj WHERE p.identificador = :id")
     Optional<Producto> findByIdWithSeguro(@Param("id") Integer id);
 
     Page<Producto> findByDuenioIdentificador(Integer duenioId, Pageable pageable);
