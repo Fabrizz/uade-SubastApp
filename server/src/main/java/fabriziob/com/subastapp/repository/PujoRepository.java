@@ -101,12 +101,13 @@ public interface PujoRepository extends JpaRepository<Pujo, Integer> {
     @Query("SELECT DISTINCT p.asistente.cliente.identificador FROM Pujo p WHERE p.asistente.subasta.identificador = :subastaId")
     List<Integer> findUniqueBidderIdsBySubastaId(@Param("subastaId") Integer subastaId);
 
-    @Query("SELECT COALESCE(SUM(p.importe), 0) FROM Pujo p WHERE p.asistente.cliente.identificador = :clienteId")
-    BigDecimal sumImporteByClienteId(@Param("clienteId") Integer clienteId);
-
-    @Query("SELECT COALESCE(SUM(p.importe), 0) FROM Pujo p WHERE p.asistente.cliente.identificador = :clienteId AND p.ganador = 'si'")
-    BigDecimal sumImporteGanadorByClienteId(@Param("clienteId") Integer clienteId);
-
-    @Query("SELECT COALESCE(AVG(p.importe), 0.0) FROM Pujo p WHERE p.asistente.cliente.identificador = :clienteId")
-    Double averageImporteByClienteId(@Param("clienteId") Integer clienteId);
+    @Query("""
+            SELECT p FROM Pujo p
+            LEFT JOIN FETCH p.asistente a
+            LEFT JOIN FETCH a.subasta s
+            WHERE a.cliente.identificador = :clienteId
+            AND s.fecha IS NOT NULL
+            ORDER BY s.fecha ASC
+            """)
+    List<Pujo> findByClienteIdWithSubastaFecha(@Param("clienteId") Integer clienteId);
 }

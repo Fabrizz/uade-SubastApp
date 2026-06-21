@@ -1,6 +1,6 @@
 package fabriziob.com.subastapp.controller.estatisticas;
 
-import java.math.BigDecimal;
+import java.util.List;
 
 import fabriziob.com.subastapp.entity.enums.ClienteCategoria;
 import lombok.AllArgsConstructor;
@@ -16,6 +16,7 @@ public class CategoriaEstadisticaResponse {
     private ClienteCategoria categoria;
     private Long totalSubastas;
     private Long totalParticipantes;
-    private BigDecimal totalRecaudado;
-    private BigDecimal promedioRecaudadoPorSubasta;
+    // Lo recaudado se desglosa por moneda porque las subastas de una misma categoría
+    // pueden ser en ARS o en USD; sumarlas mezcladas daría un total sin sentido.
+    private List<CategoriaMonedaResponse> porMoneda;
 }

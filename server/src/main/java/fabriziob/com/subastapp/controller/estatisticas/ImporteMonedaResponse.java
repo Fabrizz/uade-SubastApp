@@ -1,7 +1,6 @@
 package fabriziob.com.subastapp.controller.estatisticas;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 import fabriziob.com.subastapp.entity.enums.Moneda;
 import lombok.AllArgsConstructor;
@@ -13,12 +12,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PujoDetalle {
-    private Integer subastaId;
-    private Integer itemCatalogoId;
-    private String productoDescripcion;
-    private BigDecimal monto;
+public class ImporteMonedaResponse {
     private Moneda moneda;
-    private LocalDateTime fecha;
-    private Boolean ganado;
+    private BigDecimal importeTotalOfertado;
+    private BigDecimal importeTotalPagado;
+    private BigDecimal pujoPromedio;
 }

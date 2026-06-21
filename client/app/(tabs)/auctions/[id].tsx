@@ -1,4 +1,5 @@
 import HeaderComp from "@/components/HeaderComp";
+import { ExternalLink } from "@/components/external-link";
 import { CategoryPill } from "@/components/ui/CategoryPill";
 import { useAuth } from "@/context/auth";
 import { useWebSocket } from "@/context/websocket";
@@ -6,7 +7,7 @@ import { api, API_BASE } from "@/lib/api";
 import { getBidBounds, useSubastaStore } from "@/lib/subastas.store";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Clock, FileText, Gavel, Hammer, Info, Lock, LogIn, MapPin } from "lucide-react-native";
+import { Clock, FileText, Gavel, Hammer, Info, Lock, LogIn, MapPin, Video } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -322,10 +323,16 @@ export default function AuctionDetailScreen() {
         back
         backFallback="/(tabs)/auctions"
         outlet={
-          <View className={`px-4 py-1.5 rounded-xl ${isJoined ? "bg-red-600" : "bg-neutral-800"}`}>
-            <Text className="text-white text-xs tracking-widest font-manrope-bold uppercase">
-              {isJoined ? "LIVE" : "PREVIO"}
-            </Text>
+          <View className="flex-row items-center justify-center gap-2">
+            <ExternalLink href="https://youtube.com" asChild>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                className="gap-2 px-3 py-2 items-center flex-row justify-center bg-neutral-900/60 rounded-full border border-neutral-800"
+              >
+                <Video size={18} color="#f87171" />
+                <Text className="text-[#f87171] font-semibold">En vivo</Text>
+              </TouchableOpacity>
+            </ExternalLink>
           </View>
         }
       />
