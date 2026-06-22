@@ -7,8 +7,8 @@ import { api, API_BASE } from "@/lib/api";
 import { useSubastaStore } from "@/lib/subastas.store";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ArrowRight, Gavel, Lock, LogIn, Search } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { ArrowRight, Gavel, Lock, LogIn, RefreshCw, Search } from "lucide-react-native";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -261,36 +261,37 @@ export default function Home() {
   const [subastas, setSubastas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadSubastas() {
-      setLoading(true);
-      try {
-        const isAdmin = user?.category?.toLowerCase() === "admin";
-        const targetEstado = isAdmin ? undefined : (category === "terminadas" ? "cerrada" : "abierta");
-        const { data } = await api.GET("/api/v1/subastas", {
-          params: {
-            query: {
-              estado: targetEstado,
-              conCatalogo: true,
-              pageable: { page: 0, size: 100 }
-            }
-          },
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined
-        });
-        if (data?.content) {
-          setSubastas(data.content);
-        } else {
-          setSubastas([]);
-        }
-      } catch (err) {
-        console.error("Error loading subastas:", err);
+  const loadSubastas = useCallback(async () => {
+    setLoading(true);
+    try {
+      const isAdmin = user?.category?.toLowerCase() === "admin";
+      const targetEstado = isAdmin ? undefined : (category === "terminadas" ? "cerrada" : "abierta");
+      const { data } = await api.GET("/api/v1/subastas", {
+        params: {
+          query: {
+            estado: targetEstado,
+            conCatalogo: true,
+            pageable: { page: 0, size: 100 }
+          }
+        },
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+      });
+      if (data?.content) {
+        setSubastas(data.content);
+      } else {
         setSubastas([]);
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      console.error("Error loading subastas:", err);
+      setSubastas([]);
+    } finally {
+      setLoading(false);
     }
-    loadSubastas();
   }, [token, category, user?.category]);
+
+  useEffect(() => {
+    loadSubastas();
+  }, [loadSubastas]);
 
   const CATEGORIES: { key: CategoryTab; label: string }[] = [
     { key: "top", label: "Top items" },
@@ -379,9 +380,19 @@ export default function Home() {
         showsVerticalScrollIndicator={false}
         removeClippedSubviews={false}
       >
-        <Text className="text-white text-lg mb-4 font-montserrat-bold">
-          {category === "terminadas" ? "Subastas finalizadas" : "Subastas activas"}
-        </Text>
+        <View className="flex-row items-center justify-between mb-4">
+          <Text className="text-white text-lg font-montserrat-bold">
+            {category === "terminadas" ? "Subastas finalizadas" : "Subastas activas"}
+          </Text>
+          <TouchableOpacity
+            onPress={loadSubastas}
+            disabled={loading}
+            activeOpacity={0.7}
+            className="p-2 -mr-2 rounded-full"
+          >
+            <RefreshCw size={18} color={loading ? "#525252" : "#a78bfa"} />
+          </TouchableOpacity>
+        </View>
 
         {loading ? (
           <View className="py-20 items-center justify-center">
