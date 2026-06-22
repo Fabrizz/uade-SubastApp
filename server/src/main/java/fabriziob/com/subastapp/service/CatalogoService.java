@@ -142,6 +142,23 @@ public class CatalogoService {
                                 .orElseThrow(() -> new EntityNotFoundException(
                                                 "Producto no encontrado: " + req.getProductoId()));
 
+                if (catalogo.getSubasta() != null && catalogo.getSubasta().getSubastaExtra() != null) {
+                        Boolean esColeccion = catalogo.getSubasta().getSubastaExtra().getEsColeccion();
+                        if (Boolean.TRUE.equals(esColeccion)) {
+                                List<ItemCatalogo> itemsExistentes = itemRepository.findByCatalogo_Identificador(catalogo.getIdentificador());
+                                if (itemsExistentes != null && !itemsExistentes.isEmpty()) {
+                                        ItemCatalogo primerItem = itemsExistentes.get(0);
+                                        if (primerItem.getProducto() != null && primerItem.getProducto().getDuenio() != null) {
+                                                Integer duenioExclusivoId = primerItem.getProducto().getDuenio().getIdentificador();
+                                                if (producto.getDuenio() == null || !producto.getDuenio().getIdentificador().equals(duenioExclusivoId)) {
+                                                        throw new IllegalArgumentException(
+                                                                        "No se puede agregar el artículo. Esta subasta es una colección y solo permite artículos del propietario del primer lote.");
+                                                }
+                                        }
+                                }
+                        }
+                }
+
                 ItemCatalogo item = ItemCatalogo.builder()
                                 .catalogo(catalogo)
                                 .producto(producto)
