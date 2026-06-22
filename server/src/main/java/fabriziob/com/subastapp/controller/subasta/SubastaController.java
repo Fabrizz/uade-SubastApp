@@ -436,6 +436,21 @@ public class SubastaController {
                 return ResponseEntity.ok(registroService.marcarImpago(id, idRegistro));
         }
 
+        @Operation(summary = "Marcar artículo como entregado (Retiro en depósito)", description = "Confirma que el comprador retiró el artículo. Esto elimina la póliza de seguro asociada al producto.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Artículo marcado como entregado"),
+                        @ApiResponse(responseCode = "400", description = "El medio de envío no es RETIRO_DEPOSITO", content = @Content),
+                        @ApiResponse(responseCode = "401", description = "No autenticado", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "Sin permisos", content = @Content),
+                        @ApiResponse(responseCode = "404", description = "Subasta o registro no encontrado", content = @Content)
+        })
+        @PatchMapping("/{id}/registro/{idRegistro}/entregado")
+        public ResponseEntity<RegistroDeSubastaResponse> marcarEntregado(
+                        @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
+                        @Parameter(description = "ID del registro", required = true, example = "3") @PathVariable Integer idRegistro) {
+                return ResponseEntity.ok(registroService.marcarEntregado(id, idRegistro));
+        }
+
         // ── Pujos ─────────────────────────────────────────────────────────────
 
         @Operation(summary = "Listar pujos de la subasta", description = "Devuelve todos los pujos de una subasta ordenados por importe descendente")

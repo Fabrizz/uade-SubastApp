@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type RegistroDeSubastaResponse = components["schemas"]["RegistroDeSubastaResponse"];
+type RegistroDeSubastaResponse = components["schemas"]["RegistroDeSubastaResponse"] & { seguroActivo?: boolean };
 type MedioEnvio = components["schemas"]["MedioEnvio"];
 
 const ESTADO_PAGO_LABELS: Record<string, string> = {
@@ -44,6 +44,7 @@ export default function MiCompraScreen() {
   const [selectedEnvio, setSelectedEnvio] = useState<MedioEnvio | null>(null);
   const [direccionEnvio, setDireccionEnvio] = useState("");
   const [savingEnvio, setSavingEnvio] = useState(false);
+  const [markingRetirado, setMarkingRetirado] = useState(false);
 
   useEffect(() => {
     if (!token || !registroId || !subastaId) return;
@@ -74,13 +75,13 @@ export default function MiCompraScreen() {
       return;
     }
 
-    if (selectedEnvio === "RETIRO_DEPOSITO") {
+    if (selectedEnvio === "RETIRO_DEPOSITO" && selectedEnvio !== currentMedioEnvio) {
       Alert.alert(
-        "Perderás el seguro",
-        "Al retirar personalmente el bien del depósito, la cobertura de seguro quedará sin efecto. ¿Confirmás el retiro?",
+        "Aviso importante",
+        "Elegiste retiro en depósito. Tené en cuenta que al retirar personalmente el bien del depósito, la cobertura de seguro quedará sin efecto.",
         [
           { text: "Cancelar", style: "cancel" },
-          { text: "Confirmar", onPress: () => doSaveEnvio() },
+          { text: "Entendido", onPress: () => doSaveEnvio() },
         ]
       );
       return;
@@ -111,6 +112,38 @@ export default function MiCompraScreen() {
       Alert.alert("Error", err.message ?? "No se pudo guardar.");
     } finally {
       setSavingEnvio(false);
+    }
+  };
+
+  const handleMarcarEntregado = () => {
+    Alert.alert(
+      "Confirmar Retiro",
+      "¿Estás seguro que ya retiraste físicamente el artículo del depósito? Al confirmar esto, perderás la cobertura del seguro asociado.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Sí, ya lo retiré", onPress: doMarcarEntregado },
+      ]
+    );
+  };
+
+  const doMarcarEntregado = async () => {
+    if (!token || !registro) return;
+    setMarkingRetirado(true);
+    try {
+      const { data, error: e } = await api.PATCH(
+        "/api/v1/subastas/{id}/registro/{idRegistro}/entregado" as any,
+        {
+          params: { path: { id: registro.subastaId!, idRegistro: registro.identificador! } },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (e || !data) throw new Error("No se pudo marcar como entregado.");
+      setRegistro(data as any);
+      Alert.alert("Retiro confirmado", "El artículo fue marcado como retirado y el seguro ha sido dado de baja.");
+    } catch (err: any) {
+      Alert.alert("Error", err.message ?? "No se pudo actualizar.");
+    } finally {
+      setMarkingRetirado(false);
     }
   };
 
@@ -353,6 +386,34 @@ export default function MiCompraScreen() {
                 <Text className="text-white font-manrope-bold text-sm">Guardar medio de envío</Text>
               )}
             </TouchableOpacity>
+          )}
+
+          {/* Confirmación de retiro físico si ya guardó retiro en depósito */}
+          {!envioChanged && currentMedioEnvio === "RETIRO_DEPOSITO" && (
+            <View className="mt-4 pt-4 border-t border-neutral-800">
+              {registro.seguroActivo ? (
+                <TouchableOpacity
+                  onPress={handleMarcarEntregado}
+                  disabled={markingRetirado}
+                  activeOpacity={0.8}
+                  className="bg-amber-600 py-3.5 rounded-xl items-center justify-center flex-row gap-2"
+                >
+                  {markingRetirado ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <>
+                      <Package size={18} color="white" />
+                      <Text className="text-white font-manrope-bold text-sm">Confirmar que ya retiré el artículo</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <View className="bg-neutral-800/50 py-3.5 rounded-xl items-center justify-center flex-row gap-2 border border-neutral-700">
+                  <CheckCircle size={18} color="#10b981" />
+                  <Text className="text-emerald-400 font-manrope-bold text-sm">Artículo retirado (Seguro inactivo)</Text>
+                </View>
+              )}
+            </View>
           )}
         </View>
 
