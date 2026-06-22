@@ -218,22 +218,26 @@ public class CatalogoService {
                                                                 WsNotificacionService.Tipo.warning,
                                                                 "subasta",
                                                                 "Propuesta comercial rechazada: " + titulo,
-                                                                "Has rechazado la propuesta comercial. Se procederá con la devolución del artículo '" + titulo + "' a tu dirección registrada.");
+                                                                "Has rechazado la propuesta comercial. Realizaremos la devolución del artículo '" + titulo + "' a la dirección que nos indiques y el costo del envío va por tu parte.");
                                         }
 
                                         // 2. Delete ItemCatalogo first to avoid FK constraint violation
                                         itemRepository.delete(item);
+                                        itemRepository.flush();
 
                                         // 3. Delete Foto entities
                                         List<Foto> fotos = fotoRepository.findByProducto(p.getIdentificador());
                                         fotoRepository.deleteAll(fotos);
+                                        fotoRepository.flush();
 
                                         // 4. Delete Producto (which cascades to ProductoExtra)
                                         productoRepository.delete(p);
+                                        productoRepository.flush();
 
                                         // 5. Delete Seguro if exists
                                         if (nroPoliza != null) {
                                                 seguroRepository.deleteById(nroPoliza);
+                                                seguroRepository.flush();
                                         }
 
                                         return null;
