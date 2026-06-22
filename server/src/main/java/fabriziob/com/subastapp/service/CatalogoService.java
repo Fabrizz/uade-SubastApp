@@ -167,6 +167,11 @@ public class CatalogoService {
                                 .subastado("no")
                                 .build();
                 item = itemRepository.save(item);
+
+                // Generar póliza de seguro automáticamente al crear la propuesta
+                crearSeguroAutomatico(producto, req.getPrecioBase());
+                productoRepository.save(producto);
+
                 return toItemResponse(item);
         }
 
@@ -204,6 +209,7 @@ public class CatalogoService {
                                         String titulo = p.getProductoExtra() != null && p.getProductoExtra().getTitulo() != null
                                                         ? p.getProductoExtra().getTitulo()
                                                         : p.getDescripcionCompleta();
+                                        String nroPoliza = p.getSeguro();
 
                                         // 1. Notify user
                                         if (duenioId != null) {
@@ -224,6 +230,11 @@ public class CatalogoService {
 
                                         // 4. Delete Producto (which cascades to ProductoExtra)
                                         productoRepository.delete(p);
+
+                                        // 5. Delete Seguro if exists
+                                        if (nroPoliza != null) {
+                                                seguroRepository.deleteById(nroPoliza);
+                                        }
 
                                         return null;
                                 }
