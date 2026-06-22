@@ -205,6 +205,11 @@ export default function AuctionDetailScreen() {
   const currentSubasta = isJoined ? subasta : previewSubasta;
   const currentCatalog = isJoined ? catalogo : previewCatalog;
 
+  const estadoDetallado = currentSubasta?.estadoDetallado;
+  const isAuctionLive = estadoDetallado === "en_curso";
+  const isAuctionEnded = estadoDetallado === "cerrada" || estadoDetallado === "finalizada";
+  const isAuctionUpcoming = !isAuctionLive && !isAuctionEnded;
+
   // Fetch catalog images once currentCatalog is available
   useEffect(() => {
     async function loadCatalogImages() {
@@ -258,6 +263,16 @@ export default function AuctionDetailScreen() {
       return;
     }
     if (!id || categoryInsufficient) return;
+
+    if (!isAuctionLive) {
+      Alert.alert(
+        "Subasta no iniciada",
+        isAuctionEnded
+          ? "Esta subasta ya ha finalizado."
+          : "Esta subasta aún no ha comenzado. Solo podés unirte cuando el estado detallado sea 'En Curso'."
+      );
+      return;
+    }
 
     // Block if user has a pending fine or is suspended
     if (user?.estadoOperativo === "inhabilitado" || (user?.multaPendiente ?? 0) > 0) {
@@ -463,6 +478,26 @@ export default function AuctionDetailScreen() {
             </View>
           )}
 
+          {/* Banner: subasta no iniciada */}
+          {isAuthenticated && !categoryInsufficient && isAuctionUpcoming && !isJoined && (
+            <View className="flex-row items-center gap-2 mx-4 mb-4 px-3 py-2.5 rounded-xl border bg-amber-500/10 border-amber-500/25">
+              <Clock size={15} color="#fbbf24" />
+              <Text className="flex-1 text-xs font-manrope-semibold text-amber-300">
+                Esta subasta aún no ha comenzado. Podrás unirte y pujar una vez que esté en curso.
+              </Text>
+            </View>
+          )}
+
+          {/* Banner: subasta finalizada */}
+          {isAuthenticated && !categoryInsufficient && isAuctionEnded && !isJoined && (
+            <View className="flex-row items-center gap-2 mx-4 mb-4 px-3 py-2.5 rounded-xl border bg-red-500/10 border-red-500/25">
+              <Info size={15} color="#ef4444" />
+              <Text className="flex-1 text-xs font-manrope-semibold text-red-300">
+                Esta subasta ya ha finalizado. No es posible unirse ni realizar pujas.
+              </Text>
+            </View>
+          )}
+
           {/* Banner: ya estás en otra subasta */}
           {attendingElsewhere && (
             <View className="flex-row items-center gap-2 mx-4 mb-4 px-3 py-2.5 rounded-xl border bg-fuchsia-500/10 border-fuchsia-500/25">
@@ -540,12 +575,16 @@ export default function AuctionDetailScreen() {
                 </View>
                 <TouchableOpacity
                   onPress={handleJoin}
-                  disabled={isStoreLoading || categoryInsufficient}
+                  disabled={isStoreLoading || categoryInsufficient || (isAuthenticated && !isAuctionLive)}
                   activeOpacity={0.8}
                   className="flex-[2] mr-3 rounded-2xl overflow-hidden"
                 >
                   <LinearGradient
-                    colors={categoryInsufficient ? ["#4b5563", "#4b5563"] : ["#4ade80", "#2dd4bf"]}
+                    colors={
+                      categoryInsufficient || (isAuthenticated && !isAuctionLive)
+                        ? ["#4b5563", "#4b5563"]
+                        : ["#4ade80", "#2dd4bf"]
+                    }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={{
@@ -568,6 +607,16 @@ export default function AuctionDetailScreen() {
                       <>
                         <Lock size={20} color="#d1d5db" />
                         <Text className="text-neutral-300 text-xl font-manrope-bold">Bloqueado</Text>
+                      </>
+                    ) : isAuctionEnded ? (
+                      <>
+                        <Info size={20} color="#d1d5db" />
+                        <Text className="text-neutral-300 text-xl font-manrope-bold">Finalizada</Text>
+                      </>
+                    ) : isAuctionUpcoming ? (
+                      <>
+                        <Clock size={20} color="#d1d5db" />
+                        <Text className="text-neutral-300 text-xl font-manrope-bold">No Iniciada</Text>
                       </>
                     ) : (
                       <>
@@ -593,9 +642,21 @@ export default function AuctionDetailScreen() {
                     <Text className="text-[#d946ef] text-4xl mb-3 font-montserrat-extrabold">
                       ${(previewCatalog[0]?.precioBase ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </Text>
-                    <View className="bg-[#4ade80] px-3 py-1 rounded-full">
-                      <Text className="text-[#0f3330] text-[10px] tracking-widest font-manrope-bold uppercase">
-                        ABIERTA A INSCRIPCIÓN
+                    <View className={
+                      isAuctionEnded 
+                        ? "bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20"
+                        : isAuctionUpcoming
+                          ? "bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20"
+                          : "bg-[#4ade80] px-3 py-1 rounded-full"
+                    }>
+                      <Text className={
+                        isAuctionEnded
+                          ? "text-red-400 text-[10px] tracking-widest font-manrope-bold uppercase"
+                          : isAuctionUpcoming
+                            ? "text-amber-400 text-[10px] tracking-widest font-manrope-bold uppercase"
+                            : "text-[#0f3330] text-[10px] tracking-widest font-manrope-bold uppercase"
+                      }>
+                        {isAuctionEnded ? "SUBASTA FINALIZADA" : isAuctionUpcoming ? "SUBASTA PROGRAMADA" : "ABIERTA A INSCRIPCIÓN"}
                       </Text>
                     </View>
                   </View>
