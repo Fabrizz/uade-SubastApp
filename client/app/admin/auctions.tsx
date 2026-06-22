@@ -454,7 +454,7 @@ export default function AdminAuctionsScreen() {
       if (error) {
         throw new Error((error as any)?.mensaje || (error as any)?.message || JSON.stringify(error));
       }
-      Alert.alert("Éxito", "El artículo ha sido aprobado digitalmente. Se le ha enviado un mensaje al usuario solicitando el envío del bien al almacén (Lima 700).");
+      Alert.alert("Éxito", "El artículo ha sido aprobado digitalmente. Se le ha enviado un mensaje al usuario solicitando el envío del bien al almacén (Lima 700, Monserrat, CABA).");
       await fetchProducts();
     } catch (err: any) {
       Alert.alert("Error", err.message || "No se pudo aprobar el artículo.");
@@ -980,6 +980,7 @@ export default function AdminAuctionsScreen() {
             onPress={() => {
               setActiveTab("articulos");
               fetchProducts();
+              fetchOwners();
             }}
             activeOpacity={0.8}
             className={`flex-1 py-2.5 rounded-lg items-center ${activeTab === "articulos" ? "bg-purple-700" : ""}`}
@@ -1361,7 +1362,18 @@ export default function AdminAuctionsScreen() {
                                 </View>
                               </View>
                             ) : (
-                              <Text className="text-neutral-400 text-xs">ID Dueño: {p.duenio || "—"} (No se encontró perfil cargado)</Text>
+                              <View className="gap-1">
+                                <View className="flex-row justify-between">
+                                  <Text className="text-neutral-500 text-[10px] font-manrope">ID Dueño:</Text>
+                                  <Text className="text-neutral-200 text-xs font-medium">{p.duenio || "—"}</Text>
+                                </View>
+                                {p.duenioNombre ? (
+                                  <View className="flex-row justify-between">
+                                    <Text className="text-neutral-500 text-[10px] font-manrope">Nombre:</Text>
+                                    <Text className="text-neutral-200 text-xs font-medium">{p.duenioNombre}</Text>
+                                  </View>
+                                ) : null}
+                              </View>
                             )}
                           </View>
 

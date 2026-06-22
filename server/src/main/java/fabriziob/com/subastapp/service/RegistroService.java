@@ -291,15 +291,13 @@ public class RegistroService {
 
         private void notificarFactura(RegistroDeSubasta registro, RegistroDeSubastaExtra extra) {
                 BigDecimal importe = registro.getImporte();
-                BigDecimal comision = registro.getComision() != null ? registro.getComision() : BigDecimal.ZERO;
                 BigDecimal costoEnvio = extra.getCostoEnvio() != null ? extra.getCostoEnvio() : BigDecimal.ZERO;
-                BigDecimal total = importe.add(comision).add(costoEnvio);
+                BigDecimal total = (importe != null ? importe : BigDecimal.ZERO).add(costoEnvio);
                 String moneda = monedaDe(registro);
 
                 StringBuilder sb = new StringBuilder();
                 sb.append("Detalle de pago por \"").append(descripcionProducto(registro)).append("\": ")
                                 .append("pujado ").append(importe)
-                                .append(" + comisión ").append(comision)
                                 .append(" + envío ").append(costoEnvio)
                                 .append(" = total ").append(total).append(" ").append(moneda).append(".");
                 if (extra.getMedioEnvio() == MedioEnvio.RETIRO_DEPOSITO)
