@@ -943,7 +943,10 @@ export default function AdminAuctionsScreen() {
   });
 
   const physicalFilteredSubastas = subastas.filter(
-    (s) => (s.moneda || "ARS") === physicalMoneda
+    (s) =>
+      (s.moneda || "ARS") === physicalMoneda &&
+      s.estado !== "cerrada" &&
+      !["en_curso", "cerrada", "finalizada"].includes(s.estadoDetallado ?? "")
   );
 
   return (
@@ -1397,7 +1400,12 @@ export default function AdminAuctionsScreen() {
                                   setPhysicalCommission("10");
                                   const defaultMoneda = "ARS";
                                   setPhysicalMoneda(defaultMoneda);
-                                  const firstSubastaOfMoneda = subastas.find(s => (s.moneda || "ARS") === defaultMoneda);
+                                  const firstSubastaOfMoneda = subastas.find(
+                                    (s) =>
+                                      (s.moneda || "ARS") === defaultMoneda &&
+                                      s.estado !== "cerrada" &&
+                                      !["en_curso", "cerrada", "finalizada"].includes(s.estadoDetallado ?? "")
+                                  );
                                   setPhysicalSubastaId(firstSubastaOfMoneda ? String(firstSubastaOfMoneda.identificador) : "");
                                   setPhysicalApprovalModalVisible(true);
                                 } else {
@@ -2212,8 +2220,13 @@ export default function AdminAuctionsScreen() {
                           key={mon}
                           onPress={() => {
                             setPhysicalMoneda(mon as "ARS" | "USD");
-                            const firstSubastaOfMoneda = subastas.find(s => (s.moneda || "ARS") === mon);
-                            setPhysicalSubastaId(firstSubastaOfMoneda ? String(firstSubastaOfMoneda.identificador) : "");
+                            const firstSubastaOfMoneda = subastas.find(
+                               (s) =>
+                                 (s.moneda || "ARS") === mon &&
+                                 s.estado !== "cerrada" &&
+                                 !["en_curso", "cerrada", "finalizada"].includes(s.estadoDetallado ?? "")
+                             );
+                             setPhysicalSubastaId(firstSubastaOfMoneda ? String(firstSubastaOfMoneda.identificador) : "");
                           }}
                           className={`flex-1 py-3 rounded-xl items-center border ${
                             isActive

@@ -154,6 +154,9 @@ public class DuenioService {
         if (d == null) return null;
         Persona p = d.getPersona();
         Pais pais = d.getPais();
+        if (pais == null && p != null && p.getCliente() != null) {
+            pais = p.getCliente().getPais();
+        }
         Empleado v = d.getVerificador();
         
         return DuenioResponse.builder()
