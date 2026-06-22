@@ -256,6 +256,7 @@ export default function AuctionDetailScreen() {
   // so this catches "already attending elsewhere" even on the first subasta screen opened.
   const otherSubastaId = subasta?.identificador ?? null;
   const attendingElsewhere = isAuthenticated && !isJoined && otherSubastaId !== null && otherSubastaId !== Number(id);
+  const isOwnAuction = isAuthenticated && currentSubasta?.subastadorId === user?.id;
 
   const handleJoin = async () => {
     if (!token || !user?.id) {
@@ -263,6 +264,11 @@ export default function AuctionDetailScreen() {
       return;
     }
     if (!id || categoryInsufficient) return;
+
+    if (isOwnAuction) {
+      Alert.alert("No permitido", "No podés unirte a una subasta que organizás vos.");
+      return;
+    }
 
     if (!isAuctionLive) {
       Alert.alert(
@@ -575,13 +581,13 @@ export default function AuctionDetailScreen() {
                 </View>
                 <TouchableOpacity
                   onPress={handleJoin}
-                  disabled={isStoreLoading || categoryInsufficient || (isAuthenticated && !isAuctionLive)}
+                  disabled={isStoreLoading || categoryInsufficient || isOwnAuction || !isAuctionLive}
                   activeOpacity={0.8}
                   className="flex-[2] mr-3 rounded-2xl overflow-hidden"
                 >
                   <LinearGradient
                     colors={
-                      categoryInsufficient || (isAuthenticated && !isAuctionLive)
+                      categoryInsufficient || isOwnAuction || !isAuctionLive
                         ? ["#4b5563", "#4b5563"]
                         : ["#4ade80", "#2dd4bf"]
                     }
@@ -607,6 +613,11 @@ export default function AuctionDetailScreen() {
                       <>
                         <Lock size={20} color="#d1d5db" />
                         <Text className="text-neutral-300 text-xl font-manrope-bold">Bloqueado</Text>
+                      </>
+                    ) : isOwnAuction ? (
+                      <>
+                        <Hammer size={20} color="#d1d5db" />
+                        <Text className="text-neutral-300 text-xl font-manrope-bold">Tu Subasta</Text>
                       </>
                     ) : isAuctionEnded ? (
                       <>
