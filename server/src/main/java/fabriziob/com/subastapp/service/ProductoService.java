@@ -138,7 +138,7 @@ public class ProductoService {
                 .titulo(req.getTitulo() != null ? req.getTitulo() : producto.getDescripcionCompleta())
                 .fechaCreacionObra(req.getFechaCreacionObra())
                 .historia(req.getHistoria())
-                .deposito(req.getDeposito() != null ? req.getDeposito() : "Depósito Central")
+                .deposito(req.getDeposito() != null ? req.getDeposito() : "Lima 700, Monserrat")
                 .build();
 
         producto.setProductoExtra(extra);
