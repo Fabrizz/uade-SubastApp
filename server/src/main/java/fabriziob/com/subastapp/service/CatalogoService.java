@@ -163,17 +163,13 @@ public class CatalogoService {
 
                         if (item.getProducto() != null) {
                                 Producto p = item.getProducto();
+
                                 if (req.getEstadoAceptacion() == EstadoAceptacionItem.aceptado) {
                                         if (p.getProductoExtra() != null) {
                                                 p.getProductoExtra().setEstadoBien(fabriziob.com.subastapp.entity.enums.EstadoBien.aceptado);
                                         }
                                         crearSeguroAutomatico(p, item.getPrecioBase());
-                                } else if (req.getEstadoAceptacion() == EstadoAceptacionItem.rechazado) {
-                                        if (p.getProductoExtra() != null) {
-                                                p.getProductoExtra().setEstadoBien(fabriziob.com.subastapp.entity.enums.EstadoBien.devuelto);
-                                        }
-                                }
-                                productoRepository.save(p);
+                                        productoRepository.save(p);
 
                                         if (p.getDuenio() != null) {
                                                 String titulo = p.getProductoExtra() != null && p.getProductoExtra().getTitulo() != null
@@ -191,7 +187,7 @@ public class CatalogoService {
                                         String titulo = p.getProductoExtra() != null && p.getProductoExtra().getTitulo() != null
                                                         ? p.getProductoExtra().getTitulo()
                                                         : p.getDescripcionCompleta();
-                                        
+
                                         // 1. Notify user
                                         if (duenioId != null) {
                                                 notificacionService.notificarCliente(
@@ -216,7 +212,7 @@ public class CatalogoService {
                                 }
                         }
                 }
-                
+
                 item = itemRepository.save(item);
                 return toItemResponse(item);
         }
