@@ -18,6 +18,7 @@ public class ProductoResponse {
     private String descripcionCompleta;
     private Integer revisor;
     private Integer duenio;
+    private String duenioNombre;
     private String seguro;
     private List<Integer> fotosIds;
     // datos de productos_extra
