@@ -247,7 +247,8 @@ public class PujoService {
                                                 + "\". Debés abonar: pujado " + pujo.getImporte()
                                                 + " + comisión " + comision + " = " + totalProvisional
                                                 + " " + monedaSubasta.name()
-                                                + " (más el costo de envío a definir según el medio de envío que elijas).");
+                                                + " (más el costo de envío a definir según el medio de envío que elijas).",
+                                "/subastas/" + subastaId + "/registro/" + registro.getIdentificador());
                 return response;
         }
 

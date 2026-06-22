@@ -40,6 +40,11 @@ public class NotificacionService {
          */
         public void notificarCliente(Integer clienteId, WsNotificacionService.Tipo tipoWs,
                         String tipoPersistido, String titulo, String descripcion) {
+                notificarCliente(clienteId, tipoWs, tipoPersistido, titulo, descripcion, null);
+        }
+
+        public void notificarCliente(Integer clienteId, WsNotificacionService.Tipo tipoWs,
+                        String tipoPersistido, String titulo, String descripcion, String accion) {
                 Cliente cliente = clienteRepository.findById(clienteId)
                                 .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado: " + clienteId));
                 Persona persona = cliente.getPersona();
@@ -50,6 +55,7 @@ public class NotificacionService {
                                 .descripcion(descripcion)
                                 .tipo(tipoPersistido)
                                 .leida(false)
+                                .accion(accion)
                                 .build();
                 notificacionRepository.save(notificacion);
 
@@ -57,7 +63,7 @@ public class NotificacionService {
                                 ? persona.getPersonaExtra().getEmail()
                                 : null;
                 if (email != null && !email.isBlank())
-                        wsNotificacionService.enviar(email, tipoWs, titulo, descripcion);
+                        wsNotificacionService.enviar(email, tipoWs, titulo, descripcion, accion);
         }
 
         // ─── consultas (NotificacionController) ────────────────────────────────────
