@@ -47,10 +47,10 @@ export default function ItemDetailScreen() {
     ? `${API_BASE}/productos/${itemId}/fotos/${product.fotosIds[0]}/content`
     : (params.image as string) || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800";
 
-  const shipping = product?.deposito || (params.shipping as string) || "Ginebra, Suiza";
+  const shipping = product?.deposito || (params.shipping as string) || "Lima 700, Monserrat";
   const parts = shipping.split(",");
-  const city = parts[0]?.trim() || "Ginebra";
-  const country = parts[1]?.trim() || "Suiza";
+  const city = parts[0]?.trim() || "Lima 700";
+  const country = parts[1]?.trim() || "Monserrat";
 
   const history = product?.historia || (params.history as string) || "";
 
