@@ -1,6 +1,9 @@
 package fabriziob.com.subastapp.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
+import java.util.Random;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -21,12 +24,14 @@ import fabriziob.com.subastapp.entity.Catalogo;
 import fabriziob.com.subastapp.entity.Empleado;
 import fabriziob.com.subastapp.entity.ItemCatalogo;
 import fabriziob.com.subastapp.entity.Producto;
+import fabriziob.com.subastapp.entity.Seguro;
 import fabriziob.com.subastapp.entity.Subasta;
 import fabriziob.com.subastapp.entity.enums.EstadoAceptacionItem;
 import fabriziob.com.subastapp.repository.CatalogoRepository;
 import fabriziob.com.subastapp.repository.EmpleadoRepository;
 import fabriziob.com.subastapp.repository.ItemCatalogoRepository;
 import fabriziob.com.subastapp.repository.ProductoRepository;
+import fabriziob.com.subastapp.repository.SeguroRepository;
 import fabriziob.com.subastapp.repository.SubastaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -36,11 +41,29 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class CatalogoService {
 
+        // Porcentaje del precio base que se cobra como prima al asegurar un bien aceptado (TPO: "se le
+        // contrata un seguro en función del valor base del bien", sin fórmula exacta especificada).
+        private static final BigDecimal SEGURO_PORCENTAJE_PRECIO_BASE = new BigDecimal("0.10");
+
+        // Compañías de seguro de fantasía usadas para la póliza generada automáticamente al aceptar un ítem.
+        private static final List<String> COMPANIAS_SEGURO = List.of(
+                        "Protección Total S.A.",
+                        "Aseguradora del Sur",
+                        "Confianza Seguros",
+                        "Patrimonio Seguro S.A.",
+                        "Resguardo Compañía de Seguros",
+                        "Vanguardia Seguros",
+                        "Escudo Mutual de Seguros",
+                        "Garantía Plena S.A.",
+                        "Horizonte Aseguradora",
+                        "Custodia Seguros Generales");
+
         private final CatalogoRepository catalogoRepository;
         private final ItemCatalogoRepository itemRepository;
         private final SubastaRepository subastaRepository;
         private final EmpleadoRepository empleadoRepository;
         private final ProductoRepository productoRepository;
+        private final SeguroRepository seguroRepository;
         private final NotificacionService notificacionService;
 
         // ─── lecturas ──────────────────────────────────────────────────────────
@@ -140,6 +163,7 @@ public class CatalogoService {
                                         if (p.getProductoExtra() != null) {
                                                 p.getProductoExtra().setEstadoBien(fabriziob.com.subastapp.entity.enums.EstadoBien.aceptado);
                                         }
+                                        crearSeguroAutomatico(p, item.getPrecioBase());
                                 } else if (req.getEstadoAceptacion() == EstadoAceptacionItem.rechazado) {
                                         if (p.getProductoExtra() != null) {
                                                 p.getProductoExtra().setEstadoBien(fabriziob.com.subastapp.entity.enums.EstadoBien.devuelto);
@@ -195,6 +219,26 @@ public class CatalogoService {
         }
 
         // ─── helpers ───────────────────────────────────────────────────────────
+
+        // El TPO indica que todo bien aceptado para subasta se asegura en función de su valor base;
+        // se genera la póliza acá mismo en vez de requerir un alta manual separada vía /api/v1/seguros.
+        private void crearSeguroAutomatico(Producto producto, BigDecimal precioBase) {
+                if (producto.getSeguro() != null || precioBase == null)
+                        return;
+
+                String nroPoliza = "POL-" + producto.getIdentificador();
+                String compania = COMPANIAS_SEGURO.get(new Random().nextInt(COMPANIAS_SEGURO.size()));
+                BigDecimal importe = precioBase.multiply(SEGURO_PORCENTAJE_PRECIO_BASE).setScale(2, RoundingMode.HALF_UP);
+
+                Seguro seguro = Seguro.builder()
+                                .nroPoliza(nroPoliza)
+                                .compania(compania)
+                                .polizaCombinada("no")
+                                .importe(importe)
+                                .build();
+                seguroRepository.save(seguro);
+                producto.setSeguro(nroPoliza);
+        }
 
         private void verificarSubasta(Integer subastaId) {
                 if (!subastaRepository.existsById(subastaId))
