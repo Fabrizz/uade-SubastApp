@@ -299,9 +299,13 @@ export default function Home() {
   ];
 
   const filteredSubastas = subastas.filter((s) => {
-    // Defensive guard: keep finished auctions out of the active tabs (the API already
-    // filters by estado, but admin sees everything and estadoDetallado is more granular).
-    if (category !== "terminadas" && s.estadoDetallado === "finalizada") return false;
+    if (category === "terminadas") {
+      // In "terminadas" tab, only show auctions that are explicitly "finalizada"
+      if (s.estadoDetallado !== "finalizada") return false;
+    } else {
+      // Active tabs must exclude finished/closed auctions
+      if (s.estadoDetallado === "finalizada" || s.estadoDetallado === "cerrada") return false;
+    }
     const q = search.toLowerCase().trim();
     if (!q) return true;
     const title = (s.nombreColeccion || s.ubicacion || `Subasta ${s.categoria}`).toLowerCase();
