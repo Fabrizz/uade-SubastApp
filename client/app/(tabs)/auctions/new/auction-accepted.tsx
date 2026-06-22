@@ -119,7 +119,7 @@ export default function AuctionAcceptedScreen() {
       } else {
         Alert.alert(
           "Propuesta Rechazada",
-          "Has rechazado la tasación. El bien será devuelto a tu dirección declarada con un costo de devolución de $5 USD a tu cargo."
+          "Has rechazado la propuesta comercial. Realizaremos la devolución del artículo a la dirección que nos indiques y el costo del envío va por tu parte."
         );
       }
       router.back();
