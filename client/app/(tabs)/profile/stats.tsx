@@ -1,14 +1,17 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { Stack, useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { Banknote, CalendarCheck, ArrowLeft, Star, Target, Trophy } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { BarChart, LineChart } from "react-native-gifted-charts";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import HeaderComp from "@/components/HeaderComp";
+import { AvatarInitials } from "@/components/ui/AvatarInitials";
+import { CategoryPill } from "@/components/ui/CategoryPill";
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
 import type { components } from "@/types/api";
+import { LinearGradient } from "expo-linear-gradient";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { Banknote, CalendarCheck, RefreshCw, Star, Target, Trophy } from "lucide-react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { BarChart, LineChart } from "react-native-gifted-charts";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Historico = components["schemas"]["ClienteHistoricoResponse"];
 type ImporteMoneda = components["schemas"]["ImporteMonedaResponse"];
@@ -28,7 +31,6 @@ function formatMonto(value: number, moneda: Moneda) {
 }
 
 export default function StatsScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { token, user } = useAuth();
 
@@ -41,62 +43,66 @@ export default function StatsScreen() {
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [pujos, setPujos] = useState<PujoMonto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [actividadWidth, setActividadWidth] = useState(0);
   const [pujosWidth, setPujosWidth] = useState(0);
 
-  useEffect(() => {
-    if (!token || !user?.id) {
-      setLoading(false);
-      return;
-    }
+  const fetchStats = useCallback(async () => {
+    if (!token || !user?.id) return;
     const clienteId = user.id;
 
-    const fetchStats = async () => {
-      try {
-        const [{ data }, { data: historicoData }, { data: pujosData }] = await Promise.all([
-          api.GET("/api/v1/estadisticas/clientes/{id}/participaciones", {
-            params: { path: { id: clienteId } },
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          api.GET("/api/v1/estadisticas/clientes/{id}/historico", {
-            params: { path: { id: clienteId } },
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          api.GET("/api/v1/estadisticas/clientes/{id}/pujos", {
-            params: { path: { id: clienteId } },
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-        ]);
-        if (data) {
-          setStats({
-            subastasAsistidas: Number(data.subastasAsistidas ?? 0),
-            subastasConPuja: Number(data.subastasConPuja ?? 0),
-            subastasGanadas: Number(data.subastasGanadas ?? 0),
-            porMoneda: (data.porMoneda ?? [])
-              .filter((m): m is ImporteMoneda & { moneda: Moneda } => !!m.moneda)
-              .map((m) => ({
-                moneda: m.moneda,
-                importeTotalOfertado: Number(m.importeTotalOfertado ?? 0),
-                importeTotalPagado: Number(m.importeTotalPagado ?? 0),
-                pujoPromedio: Number(m.pujoPromedio ?? 0),
-              })),
-          });
-        }
-        if (historicoData) {
-          setHistorico(historicoData);
-        }
-        if (pujosData) {
-          setPujos(pujosData);
-        }
-      } catch (err) {
-        console.error("Error fetching stats:", err);
-      } finally {
-        setLoading(false);
+    try {
+      const [{ data }, { data: historicoData }, { data: pujosData }] = await Promise.all([
+        api.GET("/api/v1/estadisticas/clientes/{id}/participaciones", {
+          params: { path: { id: clienteId } },
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        api.GET("/api/v1/estadisticas/clientes/{id}/historico", {
+          params: { path: { id: clienteId } },
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        api.GET("/api/v1/estadisticas/clientes/{id}/pujos", {
+          params: { path: { id: clienteId } },
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+      ]);
+      if (data) {
+        setStats({
+          subastasAsistidas: Number(data.subastasAsistidas ?? 0),
+          subastasConPuja: Number(data.subastasConPuja ?? 0),
+          subastasGanadas: Number(data.subastasGanadas ?? 0),
+          porMoneda: (data.porMoneda ?? [])
+            .filter((m): m is ImporteMoneda & { moneda: Moneda } => !!m.moneda)
+            .map((m) => ({
+              moneda: m.moneda,
+              importeTotalOfertado: Number(m.importeTotalOfertado ?? 0),
+              importeTotalPagado: Number(m.importeTotalPagado ?? 0),
+              pujoPromedio: Number(m.pujoPromedio ?? 0),
+            })),
+        });
       }
-    };
-
-    fetchStats();
+      if (historicoData) {
+        setHistorico(historicoData);
+      }
+      if (pujosData) {
+        setPujos(pujosData);
+      }
+    } catch (err) {
+      console.error("Error fetching stats:", err);
+    }
   }, [token, user?.id]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchStats().finally(() => setLoading(false));
+  }, [fetchStats]);
+
+  const onSyncPress = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    await fetchStats();
+    setRefreshing(false);
+  }, [fetchStats, refreshing]);
 
   if (loading) {
     return (
@@ -133,70 +139,45 @@ export default function StatsScreen() {
     <View className="flex-1 bg-[#121212]">
       <Stack.Screen options={{ headerShown: false }} />
       <StatusBar style="light" />
+      <HeaderComp
+        back
+        backFallback="/(tabs)/profile"
+        outlet={
+          <TouchableOpacity
+            onPress={onSyncPress}
+            disabled={refreshing}
+            activeOpacity={0.7}
+            className="w-10 h-10 items-center justify-center bg-neutral-900/60 rounded-full border border-neutral-800"
+          >
+            {refreshing
+              ? <ActivityIndicator size="small" color="#A14EBF" />
+              : <RefreshCw size={18} color="#A14EBF" strokeWidth={2.5} />}
+          </TouchableOpacity>
+        }
+      />
       <ScrollView
         contentContainerStyle={{
-          paddingTop: Math.max(insets.top, Platform.OS === "ios" ? 50 : 30),
+          paddingTop: 20,
           paddingBottom: insets.bottom + 40,
           paddingHorizontal: 20,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View className="flex-row items-center justify-between mb-8 px-2">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="w-10 h-10 items-center justify-center"
-          >
-            <ArrowLeft size={28} color="#A14EBF" strokeWidth={2.5} />
-          </TouchableOpacity>
-          <View className="flex-row items-center gap-3">
-            <View
-              className="items-center justify-center rounded-full"
-              style={{
-                shadowColor: "#d946ef",
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.8,
-                shadowRadius: 15,
-                elevation: 10,
-                backgroundColor: "transparent",
-              }}
-            >
-              <Image
-                source={require("@/assets/images/logo.png")}
-                style={{ width: 32, height: 32, tintColor: "white" }}
-                resizeMode="contain"
-              />
-            </View>
-            <Text className="text-white text-2xl font-bold tracking-wide">
-              SubastApp
-            </Text>
-          </View>
-          <View className="w-10" />
-        </View>
-
-        {/* Tarjeta Principal */}
+        {/* Chip de perfil */}
         <View
-          className="bg-neutral-900 border border-neutral-800 p-6 w-full mb-6 relative overflow-hidden"
-          style={{ borderRadius: 32 }}
+          className="bg-neutral-900 border border-neutral-800 p-4 w-full mb-6 flex-row items-center gap-3"
+          style={{ borderRadius: 24 }}
         >
-          {/* Subtle gradient glow in background */}
-          <LinearGradient
-            colors={["rgba(161, 78, 191, 0.15)", "transparent"]}
-            className="absolute top-0 right-0 left-0 bottom-0"
-            start={{ x: 1, y: 0 }}
-            end={{ x: 0, y: 1 }}
-          />
-
-          <Text className="text-white text-3xl font-extrabold mb-3 tracking-wide">
-            Tus Estadísticas
-          </Text>
-          <Text className="text-neutral-400 text-sm mb-6 leading-5 pr-8">
-            Tu resumen detallado de actividad en subastas de alta precisión.
-          </Text>
-          <View className="self-start bg-[#A14EBF] px-4 py-2" style={{ borderRadius: 12 }}>
-            <Text className="text-white font-bold text-xs tracking-wider">
-              Actualizado hoy
+          <AvatarInitials name={user?.name ?? user?.email ?? "?"} size={48} />
+          <View className="flex-1">
+            <Text className="text-white text-base font-bold" numberOfLines={1}>
+              {user?.name ?? user?.email}
             </Text>
+            {user?.category && (
+              <View className="mt-1">
+                <CategoryPill category={user.category as any} size="sm" />
+              </View>
+            )}
           </View>
         </View>
 
@@ -266,9 +247,15 @@ export default function StatsScreen() {
           return (
             <View key={m.moneda}>
               {mostrarMoneda && (
-                <Text className="text-neutral-400 text-xs font-bold tracking-wider uppercase mb-2 px-1">
-                  {m.moneda}
-                </Text>
+                <View className="flex-row items-center gap-2 mb-3 px-1">
+                  <View className="w-3 h-3 rounded-full" style={{ backgroundColor: CURRENCY_COLOR[m.moneda] }} />
+                  <Text
+                    className="text-lg font-black tracking-wider uppercase"
+                    style={{ color: CURRENCY_COLOR[m.moneda] }}
+                  >
+                    {m.moneda}
+                  </Text>
+                </View>
               )}
 
               {/* Total pujado */}
@@ -337,11 +324,6 @@ export default function StatsScreen() {
             <Text className="text-white text-lg font-bold tracking-wide">
               Actividad Mensual
             </Text>
-            <TouchableOpacity>
-              <Text className="text-[#A14EBF] text-xs font-bold">
-                Ver detalle
-              </Text>
-            </TouchableOpacity>
           </View>
 
           <View
@@ -382,14 +364,14 @@ export default function StatsScreen() {
             <Text className="text-white text-lg font-bold tracking-wide">
               Evolución de Pujos
             </Text>
-            <View className="flex-row items-center gap-3">
+            <View className="flex-row items-center gap-4">
               <View className="flex-row items-center gap-1.5">
-                <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CURRENCY_COLOR.ARS }} />
-                <Text className="text-neutral-400 text-xs font-bold">ARS</Text>
+                <View className="w-3 h-3 rounded-full" style={{ backgroundColor: CURRENCY_COLOR.ARS }} />
+                <Text className="text-sm font-black tracking-wide" style={{ color: CURRENCY_COLOR.ARS }}>ARS</Text>
               </View>
               <View className="flex-row items-center gap-1.5">
-                <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CURRENCY_COLOR.USD }} />
-                <Text className="text-neutral-400 text-xs font-bold">USD</Text>
+                <View className="w-3 h-3 rounded-full" style={{ backgroundColor: CURRENCY_COLOR.USD }} />
+                <Text className="text-sm font-black tracking-wide" style={{ color: CURRENCY_COLOR.USD }}>USD</Text>
               </View>
             </View>
           </View>
@@ -401,16 +383,23 @@ export default function StatsScreen() {
           >
             {pujos.length > 0 && pujosWidth > 0 ? (
               <LineChart
-                data={pujos.map((p) => ({
-                  value: Number(p.importe ?? 0),
-                  dataPointColor: p.moneda === "USD" ? CURRENCY_COLOR.USD : CURRENCY_COLOR.ARS,
-                }))}
+                data={pujos
+                  .filter((p) => p.moneda !== "USD")
+                  .map((p) => ({ value: Number(p.importe ?? 0) }))}
+                data2={pujos.some((p) => p.moneda === "USD")
+                  ? pujos.filter((p) => p.moneda === "USD").map((p) => ({ value: Number(p.importe ?? 0) }))
+                  : undefined}
                 height={100}
                 width={pujosWidth - 40}
                 spacing={16}
-                thickness={2}
-                color="#525252"
-                dataPointsRadius={4}
+                thickness1={2}
+                thickness2={2}
+                color1={CURRENCY_COLOR.ARS}
+                color2={CURRENCY_COLOR.USD}
+                dataPointsRadius1={4}
+                dataPointsRadius2={4}
+                dataPointsColor1={CURRENCY_COLOR.ARS}
+                dataPointsColor2={CURRENCY_COLOR.USD}
                 hideRules={false}
                 xAxisLabelsHeight={0}
                 hideYAxisText={false}
