@@ -86,6 +86,7 @@ public class SubastaSchedulerService {
                 itemCatalogoRepository
                                 .findFirstBySubastaIdAndEstadoAceptacionAndNoSubastado(
                                                 subasta.getIdentificador(), EstadoAceptacionItem.aceptado)
+                                .stream().findFirst()
                                 .ifPresentOrElse(
                                                 siguiente -> avanzarItem(extra, siguiente),
                                                 () -> cerrarSubasta(subasta, extra));
