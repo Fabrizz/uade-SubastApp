@@ -234,7 +234,7 @@ export default function AuctionAcceptedScreen() {
                 <View className="flex-1">
                   <Text className="text-neutral-400 text-xs">Ubicación física / Depósito</Text>
                   <Text className="text-white text-sm font-semibold">
-                    {subasta ? subasta.ubicacion : deposito}
+                    Lima 700, Monserrat CABA
                   </Text>
                 </View>
               </View>
