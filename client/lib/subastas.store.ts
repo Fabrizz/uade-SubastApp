@@ -130,7 +130,11 @@ async function enterSubasta(
     headers: authHeaders(token),
   });
   const catalogo = (catalogoPage as any)?.content ?? catalogoPage ?? [];
-  const itemActual = (catalogo as ItemCatalogoResponse[]).find((i) => !i.subastado)
+  const itemActual =
+    (subasta.itemActualId
+      ? (catalogo as ItemCatalogoResponse[]).find((i) => i.identificador === subasta.itemActualId)
+      : undefined)
+    ?? (catalogo as ItemCatalogoResponse[]).find((i) => i.subastado !== 'si')
     ?? (catalogo as ItemCatalogoResponse[])[0]
     ?? null;
 
