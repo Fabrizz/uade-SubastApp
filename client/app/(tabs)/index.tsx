@@ -299,13 +299,9 @@ export default function Home() {
   ];
 
   const filteredSubastas = subastas.filter((s) => {
-    if (category === "terminadas") {
-      // In "terminadas" tab, only show auctions that are explicitly "finalizada"
-      if (s.estadoDetallado !== "finalizada") return false;
-    } else {
-      // Active tabs must exclude finished/closed auctions
-      if (s.estadoDetallado === "finalizada" || s.estadoDetallado === "cerrada") return false;
-    }
+    if (category === "terminadas" && s.estadoDetallado !== "finalizada") return false;
+    if (category === "empezando" && s.estadoDetallado !== "en_curso") return false;
+    if (category === "top" && (s.estadoDetallado === "cerrada" || s.estadoDetallado === "finalizada")) return false;
     const q = search.toLowerCase().trim();
     if (!q) return true;
     const title = (s.nombreColeccion || s.ubicacion || `Subasta ${s.categoria}`).toLowerCase();
