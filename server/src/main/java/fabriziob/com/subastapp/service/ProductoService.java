@@ -94,6 +94,7 @@ public class ProductoService {
             if (verificador != null) {
                 duenio = Duenio.builder()
                         .persona(persona)
+                        .pais(persona.getCliente() != null ? persona.getCliente().getPais() : null)
                         .verificacionFinanciera("si")
                         .verificacionJudicial("si")
                         .calificacionRiesgo(1)
