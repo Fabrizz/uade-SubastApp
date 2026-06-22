@@ -147,6 +147,7 @@ public class SubastaService {
                 ItemCatalogo primerItem = itemCatalogoRepository
                                 .findFirstBySubastaIdAndEstadoAceptacionAndNoSubastado(
                                                 subasta.getIdentificador(), EstadoAceptacionItem.aceptado)
+                                .stream().findFirst()
                                 .orElseThrow(() -> new IllegalStateException(
                                                 "No se encontró ningún artículo aceptado sin subastar."));
 

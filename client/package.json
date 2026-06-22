@@ -15,6 +15,7 @@
     "api:tunnel": "cloudflared tunnel --url http://localhost:4002"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",

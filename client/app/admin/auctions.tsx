@@ -268,7 +268,7 @@ export default function AdminAuctionsScreen() {
           },
           headers: { Authorization: `Bearer ${token}` },
           body: {
-            medioPagoCompradorId: medioValido.identificador,
+            medioPagoCompradorId: medioValido.identificador!,
           },
         }
       );
@@ -283,6 +283,90 @@ export default function AdminAuctionsScreen() {
       fetchCatalogData(selectedSubastaForCatalog.identificador);
     } catch (error: any) {
       Alert.alert("Error al adjudicar", error.message || "Ocurrió un error inesperado.");
+    }
+  };
+
+  const handleTerminarSubastaItem = async (item: any) => {
+    if (!token || !selectedSubastaForCatalog) return;
+    try {
+      // 1. Get all bids for the item
+      const { data: pujasData, error: errPujas } = await api.GET(
+        "/api/v1/subastas/{id}/catalogo/items/{idItem}/pujos",
+        {
+          params: {
+            path: {
+              id: selectedSubastaForCatalog.identificador,
+              idItem: item.identificador,
+            },
+          },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (errPujas || !pujasData) {
+        throw new Error("No se pudieron cargar las pujas del lote.");
+      }
+
+      const pujas = (Array.isArray(pujasData)
+        ? pujasData
+        : (pujasData as any)?.content ?? []) as any[];
+
+      if (pujas.length === 0) {
+        // No bids case
+        Alert.alert(
+          "Lote sin pujas",
+          "Este lote no recibió ninguna oferta. ¿Deseas dar por terminada la subasta del lote y marcarlo como subastado? (Se cerrará sin ganador)",
+          [
+            { text: "Cancelar", style: "cancel" },
+            {
+              text: "Confirmar",
+              onPress: async () => {
+                try {
+                  const { error } = await api.PATCH(
+                    "/api/v1/subastas/{id}/catalogo/items/{idItem}",
+                    {
+                      params: {
+                        path: {
+                          id: selectedSubastaForCatalog.identificador,
+                          idItem: item.identificador,
+                        },
+                      },
+                      headers: { Authorization: `Bearer ${token}` },
+                      body: {
+                        subastado: "si",
+                      },
+                    }
+                  );
+                  if (error) {
+                    throw new Error((error as any)?.message ?? "Error en el servidor al cerrar el lote.");
+                  }
+                  Alert.alert("Éxito", "El lote fue marcado como subastado (sin adjudicar).");
+                  fetchCatalogData(selectedSubastaForCatalog.identificador);
+                } catch (err: any) {
+                  Alert.alert("Error", err.message || "Ocurrió un error inesperado.");
+                }
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      const topPujo = pujas[0];
+      const moneda = selectedSubastaForCatalog.moneda || "ARS";
+      Alert.alert(
+        "Confirmar Adjudicación",
+        `El lote tiene ${pujas.length} pujas. ¿Deseas terminar la subasta del lote y adjudicarlo a ${topPujo.clienteNombre || `Postor #${topPujo.numeroPostor}`} por ${moneda} ${topPujo.importe}?`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Adjudicar",
+            onPress: () => handleAdjudicarLote(item),
+          },
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Ocurrió un error inesperado.");
     }
   };
 
@@ -817,9 +901,8 @@ export default function AdminAuctionsScreen() {
                 headers: { Authorization: `Bearer ${token}` },
               });
               if (error) {
-                throw new Error(
-                  (error as any)?.mensaje ?? (error as any)?.message ?? "No se pudo iniciar la subasta",
-                );
+                const errMsg = (error as any)?.mensaje || (error as any)?.message || JSON.stringify(error);
+                throw new Error(errMsg);
               }
               Alert.alert("Subasta iniciada", "El cronómetro comenzó y el primer lote está en subasta.");
               setLoading(true);
@@ -1712,6 +1795,81 @@ export default function AdminAuctionsScreen() {
                                 </Text>
                               </View>
                             </View>
+                            {item.estadoAceptacion === "espera" && (
+                              <View className="flex-row gap-2 mt-2">
+                                <TouchableOpacity
+                                  onPress={async () => {
+                                    try {
+                                      const { error } = await api.POST(
+                                        "/api/v1/subastas/{id}/catalogo/items/{idItem}/aceptacion",
+                                        {
+                                          params: {
+                                            path: {
+                                              id: selectedSubastaForCatalog.identificador,
+                                              idItem: item.identificador,
+                                            },
+                                          },
+                                          headers: { Authorization: `Bearer ${token}` },
+                                          body: { estadoAceptacion: "aceptado" },
+                                        }
+                                      );
+                                      if (error) throw new Error((error as any)?.message ?? "Error.");
+                                      Alert.alert("Éxito", "Lote aceptado.");
+                                      fetchCatalogData(selectedSubastaForCatalog.identificador);
+                                    } catch (err: any) {
+                                      Alert.alert("Error", err.message);
+                                    }
+                                  }}
+                                  className="flex-1 bg-emerald-950 border border-emerald-800/60 py-2 rounded-xl items-center justify-center"
+                                  activeOpacity={0.8}
+                                  style={{ backgroundColor: "#06312a" }}
+                                >
+                                  <Text className="text-emerald-400 text-[10px] font-bold font-manrope-bold">Aceptar Lote</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  onPress={async () => {
+                                    try {
+                                      const { error } = await api.POST(
+                                        "/api/v1/subastas/{id}/catalogo/items/{idItem}/aceptacion",
+                                        {
+                                          params: {
+                                            path: {
+                                              id: selectedSubastaForCatalog.identificador,
+                                              idItem: item.identificador,
+                                            },
+                                          },
+                                          headers: { Authorization: `Bearer ${token}` },
+                                          body: { estadoAceptacion: "rechazado" },
+                                        }
+                                      );
+                                      if (error) throw new Error((error as any)?.message ?? "Error.");
+                                      Alert.alert("Éxito", "Lote rechazado.");
+                                      fetchCatalogData(selectedSubastaForCatalog.identificador);
+                                    } catch (err: any) {
+                                      Alert.alert("Error", err.message);
+                                    }
+                                  }}
+                                  className="flex-1 bg-rose-950 border border-rose-800/60 py-2 rounded-xl items-center justify-center"
+                                  activeOpacity={0.8}
+                                  style={{ backgroundColor: "#3b0c13" }}
+                                >
+                                  <Text className="text-rose-400 text-[10px] font-bold font-manrope-bold">Rechazar Lote</Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                            {!isSubastado && (
+                              <TouchableOpacity
+                                onPress={() => handleTerminarSubastaItem(item)}
+                                className="mt-2 bg-purple-955 border border-purple-800/60 py-2 rounded-xl items-center justify-center flex-row gap-1.5"
+                                activeOpacity={0.8}
+                                style={{ backgroundColor: "#2e0854" }}
+                              >
+                                <Gavel size={12} color="#d8b4fe" />
+                                <Text className="text-purple-300 text-[10px] font-bold font-manrope-bold">
+                                  Terminar Subasta
+                                </Text>
+                              </TouchableOpacity>
+                            )}
                           </View>
                         );
                       })}

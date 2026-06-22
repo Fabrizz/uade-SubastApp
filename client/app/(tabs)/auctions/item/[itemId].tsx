@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, MapPin } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
-import { Image, Platform, ScrollView, StatusBar, Text, TouchableOpacity, View, ActivityIndicator, Dimensions, FlatList } from "react-native";
+import { Image, Platform, ScrollView, StatusBar, Text, TouchableOpacity, View, ActivityIndicator, Dimensions, FlatList, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/auth";
 import { api, API_BASE } from "@/lib/api";
@@ -13,10 +13,50 @@ export default function ItemDetailScreen() {
   const params = useLocalSearchParams();
   const { token } = useAuth();
   
-  const { itemId } = params;
+  const { itemId, subastaId } = params;
 
   const [product, setProduct] = useState<components["schemas"]["ProductoResponse"] | null>(null);
+  const [catalogItem, setCatalogItem] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function fetchCatalogItem() {
+      if (!itemId || !subastaId || !token) return;
+      try {
+        const { data } = await api.GET("/api/v1/subastas/{id}/catalogo/items/{idItem}", {
+          params: { path: { id: Number(subastaId), idItem: Number(itemId) } },
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (data) {
+          setCatalogItem(data);
+        }
+      } catch (err) {
+        console.error("Error fetching catalog item:", err);
+      }
+    }
+    fetchCatalogItem();
+  }, [itemId, subastaId, token]);
+
+  const handleAceptarLote = async (aceptar: boolean) => {
+    if (!token || !subastaId || !itemId) return;
+    try {
+      const { data, error } = await api.POST(
+        "/api/v1/subastas/{id}/catalogo/items/{idItem}/aceptacion",
+        {
+          params: { path: { id: Number(subastaId), idItem: Number(itemId) } },
+          headers: { Authorization: `Bearer ${token}` },
+          body: {
+            estadoAceptacion: aceptar ? "aceptado" : "rechazado",
+          },
+        }
+      );
+      if (error) throw new Error((error as any)?.message ?? "Error al procesar la aceptación.");
+      Alert.alert("Éxito", aceptar ? "Has aceptado las condiciones del lote." : "Has rechazado las condiciones.");
+      setCatalogItem(data);
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Ocurrió un error inesperado.");
+    }
+  };
 
   useEffect(() => {
     async function fetchProduct() {
@@ -179,6 +219,44 @@ export default function ItemDetailScreen() {
             ) : null}
           </View>
         ) : null}
+
+        {/* Proposal Acceptance Card */}
+        {catalogItem && catalogItem.estadoAceptacion === "espera" && (
+          <View className="bg-[#181818] border border-neutral-900 p-6 mb-6 rounded-[28px] gap-4">
+            <Text className="text-purple-400 text-xs font-bold uppercase tracking-wider">
+              Propuesta de Subasta
+            </Text>
+            <Text className="text-neutral-300 text-sm leading-5 font-manrope">
+              La casa de subastas propone incluir este artículo en la Subasta #{subastaId} con las siguientes condiciones:
+            </Text>
+            <View className="flex-row justify-between bg-neutral-900/50 p-3 rounded-xl">
+              <Text className="text-neutral-400 text-xs">Precio Base</Text>
+              <Text className="text-teal-400 font-bold text-xs">
+                {catalogItem.moneda === "USD" ? "USD " : "ARS "}{catalogItem.precioBase}
+              </Text>
+            </View>
+            <View className="flex-row justify-between bg-neutral-900/50 p-3 rounded-xl">
+              <Text className="text-neutral-400 text-xs">Comisión de Venta</Text>
+              <Text className="text-white font-bold text-xs">
+                {catalogItem.comision}%
+              </Text>
+            </View>
+            <View className="flex-row gap-3 mt-2">
+              <TouchableOpacity
+                onPress={() => handleAceptarLote(false)}
+                className="flex-1 bg-rose-950/45 border border-rose-500/25 py-3 rounded-xl items-center justify-center"
+              >
+                <Text className="text-rose-450 font-bold text-xs font-manrope-bold">Rechazar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleAceptarLote(true)}
+                className="flex-1 bg-emerald-950/45 border border-emerald-500/25 py-3 rounded-xl items-center justify-center"
+              >
+                <Text className="text-emerald-400 font-bold text-xs font-manrope-bold">Aceptar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Shipping Location Card */}
         <View className="bg-[#181818] border border-neutral-900 p-5 rounded-[24px] flex-row items-center justify-between shadow-xl shadow-black/30">

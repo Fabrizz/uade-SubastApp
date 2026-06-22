@@ -44,7 +44,7 @@ public interface ItemCatalogoRepository extends JpaRepository<ItemCatalogo, Inte
               AND (i.subastado IS NULL OR i.subastado = 'no')
             ORDER BY i.identificador ASC
             """)
-    Optional<ItemCatalogo> findFirstBySubastaIdAndEstadoAceptacionAndNoSubastado(
+    List<ItemCatalogo> findFirstBySubastaIdAndEstadoAceptacionAndNoSubastado(
             @Param("subastaId") Integer subastaId,
             @Param("estado") EstadoAceptacionItem estado);
 }
