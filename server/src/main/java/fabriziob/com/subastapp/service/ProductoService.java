@@ -138,7 +138,7 @@ public class ProductoService {
                 .titulo(req.getTitulo() != null ? req.getTitulo() : producto.getDescripcionCompleta())
                 .fechaCreacionObra(req.getFechaCreacionObra())
                 .historia(req.getHistoria())
-                .deposito(req.getDeposito() != null ? req.getDeposito() : "Lima 700, Monserrat")
+                .deposito(req.getDeposito() != null ? req.getDeposito() : "Lima 700, Monserrat, CABA")
                 .build();
 
         producto.setProductoExtra(extra);
@@ -209,7 +209,7 @@ public class ProductoService {
                     WsNotificacionService.Tipo.info,
                     "envio",
                     "Envío requerido: " + titulo,
-                    "Tu artículo ha sido aprobado digitalmente. Por favor, envíalo a nuestro almacén en Lima 700 para la inspección física final."
+                    "Tu artículo ha sido aprobado digitalmente. Por favor, envíalo a nuestro almacén en Lima 700, Monserrat, CABA para la inspección física final."
                 );
             } else if (req.getEstadoBien() == EstadoBien.rechazado) {
                 String motivo = req.getMotivoRechazo() != null ? req.getMotivoRechazo() : "No cumple con las políticas de calidad.";

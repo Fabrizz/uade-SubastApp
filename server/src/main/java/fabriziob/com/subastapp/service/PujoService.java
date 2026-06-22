@@ -249,14 +249,11 @@ public class PujoService {
                 // Mensaje privado al ganador con el detalle de pago (lo pujado +
                 // comisiones). El costo de envío se define luego al elegir el medio de
                 // envío (PATCH .../medio-envio), que reenvía la factura completa.
-                BigDecimal comision = item.getComision() != null ? item.getComision() : BigDecimal.ZERO;
-                BigDecimal totalProvisional = pujo.getImporte().add(comision);
                 notificacionService.notificarCliente(cliente.getIdentificador(),
                                 WsNotificacionService.Tipo.success, "pago",
                                 "¡Ganaste la subasta!",
                                 "Te adjudicaste \"" + item.getProducto().getDescripcionCatalogo()
-                                                + "\". Debés abonar: pujado " + pujo.getImporte()
-                                                + " + comisión " + comision + " = " + totalProvisional
+                                                + "\". Debés abonar el monto de tu puja de " + pujo.getImporte()
                                                 + " " + monedaSubasta.name()
                                                 + " (más el costo de envío a definir según el medio de envío que elijas).",
                                 "/subastas/" + subastaId + "/registro/" + registro.getIdentificador());
@@ -417,18 +414,16 @@ public class PujoService {
                                         "/topic/subastas/" + subasta.getIdentificador() + "/ganadores",
                                         toResponse(pujo));
 
-                        BigDecimal comision = item.getComision() != null ? item.getComision() : BigDecimal.ZERO;
-                        BigDecimal total = pujo.getImporte().add(comision);
                         String descripcion = item.getProducto() != null
                                         ? item.getProducto().getDescripcionCatalogo()
                                         : "un ítem";
                         notificacionService.notificarCliente(cliente.getIdentificador(),
                                         WsNotificacionService.Tipo.success, "pago",
                                         "¡Ganaste la subasta!",
-                                        "Te adjudicaste \"" + descripcion + "\". Debés abonar: pujado "
-                                                        + pujo.getImporte() + " + comisión " + comision
-                                                        + " = " + total + " " + monedaSubasta.name()
-                                                        + " (más el costo de envío a definir).");
+                                        "Te adjudicaste \"" + descripcion + "\". Debés abonar el monto de tu puja de "
+                                                        + pujo.getImporte() + " " + monedaSubasta.name()
+                                                        + " (más el costo de envío a definir).",
+                                        "/subastas/" + subasta.getIdentificador() + "/registro/" + registro.getIdentificador());
                 } else {
                         // NO ONE BID -> Company buys at base value and keeps it in the warehouse
                         Cliente clienteEmpresa = clienteRepository.findAll().stream()

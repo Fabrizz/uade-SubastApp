@@ -149,8 +149,6 @@ export default function MiCompraScreen() {
 
   // Derived amounts
   const importe = registro?.importe ?? 0;
-  const comisionPct = registro?.comision ?? 0;
-  const comisionAmount = importe * (comisionPct / 100);
   const costoEnvio = registro?.costoEnvio ?? 0;
   const totalComprador = importe + costoEnvio;
 
@@ -244,11 +242,6 @@ export default function MiCompraScreen() {
             <View className="flex-row justify-between">
               <Text className="text-neutral-300 text-sm font-manrope">Tu puja ganadora</Text>
               <Text className="text-white text-sm font-manrope-bold">${fmt(importe)} {registro.moneda ?? ""}</Text>
-            </View>
-
-            <View className="flex-row justify-between">
-              <Text className="text-neutral-300 text-sm font-manrope">Comisión casa ({comisionPct}%)</Text>
-              <Text className="text-neutral-400 text-sm font-manrope">−${fmt(comisionAmount)} {registro.moneda ?? ""}</Text>
             </View>
 
             {costoEnvio > 0 && (

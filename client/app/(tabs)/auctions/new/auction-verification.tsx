@@ -97,7 +97,7 @@ export default function AuctionVerificationScreen() {
                 </Text>
                 <View className="bg-teal-950/20 border border-teal-500/20 p-4 rounded-xl mb-4">
                   <Text className="text-teal-200 text-sm leading-6">
-                    Por favor, envíe el artículo físicamente a nuestra sede central ubicada en <Text className="font-bold">Lima 700</Text> para proceder con la tasación física y la aprobación definitiva.
+                    Por favor, envíe el artículo físicamente a nuestra sede central ubicada en <Text className="font-bold">Lima 700, Monserrat, CABA</Text> para proceder con la tasación física y la aprobación definitiva.
                   </Text>
                 </View>
                 <Text className="text-neutral-400 text-xs leading-5">
