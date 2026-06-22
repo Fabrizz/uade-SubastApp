@@ -1854,7 +1854,9 @@ export interface components {
             horaFin?: string;
             /** Format: int32 */
             itemActualId?: number;
+            /** Format: date-time */
             inicioItemActualTs?: string;
+            /** Format: date-time */
             finItemActualTs?: string;
         };
         /** @enum {string} */
@@ -1909,6 +1911,7 @@ export interface components {
             importeNeto?: number;
             costoEnvio?: number;
             medioEnvio?: components["schemas"]["MedioEnvio"];
+            moneda?: string;
         };
         CatalogoRequest: {
             descripcion?: string;
@@ -2285,10 +2288,10 @@ export interface components {
             inadmitido?: boolean;
         };
         PageProductoResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ProductoResponse"][];
@@ -2298,20 +2301,20 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageableObject: {
             /** Format: int64 */
             offset?: number;
-            paged?: boolean;
-            unpaged?: boolean;
-            sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            pageSize?: number;
             /** Format: int32 */
             pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            sort?: components["schemas"]["SortObject"];
+            paged?: boolean;
+            unpaged?: boolean;
         };
         SortObject: {
             empty?: boolean;
@@ -2336,10 +2339,10 @@ export interface components {
             sort?: string[];
         };
         PageSubastaResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SubastaResponse"][];
@@ -2349,15 +2352,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageRegistroDeSubastaResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["RegistroDeSubastaResponse"][];
@@ -2367,15 +2370,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageItemCatalogoResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ItemCatalogoResponse"][];
@@ -2385,15 +2388,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageAsistenteResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["AsistenteResponse"][];
@@ -2403,15 +2406,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageSubastadorResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SubastadorResponse"][];
@@ -2421,15 +2424,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PagePersonaResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PersonaResponse"][];
@@ -2439,15 +2442,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PagePaisResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["PaisResponse"][];
@@ -2457,8 +2460,8 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PaisResponse: {
@@ -2471,10 +2474,10 @@ export interface components {
             idiomas?: string;
         };
         PageNotificacionResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["NotificacionResponse"][];
@@ -2484,8 +2487,8 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         GlobalSubastasResponse: {
@@ -2565,10 +2568,10 @@ export interface components {
             subastasGanadas?: number;
         };
         PageSectorResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["SectorResponse"][];
@@ -2578,15 +2581,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageEmpleadoResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["EmpleadoResponse"][];
@@ -2596,15 +2599,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageDuenioResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["DuenioResponse"][];
@@ -2614,15 +2617,15 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         PageClienteResponse: {
-            /** Format: int32 */
-            totalPages?: number;
             /** Format: int64 */
             totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["ClienteResponse"][];
@@ -2632,8 +2635,8 @@ export interface components {
             last?: boolean;
             /** Format: int32 */
             numberOfElements?: number;
-            sort?: components["schemas"]["SortObject"];
             pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
             empty?: boolean;
         };
         Link: {

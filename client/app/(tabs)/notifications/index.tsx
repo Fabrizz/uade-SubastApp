@@ -147,9 +147,20 @@ export default function NotificationsScreen() {
                       {newCategory ? (
                         <CategoryPill category={newCategory} size="sm" />
                       ) : (
-                        <Text className="text-neutral-400 text-sm leading-5 pr-4" numberOfLines={2}>
-                          {notif.description}
-                        </Text>
+                        <View className="gap-2">
+                          <Text className="text-neutral-400 text-sm leading-5 pr-4">
+                            {notif.description}
+                          </Text>
+                          {notif.accion && (
+                            <View className="flex-row mt-1">
+                              <View className="bg-purple-500/10 border border-purple-500/25 rounded-xl px-3 py-1.5">
+                                <Text className="text-purple-400 text-xs font-semibold">
+                                  {notif.accion.includes("/registro/") ? "Completar envío y pago →" : "Ver subasta →"}
+                                </Text>
+                              </View>
+                            </View>
+                          )}
+                        </View>
                       )}
                     </View>
                   </View>

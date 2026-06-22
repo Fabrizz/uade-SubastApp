@@ -157,19 +157,33 @@ public class RegistroService {
                         if (req.getDireccionEnvio() == null || req.getDireccionEnvio().isBlank())
                                 throw new IllegalArgumentException(
                                                 "direccionEnvio es obligatorio para envío a domicilio");
-                        if (req.getPaisEnvioId() == null)
-                                throw new IllegalArgumentException(
-                                                "paisEnvioId es obligatorio para envío a domicilio");
                         extra.setDireccionEnvio(req.getDireccionEnvio());
-                        extra.setPaisEnvio(buscarPais(req.getPaisEnvioId()));
+
+                        // Automatically find or default the country
+                        Integer paisId = req.getPaisEnvioId();
+                        if (paisId == null) {
+                                if (registro.getCliente() != null && registro.getCliente().getPais() != null) {
+                                        paisId = registro.getCliente().getPais().getNumero();
+                                } else {
+                                        paisId = 34; // Default to Argentina (from seed-paises)
+                                }
+                        }
+                        extra.setPaisEnvio(buscarPais(paisId));
+
+                        // Calculate the shipping cost: 5 USD or 5000 ARS
+                        BigDecimal costo = new BigDecimal("5");
+                        if (monedaDe(registro).equals(Moneda.ARS.name())) {
+                                costo = new BigDecimal("5000");
+                        }
+                        extra.setCostoEnvio(costo);
                 } else {
                         // Retiro en depósito: sin dirección/país y sin costo de envío.
                         extra.setDireccionEnvio(null);
                         extra.setPaisEnvio(null);
+                        extra.setCostoEnvio(BigDecimal.ZERO);
                 }
 
                 extra.setMedioEnvio(medio);
-                extra.setCostoEnvio(normalizarCosto(medio, req.getCostoEnvio()));
                 extra.setImporteNeto(calcularNeto(registro.getImporte(), registro.getComision()));
                 extraRepository.save(extra);
 
@@ -265,7 +279,8 @@ public class RegistroService {
 
                 notificacionService.notificarCliente(registro.getCliente().getIdentificador(),
                                 WsNotificacionService.Tipo.info, "envio",
-                                "Detalle de envío y pago", sb.toString());
+                                "Detalle de envío y pago", sb.toString(),
+                                "/subastas/" + registro.getSubasta().getIdentificador() + "/registro/" + registro.getIdentificador());
         }
 
         private String descripcionProducto(RegistroDeSubasta registro) {
@@ -315,6 +330,7 @@ public class RegistroService {
                                 .importeNeto(extra != null ? extra.getImporteNeto() : null)
                                 .costoEnvio(extra != null ? extra.getCostoEnvio() : null)
                                 .medioEnvio(extra != null ? extra.getMedioEnvio() : null)
+                                .moneda(monedaDe(r))
                                 .build();
         }
 }

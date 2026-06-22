@@ -37,4 +37,5 @@ public class RegistroDeSubastaResponse {
     private BigDecimal importeNeto;
     private BigDecimal costoEnvio;
     private MedioEnvio medioEnvio;
+    private String moneda;
 }

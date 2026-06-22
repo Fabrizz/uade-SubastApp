@@ -23,12 +23,17 @@ public class WsNotificacionService {
     }
 
     public void enviar(String email, Tipo tipo, String title, String description) {
+        enviar(email, tipo, title, description, null);
+    }
+
+    public void enviar(String email, Tipo tipo, String title, String description, String accion) {
         var payload = new WsPayload(
                 UUID.randomUUID().toString(),
                 tipo,
                 title,
                 description,
-                Instant.now().toString());
+                Instant.now().toString(),
+                accion);
         messagingTemplate.convertAndSendToUser(email, "/queue/notificaciones", payload);
     }
 
@@ -40,6 +45,6 @@ public class WsNotificacionService {
         enviar(email, tipo, title, description);
     }
 
-    public record WsPayload(String id, Tipo type, String title, String description, String createdAt) {
+    public record WsPayload(String id, Tipo type, String title, String description, String createdAt, String accion) {
     }
 }

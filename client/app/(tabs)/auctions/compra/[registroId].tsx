@@ -210,24 +210,24 @@ export default function MiCompraScreen() {
           <View className="gap-2.5">
             <View className="flex-row justify-between">
               <Text className="text-neutral-300 text-sm font-manrope">Tu puja ganadora</Text>
-              <Text className="text-white text-sm font-manrope-bold">${fmt(importe)}</Text>
+              <Text className="text-white text-sm font-manrope-bold">${fmt(importe)} {registro.moneda ?? ""}</Text>
             </View>
 
             <View className="flex-row justify-between">
               <Text className="text-neutral-300 text-sm font-manrope">Comisión casa ({comisionPct}%)</Text>
-              <Text className="text-neutral-400 text-sm font-manrope">−${fmt(comisionAmount)}</Text>
+              <Text className="text-neutral-400 text-sm font-manrope">−${fmt(comisionAmount)} {registro.moneda ?? ""}</Text>
             </View>
 
             {costoEnvio > 0 && (
               <View className="flex-row justify-between">
                 <Text className="text-neutral-300 text-sm font-manrope">Costo de envío</Text>
-                <Text className="text-white text-sm font-manrope">+${fmt(costoEnvio)}</Text>
+                <Text className="text-white text-sm font-manrope">+${fmt(costoEnvio)} {registro.moneda ?? ""}</Text>
               </View>
             )}
 
             <View className="border-t border-neutral-700 pt-3 mt-1 flex-row justify-between items-center">
               <Text className="text-white text-base font-manrope-bold">Total a pagar</Text>
-              <Text className="text-[#d946ef] text-xl font-montserrat-extrabold">${fmt(totalComprador)}</Text>
+              <Text className="text-[#d946ef] text-xl font-montserrat-extrabold">${fmt(totalComprador)} {registro.moneda ?? ""}</Text>
             </View>
           </View>
         </View>
@@ -310,7 +310,7 @@ export default function MiCompraScreen() {
                 Envío a domicilio
               </Text>
               <Text className="text-neutral-500 text-xs font-manrope">
-                {costoEnvio > 0 ? `Costo: $${fmt(costoEnvio)}` : "Con cargo de envío"}
+                Costo: $5 USD ($5.000 ARS)
               </Text>
             </View>
           </TouchableOpacity>
@@ -318,6 +318,12 @@ export default function MiCompraScreen() {
           {/* Dirección si eligió envío a domicilio */}
           {selectedEnvio === "ENVIO_DOMICILIO" && (
             <View className="mb-3">
+              <View className="flex-row items-start gap-2 bg-teal-500/10 border border-teal-500/25 rounded-xl px-3 py-2.5 mb-3">
+                <Text className="flex-1 text-teal-300 text-xs font-manrope-semibold leading-4">
+                  El costo del envío es de 5 dólares (o su equivalente de $5.000 ARS) y lo verás reflejado en la factura de la compra. Por favor, dejanos la dirección a donde querés que enviemos tu artículo nuevo.
+                </Text>
+              </View>
+
               <Text className="text-neutral-400 text-xs font-manrope-semibold mb-1.5">
                 Dirección de entrega
               </Text>
