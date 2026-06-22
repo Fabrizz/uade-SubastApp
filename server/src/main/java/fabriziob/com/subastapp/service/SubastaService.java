@@ -164,6 +164,7 @@ public class SubastaService {
         SubastaResponse toResponse(Subasta s) {
                 SubastaExtra extra = s.getSubastaExtra();
                 Subastador subastador = s.getSubastador();
+                Instant finItemActualTs = calcularFinItemActual(s, extra);
                 return SubastaResponse.builder()
                                 .identificador(s.getIdentificador())
                                 .fecha(s.getFecha())
@@ -188,6 +189,33 @@ public class SubastaService {
                                                 ? extra.getItemActual().getIdentificador()
                                                 : null)
                                 .inicioItemActualTs(extra != null ? extra.getInicioItemActualTs() : null)
+                                .finItemActualTs(finItemActualTs)
                                 .build();
+        }
+
+        /**
+         * Calcula cuándo vence el slot del ítem actual: inicioItemActualTs + duración por ítem.
+         * La duración por ítem es la misma fórmula usada en iniciarSubasta y en el scheduler
+         * (tiempo total repartido entre los ítems aceptados). Devuelve null si la subasta no
+         * está corriendo o le faltan datos de fin.
+         */
+        private Instant calcularFinItemActual(Subasta s, SubastaExtra extra) {
+                if (extra == null || extra.getInicioItemActualTs() == null
+                                || extra.getFechaFin() == null || extra.getHoraFin() == null)
+                        return null;
+
+                LocalDateTime inicio = LocalDateTime.of(s.getFecha(), s.getHora());
+                LocalDateTime fin = LocalDateTime.of(extra.getFechaFin(), extra.getHoraFin());
+                long totalMinutos = ChronoUnit.MINUTES.between(inicio, fin);
+                if (totalMinutos <= 0)
+                        return null;
+
+                long countAceptados = itemCatalogoRepository.countBySubastaIdAndEstadoAceptacion(
+                                s.getIdentificador(), EstadoAceptacionItem.aceptado);
+                if (countAceptados == 0)
+                        return null;
+
+                long minutosPorItem = totalMinutos / countAceptados;
+                return extra.getInicioItemActualTs().plusSeconds(minutosPorItem * 60L);
         }
 }

@@ -2,7 +2,7 @@ import HeaderComp from "@/components/HeaderComp";
 import { useAuth } from "@/context/auth";
 import { api, API_BASE } from "@/lib/api";
 import { LinearGradient } from "expo-linear-gradient";
-import { Calendar, Clock, MapPin, Plus, Users, X, DollarSign, Check, Gavel, ChevronDown, ChevronUp, User } from "lucide-react-native";
+import { Calendar, Clock, MapPin, Plus, Users, X, DollarSign, Check, Gavel, ChevronDown, ChevronUp, User, Play } from "lucide-react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -115,6 +115,7 @@ export default function AdminAuctionsScreen() {
   const [seguridadPropia, setSeguridadPropia] = useState(true);
   const [esColeccion, setEsColeccion] = useState(false);
   const [selectedSubastador, setSelectedSubastador] = useState<string>("");
+  const [startingId, setStartingId] = useState<number | null>(null);
 
   // Load subastas and subastadores on mount
   const loadData = useCallback(async () => {
@@ -690,6 +691,47 @@ export default function AdminAuctionsScreen() {
     }
   };
 
+  // Start the auction: triggers the backend timer (en_curso) — sets the first item and
+  // begins the scheduled per-item advancement. This is the only way to start it from the app.
+  const handleIniciarSubasta = async (subasta: any) => {
+    if (!token) return;
+    Alert.alert(
+      "Iniciar subasta",
+      `¿Iniciar la subasta #${subasta.identificador}? Se arrancará el cronómetro y los lotes avanzarán automáticamente.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Iniciar",
+          style: "default",
+          onPress: async () => {
+            setStartingId(subasta.identificador);
+            try {
+              const { error } = await api.PATCH("/api/v1/subastas/{id}/estado-detallado", {
+                params: {
+                  path: { id: subasta.identificador },
+                  query: { estadoDetallado: "en_curso" },
+                },
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (error) {
+                throw new Error(
+                  (error as any)?.mensaje ?? (error as any)?.message ?? "No se pudo iniciar la subasta",
+                );
+              }
+              Alert.alert("Subasta iniciada", "El cronómetro comenzó y el primer lote está en subasta.");
+              setLoading(true);
+              loadData();
+            } catch (err: any) {
+              Alert.alert("No se pudo iniciar", err.message || "Error al iniciar la subasta");
+            } finally {
+              setStartingId(null);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const filteredSubastas = subastas.filter((s) => {
     const q = search.toLowerCase();
     if (!q) return true;
@@ -906,6 +948,29 @@ export default function AdminAuctionsScreen() {
                         <Gavel size={14} color="#d8b4fe" />
                         <Text className="text-purple-300 text-xs font-bold font-manrope-bold">Gestionar Lotes (Catálogo)</Text>
                       </TouchableOpacity>
+
+                      {/* Iniciar subasta: solo si todavía no está en curso ni cerrada */}
+                      {s.estado !== "cerrada" &&
+                        !["en_curso", "cerrada", "finalizada"].includes(s.estadoDetallado ?? "") && (
+                          <TouchableOpacity
+                            onPress={() => handleIniciarSubasta(s)}
+                            disabled={startingId === s.identificador}
+                            activeOpacity={0.8}
+                            className="mt-3 py-2.5 rounded-xl items-center justify-center flex-row gap-2 border border-emerald-700/60"
+                            style={{ backgroundColor: "#06312a" }}
+                          >
+                            {startingId === s.identificador ? (
+                              <ActivityIndicator size="small" color="#34d399" />
+                            ) : (
+                              <>
+                                <Play size={14} color="#34d399" />
+                                <Text className="text-emerald-400 text-xs font-bold font-manrope-bold">
+                                  Iniciar subasta
+                                </Text>
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        )}
                     </View>
                   );
                 })}

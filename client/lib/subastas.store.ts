@@ -21,6 +21,7 @@ interface SubastaStore {
   mejorPuja: number;
   pujas: PujoResponse[];
   asistente: AsistenteResponse | null;
+  finalizada: boolean;
 
   isLoading: boolean;
   isPlacingBid: boolean;
@@ -50,6 +51,63 @@ const authHeaders = (token: string) => ({ Authorization: `Bearer ${token}` });
 type SetSubastaStore = (
   partial: Partial<SubastaStore> | ((s: SubastaStore) => Partial<SubastaStore>),
 ) => void;
+
+/**
+ * Re-fetches subasta + catalog + bids for the current item and writes them into the store.
+ * Used whenever the server advances the auction (SUBASTA_INICIADA / ITEM_SUBASTADO / ITEM_SIGUIENTE):
+ * re-fetching the subasta brings the updated itemActualId / inicioItemActualTs / finItemActualTs,
+ * so the per-item countdown resets on its own. The current item is chosen by the server's
+ * itemActualId, falling back to the first not-yet-auctioned item.
+ */
+async function refetchEstadoSubasta(
+  set: SetSubastaStore,
+  subastaId: number,
+  token: string,
+): Promise<void> {
+  const { data: subasta } = await api.GET('/api/v1/subastas/{id}', {
+    params: { path: { id: subastaId } },
+    headers: authHeaders(token),
+  });
+
+  const { data: catalogoPage } = await api.GET('/api/v1/subastas/{id}/catalogo/items', {
+    params: {
+      path: { id: subastaId },
+      query: { pageable: {} },
+    },
+    headers: authHeaders(token),
+  });
+  const catalogo = (catalogoPage as any)?.content ?? catalogoPage ?? [];
+  const itemActual =
+    (subasta?.itemActualId
+      ? (catalogo as ItemCatalogoResponse[]).find((i) => i.identificador === subasta.itemActualId)
+      : undefined)
+    ?? (catalogo as ItemCatalogoResponse[]).find((i) => !i.subastado)
+    ?? (catalogo as ItemCatalogoResponse[])[0]
+    ?? null;
+
+  let mejorPuja = itemActual?.precioBase ?? 0;
+  let pujas: PujoResponse[] = [];
+  if (itemActual?.identificador) {
+    const { data: pujasData } = await api.GET(
+      '/api/v1/subastas/{id}/catalogo/items/{idItem}/pujos',
+      {
+        params: { path: { id: subastaId, idItem: itemActual.identificador } },
+        headers: authHeaders(token),
+      },
+    );
+    pujas = (Array.isArray(pujasData) ? pujasData : (pujasData as any)?.content ?? []) as PujoResponse[];
+    const top = pujas.reduce((max, p) => Math.max(max, p.importe ?? 0), 0);
+    if (top > 0) mejorPuja = top;
+  }
+
+  set({
+    ...(subasta ? { subasta } : {}),
+    catalogo,
+    itemActual,
+    mejorPuja,
+    pujas,
+  });
+}
 
 async function enterSubasta(
   set: SetSubastaStore,
@@ -104,46 +162,26 @@ async function enterSubasta(
     }
   });
 
-  // Subscribe to subasta events (e.g. item advancement)
+  // Subscribe to subasta events (auction start, item advancement, auction end)
   const unsubProgression = subscribe(`/topic/subastas/${subastaId}`, async (msg: IMessage) => {
     try {
       const event = JSON.parse(msg.body);
-      if (event.tipo === 'ITEM_SUBASTADO') {
-        // Re-fetch catalog
-        const { data: catalogoPage } = await api.GET('/api/v1/subastas/{id}/catalogo/items', {
-          params: {
-            path: { id: subastaId },
-            query: { pageable: {} }
-          },
-          headers: authHeaders(token),
-        });
-        const newCatalogo = (catalogoPage as any)?.content ?? catalogoPage ?? [];
-        const newItemActual = (newCatalogo as ItemCatalogoResponse[]).find((i) => !i.subastado)
-          ?? (newCatalogo as ItemCatalogoResponse[])[0]
-          ?? null;
-
-        // Re-fetch bids for new item
-        let newMejorPuja = newItemActual?.precioBase ?? 0;
-        let newPujas: PujoResponse[] = [];
-        if (newItemActual?.identificador) {
-          const { data: pujasData } = await api.GET(
-            '/api/v1/subastas/{id}/catalogo/items/{idItem}/pujos',
-            {
-              params: { path: { id: subastaId, idItem: newItemActual.identificador } },
-              headers: authHeaders(token),
-            },
-          );
-          newPujas = (Array.isArray(pujasData) ? pujasData : (pujasData as any)?.content ?? []) as PujoResponse[];
-          const top = newPujas.reduce((max, p) => Math.max(max, p.importe ?? 0), 0);
-          if (top > 0) newMejorPuja = top;
-        }
-
-        set({
-          catalogo: newCatalogo,
-          itemActual: newItemActual,
-          mejorPuja: newMejorPuja,
-          pujas: newPujas,
-        });
+      switch (event.tipo) {
+        // The auction was started, an item advanced (auto or manual), or the current
+        // item closed — re-sync subasta/catalog/bids. The per-item countdown resets on
+        // its own because the re-fetched subasta carries fresh timestamps.
+        case 'SUBASTA_INICIADA':
+        case 'ITEM_SUBASTADO':
+        case 'ITEM_SIGUIENTE':
+          await refetchEstadoSubasta(set, subastaId, token);
+          break;
+        // The scheduler closed the auction automatically. Keep `subasta` so the screen
+        // can show a closing state, but drop the live item and flag it as finished.
+        case 'SUBASTA_FINALIZADA':
+          set({ finalizada: true, itemActual: null });
+          break;
+        default:
+          break;
       }
     } catch {
       // malformed frame or API error — ignore
@@ -157,6 +195,7 @@ async function enterSubasta(
     itemActual,
     mejorPuja,
     pujas,
+    finalizada: false,
     _unsubscribe: () => {
       unsubBids();
       unsubProgression();
@@ -187,6 +226,7 @@ export const useSubastaStore = create<SubastaStore>((set, get) => ({
   mejorPuja: 0,
   pujas: [],
   asistente: null,
+  finalizada: false,
   isLoading: false,
   isPlacingBid: false,
   error: null,
@@ -217,6 +257,7 @@ export const useSubastaStore = create<SubastaStore>((set, get) => ({
           mejorPuja: 0,
           pujas: [],
           asistente: null,
+          finalizada: false,
           _unsubscribe: null,
         });
 
@@ -305,6 +346,7 @@ export const useSubastaStore = create<SubastaStore>((set, get) => ({
       mejorPuja: 0,
       pujas: [],
       asistente: null,
+      finalizada: false,
       error: null,
       _unsubscribe: null,
     });

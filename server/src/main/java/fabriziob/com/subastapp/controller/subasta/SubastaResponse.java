@@ -39,4 +39,5 @@ public class SubastaResponse {
     private LocalTime horaFin;
     private Integer itemActualId;
     private Instant inicioItemActualTs;
+    private Instant finItemActualTs;
 }
