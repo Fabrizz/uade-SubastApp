@@ -212,6 +212,11 @@ public class PujoService {
                         throw new IllegalArgumentException(
                                         "El medio de pago no cumple los requisitos para la moneda de la subasta");
 
+                if (medio.getTipo() == TipoMedioPago.cheque) {
+                        validarGarantiaCheque(cliente.getIdentificador(), monedaSubasta,
+                                        subasta.getFecha(), pujo.getImporte());
+                }
+
                 pujo.setGanador("si");
                 pujoRepository.save(pujo);
 
@@ -392,7 +397,15 @@ public class PujoService {
 
                         List<MedioPago> mediosValidos = mediosValidosParaPujar(
                                         cliente.getIdentificador(), monedaSubasta, subasta.getFecha());
-                        MedioPago medio = mediosValidos.isEmpty() ? null : mediosValidos.get(0);
+                        MedioPago medio = mediosValidos.stream()
+                                        .filter(mp -> {
+                                                if (mp.getTipo() != TipoMedioPago.cheque) return true;
+                                                return chequeRepository.findById(mp.getIdentificador())
+                                                                .map(c -> pujo.getImporte().compareTo(c.getMontoCertificado()) <= 0)
+                                                                .orElse(false);
+                                        })
+                                        .findFirst()
+                                        .orElse(null);
 
                         RegistroDeSubasta registro = RegistroDeSubasta.builder()
                                         .subasta(subasta)
