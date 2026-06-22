@@ -31,6 +31,7 @@ import fabriziob.com.subastapp.repository.ProductoRepository;
 import fabriziob.com.subastapp.repository.RegistroDeSubastaExtraRepository;
 import fabriziob.com.subastapp.repository.RegistroDeSubastaRepository;
 import fabriziob.com.subastapp.repository.SubastaRepository;
+import fabriziob.com.subastapp.repository.SeguroRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -57,6 +58,7 @@ public class RegistroService {
         private final PaisRepository paisRepository;
         private final ClienteService clienteService;
         private final NotificacionService notificacionService;
+        private final SeguroRepository seguroRepository;
 
         // ─── lecturas ──────────────────────────────────────────────────────────
 
@@ -188,6 +190,33 @@ public class RegistroService {
                 extraRepository.save(extra);
 
                 notificarFactura(registro, extra);
+                return toResponse(registro);
+        }
+
+        // ─── retiro de artículo ────────────────────────────────────────────────────
+
+        public RegistroDeSubastaResponse marcarEntregado(Integer subastaId, Integer idRegistro) {
+                RegistroDeSubasta registro = buscarEnSubasta(subastaId, idRegistro);
+                RegistroDeSubastaExtra extra = extraDe(registro);
+
+                if (extra.getMedioEnvio() != MedioEnvio.RETIRO_DEPOSITO) {
+                        throw new IllegalArgumentException("El artículo no está marcado para retiro en depósito");
+                }
+
+                Producto producto = registro.getProducto();
+                if (producto != null && producto.getSeguro() != null) {
+                        String nroPoliza = producto.getSeguro();
+                        producto.setSeguro(null);
+                        productoRepository.save(producto);
+                        seguroRepository.deleteById(nroPoliza);
+
+                        notificacionService.notificarCliente(registro.getCliente().getIdentificador(),
+                                        WsNotificacionService.Tipo.warning, "seguro",
+                                        "Cobertura finalizada",
+                                        "El artículo \"" + descripcionProducto(registro) + "\" fue retirado y su seguro ya no se encuentra vigente.",
+                                        "/subastas/" + subastaId + "/registro/" + idRegistro);
+                }
+
                 return toResponse(registro);
         }
 
@@ -331,6 +360,7 @@ public class RegistroService {
                                 .costoEnvio(extra != null ? extra.getCostoEnvio() : null)
                                 .medioEnvio(extra != null ? extra.getMedioEnvio() : null)
                                 .moneda(monedaDe(r))
+                                .seguroActivo(r.getProducto() != null && r.getProducto().getSeguro() != null)
                                 .build();
         }
 }

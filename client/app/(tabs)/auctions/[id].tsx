@@ -257,6 +257,7 @@ export default function AuctionDetailScreen() {
   const otherSubastaId = subasta?.identificador ?? null;
   const attendingElsewhere = isAuthenticated && !isJoined && otherSubastaId !== null && otherSubastaId !== Number(id);
   const isOwnAuction = isAuthenticated && currentSubasta?.subastadorId === user?.id;
+  const isProductOwner = isAuthenticated && activeProduct?.duenio === user?.id;
 
   const handleJoin = async () => {
     if (!token || !user?.id) {
@@ -351,6 +352,11 @@ export default function AuctionDetailScreen() {
     setValidationError(null);
     if (!itemActual) {
       Alert.alert("Error", "No hay un lote activo en subasta.");
+      return;
+    }
+
+    if (isProductOwner) {
+      Alert.alert("Acción no permitida", "No podés pujar por tu propio artículo.");
       return;
     }
 
@@ -719,7 +725,14 @@ export default function AuctionDetailScreen() {
             <>
               {/* Pujar Ahora and Monto a Pujar Inputs */}
               <View className="px-4 mb-4">
-                <View className="flex-row justify-between items-center mb-1">
+                {isProductOwner ? (
+                  <View className="bg-neutral-800/80 p-4 rounded-2xl items-center justify-center border border-neutral-700">
+                    <Text className="text-neutral-400 text-sm font-manrope-bold text-center">
+                      Este artículo te pertenece. No podés pujar por él.
+                    </Text>
+                  </View>
+                ) : (
+                  <View className="flex-row justify-between items-center mb-1">
                   {/* Pujar Ahora Button */}
                   <TouchableOpacity
                     onPress={handlePujarAhoraClick}
@@ -778,7 +791,8 @@ export default function AuctionDetailScreen() {
                       </Text>
                     )}
                   </View>
-                </View>
+                  </View>
+                )}
 
                 {validationError && (
                   <Text className="text-red-500 text-xs mt-1.5 font-manrope-semibold pl-1">
