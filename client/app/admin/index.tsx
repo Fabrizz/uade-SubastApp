@@ -23,6 +23,7 @@ export default function AdminIndex() {
     <LinearGradient colors={['#000000', '#3f0146', '#9102A2']} style={{ flex: 1 }}>
       <HeaderComp
         back
+        backFallback="/"
         outlet={
           <View className="flex-row items-center gap-3">
             <View className="bg-purple-950 rounded-full p-2">

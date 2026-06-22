@@ -30,7 +30,6 @@ public class SubastadorService {
         Persona persona = userRepository.findById(identificador)
                 .orElseThrow(() -> new EntityNotFoundException("Persona no encontrada"));
         Subastador subastador = new Subastador();
-        subastador.setIdentificador(identificador);
         subastador.setPersona(persona);
         subastador.setMatricula(matricula);
         subastador.setRegion(region);

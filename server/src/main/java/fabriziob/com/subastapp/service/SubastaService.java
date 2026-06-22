@@ -34,8 +34,8 @@ public class SubastaService {
 
         @Transactional(readOnly = true)
         public Page<SubastaResponse> getAll(EstadoSubasta estado, CategoriaSubasta categoria,
-                        LocalDate fecha, Pageable pageable) {
-                return subastaRepository.buscar(estado, categoria, fecha, pageable)
+                        LocalDate fecha, Boolean conCatalogo, Pageable pageable) {
+                return subastaRepository.buscar(estado, categoria, fecha, conCatalogo, pageable)
                                 .map(this::toResponse);
         }
 

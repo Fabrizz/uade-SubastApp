@@ -6,7 +6,8 @@ import { useWebSocket } from "@/context/websocket";
 import { api, API_BASE } from "@/lib/api";
 import { getBidBounds, useSubastaStore } from "@/lib/subastas.store";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { usePreventRemove } from "@react-navigation/native";
+import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
 import { Clock, FileText, Gavel, Hammer, Info, Lock, LogIn, MapPin, Video } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -52,6 +53,7 @@ function canAccessSubasta(userCategory?: string, subastaCategoria?: string): boo
 export default function AuctionDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { token, user } = useAuth();
   const { subscribeToTopic } = useWebSocket();
@@ -149,6 +151,18 @@ export default function AuctionDetailScreen() {
       leaveSubasta(token ?? undefined);
     };
   }, [id, token, user?.id, leaveSubasta, checkAsistencia, subscribeToTopic]);
+
+  // Prevent leaving if current user is the highest bidder of the active item
+  const isHighestBidder = !!(itemActual && itemActual.subastado !== "si" && pujas[0] && pujas[0].clienteId === user?.id);
+  usePreventRemove(
+    isHighestBidder,
+    () => {
+      Alert.alert(
+        "Acción no permitida",
+        "No puedes abandonar la subasta siendo el máximo postor del lote activo."
+      );
+    }
+  );
 
   // 2. Fetch full product details for the current active item
   useEffect(() => {
@@ -258,6 +272,16 @@ export default function AuctionDetailScreen() {
     }
 
     if (otherSubastaId !== null && otherSubastaId !== Number(id)) {
+      // Check if user is the highest bidder of the active joined auction
+      const isHighest = itemActual && itemActual.subastado !== "si" && pujas[0] && pujas[0].clienteId === user?.id;
+      if (isHighest) {
+        Alert.alert(
+          "Cambio no permitido",
+          `No puedes unirte a otra subasta mientras sigas siendo el máximo postor del lote activo en la subasta "${subasta?.nombreColeccion || "tu subasta activa"}".`
+        );
+        return;
+      }
+
       Alert.alert(
         "Cambiar de subasta",
         `Ya estás participando en la subasta "${subasta?.nombreColeccion || "otra subasta"}". ¿Deseas abandonarla e ingresar a esta subasta?`,
@@ -277,6 +301,14 @@ export default function AuctionDetailScreen() {
   };
 
   const handleAbandon = () => {
+    const isHighest = itemActual && itemActual.subastado !== "si" && pujas[0] && pujas[0].clienteId === user?.id;
+    if (isHighest) {
+      Alert.alert(
+        "Acción no permitida",
+        "No puedes abandonar la subasta siendo el máximo postor del lote activo."
+      );
+      return;
+    }
     leaveSubasta(token ?? undefined);
     setBidAmount("");
     setValidationError(null);

@@ -187,6 +187,102 @@ export default function AdminAuctionsScreen() {
     }
   };
 
+  const handleAdjudicarLote = async (item: any) => {
+    if (!token || !selectedSubastaForCatalog) return;
+    try {
+      // 1. Get all bids for the item
+      const { data: pujasData, error: errPujas } = await api.GET(
+        "/api/v1/subastas/{id}/catalogo/items/{idItem}/pujos",
+        {
+          params: {
+            path: {
+              id: selectedSubastaForCatalog.identificador,
+              idItem: item.identificador,
+            },
+          },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (errPujas || !pujasData) {
+        throw new Error("No se pudieron cargar las pujas del lote.");
+      }
+
+      const pujas = (Array.isArray(pujasData)
+        ? pujasData
+        : (pujasData as any)?.content ?? []) as any[];
+
+      if (pujas.length === 0) {
+        Alert.alert("Lote sin pujas", "No se puede adjudicar un lote que no recibió ninguna oferta.");
+        return;
+      }
+
+      // Pujas are returned ordered by amount DESC (highest first)
+      const topPujo = pujas[0];
+      const clienteId = topPujo.clienteId;
+
+      if (!clienteId) {
+        throw new Error("El postor líder no tiene un ID de cliente válido.");
+      }
+
+      // 2. Fetch the winner's payment methods
+      const { data: mediosPago, error: errMedios } = await api.GET(
+        "/api/v1/clientes/{id}/medios-pago",
+        {
+          params: { path: { id: clienteId } },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (errMedios || !mediosPago) {
+        throw new Error("No se pudieron obtener los medios de pago del ganador.");
+      }
+
+      // Find compatible verified/active payment method matching subasta currency
+      const subastaMoneda = selectedSubastaForCatalog.moneda || "ARS";
+      const medioValido = mediosPago.find(
+        (m: any) => m.verificado && m.activo && m.moneda === subastaMoneda
+      );
+
+      if (!medioValido) {
+        Alert.alert(
+          "Error de pago",
+          `El ganador no tiene un medio de pago verificado y activo en la moneda ${subastaMoneda} de la subasta.`
+        );
+        return;
+      }
+
+      // 3. Mark as winner!
+      const { error: errGanador } = await api.PATCH(
+        "/api/v1/subastas/{id}/catalogo/items/{idItem}/pujos/{idPujo}/ganador",
+        {
+          params: {
+            path: {
+              id: selectedSubastaForCatalog.identificador,
+              idItem: item.identificador,
+              idPujo: topPujo.identificador,
+            },
+          },
+          headers: { Authorization: `Bearer ${token}` },
+          body: {
+            medioPagoCompradorId: medioValido.identificador,
+          },
+        }
+      );
+
+      if (errGanador) {
+        throw new Error((errGanador as any)?.message ?? "Error en el servidor al adjudicar el lote.");
+      }
+
+      Alert.alert("Éxito", `El lote #${item.identificador} fue adjudicado exitosamente a ${topPujo.clienteNombre || `Postor #${topPujo.numeroPostor}`} por un monto de ${topPujo.importe}.`);
+      
+      // Refresh catalog items list
+      fetchCatalogData(selectedSubastaForCatalog.identificador);
+    } catch (error: any) {
+      Alert.alert("Error al adjudicar", error.message || "Ocurrió un error inesperado.");
+    }
+  };
+
   const handleInitializeCatalog = async () => {
     if (!selectedSubastaForCatalog || !token) return;
     setCatalogLoading(true);
@@ -583,6 +679,11 @@ export default function AdminAuctionsScreen() {
     // Basic fields validation
     if (!fecha || !hora || !ubicacion || !capacidadAsistentes) {
       Alert.alert("Campos Obligatorios", "Por favor completa la fecha, hora, ubicación y capacidad.");
+      return;
+    }
+
+    if (!selectedSubastador) {
+      Alert.alert("Martillero Obligatorio", "Por favor selecciona un martillero / subastador.");
       return;
     }
 
@@ -1337,8 +1438,12 @@ export default function AdminAuctionsScreen() {
                             }`}
                           >
                             <View>
-                              <Text className="text-white text-xs font-semibold">Martillero Matrícula: {sub.matricula}</Text>
-                              <Text className="text-neutral-500 text-[10px] mt-0.5">Región: {sub.region || "N/A"} | ID: {sub.identificador}</Text>
+                              <Text className="text-white text-xs font-semibold">
+                                {sub.nombre ? sub.nombre : `Martillero Matrícula: ${sub.matricula}`}
+                              </Text>
+                              <Text className="text-neutral-500 text-[10px] mt-0.5">
+                                {sub.nombre ? `Matrícula: ${sub.matricula} | ` : ""}Región: {sub.region || "N/A"} | ID: {sub.identificador}
+                              </Text>
                             </View>
                             {isSelected && (
                               <View className="w-5 h-5 bg-purple-600 rounded-full items-center justify-center">
