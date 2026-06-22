@@ -1787,6 +1787,7 @@ export interface components {
             revisor?: number;
             /** Format: int32 */
             duenio?: number;
+            duenioNombre?: string;
             seguro?: string;
             fotosIds?: number[];
             estadoBien?: components["schemas"]["EstadoBien"];

@@ -299,6 +299,7 @@ public class ProductoService {
                 .descripcionCompleta(p.getDescripcionCompleta())
                 .revisor(p.getRevisor())
                 .duenio(p.getDuenio() != null ? p.getDuenio().getIdentificador() : null)
+                .duenioNombre(p.getDuenio() != null && p.getDuenio().getPersona() != null ? p.getDuenio().getPersona().getNombre() : null)
                 .seguro(p.getSeguro())
                 .fotosIds(p.getFotosIds())
                 .estadoBien(extra != null ? extra.getEstadoBien() : null)
