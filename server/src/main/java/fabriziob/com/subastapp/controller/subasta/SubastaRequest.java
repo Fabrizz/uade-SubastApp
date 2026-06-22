@@ -21,4 +21,6 @@ public class SubastaRequest {
     private Moneda moneda;
     private Boolean esColeccion;
     private String nombreColeccion;
+    private LocalDate fechaFin;
+    private LocalTime horaFin;
 }

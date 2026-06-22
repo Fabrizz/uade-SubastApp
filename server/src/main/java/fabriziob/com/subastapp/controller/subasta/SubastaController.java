@@ -131,7 +131,7 @@ public class SubastaController {
         public ResponseEntity<SubastaResponse> cambiarEstadoDetallado(
                         @Parameter(description = "ID de la subasta", required = true, example = "1") @PathVariable Integer id,
                         @Parameter(description = "Nuevo estado detallado", required = true) @RequestParam EstadoDetalladoSubasta estadoDetallado) {
-                return null;
+                return ResponseEntity.ok(subastaService.cambiarEstadoDetallado(id, estadoDetallado));
         }
 
         // ── Catálogo ──────────────────────────────────────────────────────────

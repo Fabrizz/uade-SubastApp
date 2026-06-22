@@ -2,7 +2,7 @@ import HeaderComp from "@/components/HeaderComp";
 import { useAuth } from "@/context/auth";
 import { api, API_BASE } from "@/lib/api";
 import { LinearGradient } from "expo-linear-gradient";
-import { Calendar, Clock, MapPin, Plus, Users, X, DollarSign, Check, Gavel, ChevronDown, ChevronUp, User } from "lucide-react-native";
+import { Calendar, Clock, MapPin, Plus, Users, X, DollarSign, Check, Gavel, ChevronDown, ChevronUp, User, Play } from "lucide-react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -105,6 +105,8 @@ export default function AdminAuctionsScreen() {
   const [nombreColeccion, setNombreColeccion] = useState("");
   const [fecha, setFecha] = useState(getDefaultFutureDate());
   const [hora, setHora] = useState("18:00");
+  const [fechaFin, setFechaFin] = useState(getDefaultFutureDate());
+  const [horaFin, setHoraFin] = useState("20:00");
   const [categoria, setCategoria] = useState<"comun" | "especial" | "plata" | "oro" | "platino">("comun");
   const [moneda, setMoneda] = useState<"ARS" | "USD">("USD");
   const [ubicacion, setUbicacion] = useState("");
@@ -113,6 +115,7 @@ export default function AdminAuctionsScreen() {
   const [seguridadPropia, setSeguridadPropia] = useState(true);
   const [esColeccion, setEsColeccion] = useState(false);
   const [selectedSubastador, setSelectedSubastador] = useState<string>("");
+  const [startingId, setStartingId] = useState<number | null>(null);
 
   // Load subastas and subastadores on mount
   const loadData = useCallback(async () => {
@@ -596,6 +599,22 @@ export default function AdminAuctionsScreen() {
       return;
     }
 
+    // Fecha/hora de fin validation
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaFin)) {
+      Alert.alert("Fecha de Fin Inválida", "La fecha de fin debe tener el formato AAAA-MM-DD.");
+      return;
+    }
+    if (!/^\d{2}:\d{2}(:\d{2})?$/.test(horaFin)) {
+      Alert.alert("Hora de Fin Inválida", "La hora de fin debe tener el formato HH:MM.");
+      return;
+    }
+    const dtInicio = new Date(`${fecha}T${hora.length === 5 ? hora : hora.slice(0, 5)}`);
+    const dtFin = new Date(`${fechaFin}T${horaFin.length === 5 ? horaFin : horaFin.slice(0, 5)}`);
+    if (dtFin <= dtInicio) {
+      Alert.alert("Fecha de Fin Inválida", "La fecha y hora de fin debe ser posterior a la de inicio.");
+      return;
+    }
+
     // Date logic verification: must be at least 10 days in the future
     const parsedDate = new Date(fecha + "T00:00:00");
     const diffTime = parsedDate.getTime() - Date.now();
@@ -621,7 +640,7 @@ export default function AdminAuctionsScreen() {
       const payload = {
         fecha,
         hora: hora.length === 5 ? `${hora}:00` : hora,
-        estado: "abierta" as const, // default open for bidding registration
+        estado: "abierta" as const,
         ubicacion,
         capacidadAsistentes: Number(capacidadAsistentes),
         tieneDeposito: tieneDeposito ? "si" : "no",
@@ -631,6 +650,8 @@ export default function AdminAuctionsScreen() {
         esColeccion,
         nombreColeccion: esColeccion ? nombreColeccion : undefined,
         subastadorId: selectedSubastador ? Number(selectedSubastador) : undefined,
+        fechaFin,
+        horaFin: horaFin.length === 5 ? `${horaFin}:00` : horaFin,
       };
 
       const { error } = await api.POST("/api/v1/subastas", {
@@ -649,6 +670,8 @@ export default function AdminAuctionsScreen() {
       setNombreColeccion("");
       setFecha(getDefaultFutureDate());
       setHora("18:00");
+      setFechaFin(getDefaultFutureDate());
+      setHoraFin("20:00");
       setCategoria("comun");
       setMoneda("USD");
       setUbicacion("");
@@ -666,6 +689,47 @@ export default function AdminAuctionsScreen() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Start the auction: triggers the backend timer (en_curso) — sets the first item and
+  // begins the scheduled per-item advancement. This is the only way to start it from the app.
+  const handleIniciarSubasta = async (subasta: any) => {
+    if (!token) return;
+    Alert.alert(
+      "Iniciar subasta",
+      `¿Iniciar la subasta #${subasta.identificador}? Se arrancará el cronómetro y los lotes avanzarán automáticamente.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Iniciar",
+          style: "default",
+          onPress: async () => {
+            setStartingId(subasta.identificador);
+            try {
+              const { error } = await api.PATCH("/api/v1/subastas/{id}/estado-detallado", {
+                params: {
+                  path: { id: subasta.identificador },
+                  query: { estadoDetallado: "en_curso" },
+                },
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (error) {
+                throw new Error(
+                  (error as any)?.mensaje ?? (error as any)?.message ?? "No se pudo iniciar la subasta",
+                );
+              }
+              Alert.alert("Subasta iniciada", "El cronómetro comenzó y el primer lote está en subasta.");
+              setLoading(true);
+              loadData();
+            } catch (err: any) {
+              Alert.alert("No se pudo iniciar", err.message || "Error al iniciar la subasta");
+            } finally {
+              setStartingId(null);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const filteredSubastas = subastas.filter((s) => {
@@ -853,6 +917,20 @@ export default function AdminAuctionsScreen() {
                             {s.esColeccion === true || s.esColeccion === "si" ? `Colección (${s.nombreColeccion || ""})` : "General"}
                           </Text>
                         </View>
+                        {s.fechaFin && (
+                          <View className="flex-row justify-between items-center">
+                            <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Fin programado</Text>
+                            <Text className="text-neutral-300 text-xs font-manrope-medium">
+                              {s.fechaFin} {s.horaFin?.slice(0, 5)}
+                            </Text>
+                          </View>
+                        )}
+                        {s.itemActualId && (
+                          <View className="flex-row justify-between items-center">
+                            <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Ítem en subasta</Text>
+                            <Text className="text-emerald-400 text-xs font-manrope-bold">#{s.itemActualId}</Text>
+                          </View>
+                        )}
                       </View>
 
                       <TouchableOpacity
@@ -870,6 +948,29 @@ export default function AdminAuctionsScreen() {
                         <Gavel size={14} color="#d8b4fe" />
                         <Text className="text-purple-300 text-xs font-bold font-manrope-bold">Gestionar Lotes (Catálogo)</Text>
                       </TouchableOpacity>
+
+                      {/* Iniciar subasta: solo si todavía no está en curso ni cerrada */}
+                      {s.estado !== "cerrada" &&
+                        !["en_curso", "cerrada", "finalizada"].includes(s.estadoDetallado ?? "") && (
+                          <TouchableOpacity
+                            onPress={() => handleIniciarSubasta(s)}
+                            disabled={startingId === s.identificador}
+                            activeOpacity={0.8}
+                            className="mt-3 py-2.5 rounded-xl items-center justify-center flex-row gap-2 border border-emerald-700/60"
+                            style={{ backgroundColor: "#06312a" }}
+                          >
+                            {startingId === s.identificador ? (
+                              <ActivityIndicator size="small" color="#34d399" />
+                            ) : (
+                              <>
+                                <Play size={14} color="#34d399" />
+                                <Text className="text-emerald-400 text-xs font-bold font-manrope-bold">
+                                  Iniciar subasta
+                                </Text>
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        )}
                     </View>
                   );
                 })}
@@ -1194,6 +1295,39 @@ export default function AdminAuctionsScreen() {
                     placeholderTextColor="#525252"
                     value={hora}
                     onChangeText={setHora}
+                    editable={!isSubmitting}
+                  />
+                </View>
+
+                {/* Fecha Fin input */}
+                <View>
+                  <Text className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-2 ml-1">
+                    Fecha de Fin (AAAA-MM-DD)
+                  </Text>
+                  <TextInput
+                    className="bg-neutral-900 border border-neutral-700 px-4 py-3 rounded-xl text-white text-base"
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="#525252"
+                    value={fechaFin}
+                    onChangeText={setFechaFin}
+                    editable={!isSubmitting}
+                  />
+                  <Text className="text-neutral-500 text-[10px] italic mt-1 ml-1">
+                    La duración total se divide equitativamente entre los artículos (mínimo 10 min c/u)
+                  </Text>
+                </View>
+
+                {/* Hora Fin input */}
+                <View>
+                  <Text className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-2 ml-1">
+                    Hora de Fin (HH:MM)
+                  </Text>
+                  <TextInput
+                    className="bg-neutral-900 border border-neutral-700 px-4 py-3 rounded-xl text-white text-base"
+                    placeholder="20:00"
+                    placeholderTextColor="#525252"
+                    value={horaFin}
+                    onChangeText={setHoraFin}
                     editable={!isSubmitting}
                   />
                 </View>

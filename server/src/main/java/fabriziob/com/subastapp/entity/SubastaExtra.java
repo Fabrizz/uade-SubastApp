@@ -1,13 +1,19 @@
 package fabriziob.com.subastapp.entity;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 import fabriziob.com.subastapp.entity.enums.EstadoDetalladoSubasta;
 import fabriziob.com.subastapp.entity.enums.Moneda;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -49,4 +55,17 @@ public class SubastaExtra {
 
     @Column(name = "nombrecoleccion", length = 200)
     private String nombreColeccion;
+
+    @Column(name = "fecha_fin")
+    private LocalDate fechaFin;
+
+    @Column(name = "hora_fin")
+    private LocalTime horaFin;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_actual")
+    private ItemCatalogo itemActual;
+
+    @Column(name = "inicio_item_actual_ts")
+    private Instant inicioItemActualTs;
 }
