@@ -25,6 +25,7 @@ import fabriziob.com.subastapp.entity.RegistroDeSubasta;
 import fabriziob.com.subastapp.entity.RegistroDeSubastaExtra;
 import fabriziob.com.subastapp.entity.Subasta;
 import fabriziob.com.subastapp.entity.enums.CategoriaSubasta;
+import fabriziob.com.subastapp.entity.enums.EstadoDetalladoSubasta;
 import fabriziob.com.subastapp.entity.enums.EstadoSubasta;
 import fabriziob.com.subastapp.entity.enums.Moneda;
 import fabriziob.com.subastapp.entity.enums.TipoMedioPago;
@@ -71,6 +72,11 @@ public class PujoService {
 
                 if (subasta.getEstado() != EstadoSubasta.abierta)
                         throw new IllegalStateException("La subasta no está abierta");
+
+                // Gating por estado detallado: la subasta debe estar en curso.
+                if (subasta.getSubastaExtra() == null || subasta.getSubastaExtra().getEstadoDetallado() != EstadoDetalladoSubasta.en_curso) {
+                        throw new IllegalStateException("La subasta no está en curso");
+                }
 
                 ItemCatalogo item = itemRepository.findById(itemId)
                                 .orElseThrow(() -> new EntityNotFoundException("Item no encontrado: " + itemId));
