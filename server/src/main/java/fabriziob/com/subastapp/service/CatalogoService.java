@@ -22,6 +22,7 @@ import fabriziob.com.subastapp.controller.subasta.ItemCatalogoRequest;
 import fabriziob.com.subastapp.controller.subasta.ItemCatalogoResponse;
 import fabriziob.com.subastapp.entity.Catalogo;
 import fabriziob.com.subastapp.entity.Empleado;
+import fabriziob.com.subastapp.entity.Foto;
 import fabriziob.com.subastapp.entity.ItemCatalogo;
 import fabriziob.com.subastapp.entity.Producto;
 import fabriziob.com.subastapp.entity.Seguro;
@@ -29,12 +30,14 @@ import fabriziob.com.subastapp.entity.Subasta;
 import fabriziob.com.subastapp.entity.enums.EstadoAceptacionItem;
 import fabriziob.com.subastapp.repository.CatalogoRepository;
 import fabriziob.com.subastapp.repository.EmpleadoRepository;
+import fabriziob.com.subastapp.repository.FotoRepository;
 import fabriziob.com.subastapp.repository.ItemCatalogoRepository;
 import fabriziob.com.subastapp.repository.ProductoRepository;
 import fabriziob.com.subastapp.repository.SeguroRepository;
 import fabriziob.com.subastapp.repository.SubastaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import fabriziob.com.subastapp.service.WsNotificacionService;
 
 @Service
 @RequiredArgsConstructor
@@ -65,6 +68,7 @@ public class CatalogoService {
         private final ProductoRepository productoRepository;
         private final SeguroRepository seguroRepository;
         private final NotificacionService notificacionService;
+        private final FotoRepository fotoRepository;
 
         // ─── lecturas ──────────────────────────────────────────────────────────
 
@@ -73,6 +77,7 @@ public class CatalogoService {
                 verificarSubasta(subastaId);
                 List<ItemCatalogoResponse> all = catalogoRepository.findBySubasta_Identificador(subastaId).stream()
                                 .flatMap(c -> itemRepository.findByCatalogoIdWithProducto(c.getIdentificador()).stream())
+                                .filter(i -> i.getEstadoAceptacion() == EstadoAceptacionItem.aceptado)
                                 .map(this::toItemResponse)
                                 .toList();
 
@@ -156,7 +161,6 @@ public class CatalogoService {
                 if (req.getEstadoAceptacion() != null) {
                         item.setEstadoAceptacion(req.getEstadoAceptacion());
 
-                        // Update the product's EstadoBien as appropriate
                         if (item.getProducto() != null) {
                                 Producto p = item.getProducto();
                                 if (req.getEstadoAceptacion() == EstadoAceptacionItem.aceptado) {
@@ -171,16 +175,44 @@ public class CatalogoService {
                                 }
                                 productoRepository.save(p);
 
-                                if (req.getEstadoAceptacion() == EstadoAceptacionItem.aceptado && p.getDuenio() != null) {
+                                        if (p.getDuenio() != null) {
+                                                String titulo = p.getProductoExtra() != null && p.getProductoExtra().getTitulo() != null
+                                                                ? p.getProductoExtra().getTitulo()
+                                                                : p.getDescripcionCompleta();
+                                                notificacionService.notificarCliente(
+                                                                p.getDuenio().getIdentificador(),
+                                                                WsNotificacionService.Tipo.success,
+                                                                "subasta",
+                                                                "¡Tu artículo fue aceptado para subastar!",
+                                                                "\"" + titulo + "\" fue aceptado y se incluyó en el catálogo de la subasta.");
+                                        }
+                                } else if (req.getEstadoAceptacion() == EstadoAceptacionItem.rechazado) {
+                                        Integer duenioId = p.getDuenio() != null ? p.getDuenio().getIdentificador() : null;
                                         String titulo = p.getProductoExtra() != null && p.getProductoExtra().getTitulo() != null
                                                         ? p.getProductoExtra().getTitulo()
                                                         : p.getDescripcionCompleta();
-                                        notificacionService.notificarCliente(
-                                                        p.getDuenio().getIdentificador(),
-                                                        WsNotificacionService.Tipo.success,
-                                                        "subasta",
-                                                        "¡Tu artículo fue aceptado para subastar!",
-                                                        "\"" + titulo + "\" fue aceptado y se incluyó en el catálogo de la subasta.");
+                                        
+                                        // 1. Notify user
+                                        if (duenioId != null) {
+                                                notificacionService.notificarCliente(
+                                                                duenioId,
+                                                                WsNotificacionService.Tipo.warning,
+                                                                "subasta",
+                                                                "Propuesta comercial rechazada: " + titulo,
+                                                                "Has rechazado la propuesta comercial. Se procederá con la devolución del artículo '" + titulo + "' a tu dirección registrada.");
+                                        }
+
+                                        // 2. Delete ItemCatalogo first to avoid FK constraint violation
+                                        itemRepository.delete(item);
+
+                                        // 3. Delete Foto entities
+                                        List<Foto> fotos = fotoRepository.findByProducto(p.getIdentificador());
+                                        fotoRepository.deleteAll(fotos);
+
+                                        // 4. Delete Producto (which cascades to ProductoExtra)
+                                        productoRepository.delete(p);
+
+                                        return null;
                                 }
                         }
                 }
@@ -260,7 +292,9 @@ public class CatalogoService {
 
         private CatalogoResponse toCatalogoResponse(Catalogo c) {
                 List<ItemCatalogoResponse> items = c.getItems() == null ? List.of()
-                                : c.getItems().stream().map(this::toItemResponse).toList();
+                                : c.getItems().stream()
+                                                .filter(i -> i.getEstadoAceptacion() == EstadoAceptacionItem.aceptado)
+                                                .map(this::toItemResponse).toList();
                 Empleado responsable = c.getResponsable();
                 return CatalogoResponse.builder()
                                 .identificador(c.getIdentificador())

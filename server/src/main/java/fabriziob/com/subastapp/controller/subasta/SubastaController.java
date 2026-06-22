@@ -59,8 +59,9 @@ public class SubastaController {
                         @Parameter(description = "Filtrar por estado (abierta, cerrada)") @RequestParam(required = false) EstadoSubasta estado,
                         @Parameter(description = "Filtrar por categoría (comun, especial, plata, oro, platino)") @RequestParam(required = false) CategoriaSubasta categoria,
                         @Parameter(description = "Filtrar por fecha exacta (yyyy-MM-dd)") @RequestParam(required = false) LocalDate fecha,
+                        @Parameter(description = "Filtrar solo subastas con catálogo con ítems aceptados") @RequestParam(required = false) Boolean conCatalogo,
                         @PageableDefault(size = 30, sort = "identificador") Pageable pageable) {
-                return ResponseEntity.ok(subastaService.getAll(estado, categoria, fecha, pageable));
+                return ResponseEntity.ok(subastaService.getAll(estado, categoria, fecha, conCatalogo, pageable));
         }
 
         @Operation(summary = "Obtener subasta por ID")

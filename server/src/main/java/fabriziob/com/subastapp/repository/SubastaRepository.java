@@ -33,10 +33,16 @@ public interface SubastaRepository extends JpaRepository<Subasta, Integer> {
             WHERE (:estado IS NULL OR s.estado = :estado)
               AND (:categoria IS NULL OR s.categoria = :categoria)
               AND (:fecha IS NULL OR s.fecha = :fecha)
+              AND (:conCatalogo IS NULL OR :conCatalogo = false OR EXISTS (
+                  SELECT ic FROM ItemCatalogo ic 
+                  WHERE ic.catalogo.subasta = s 
+                    AND ic.estadoAceptacion = fabriziob.com.subastapp.entity.enums.EstadoAceptacionItem.aceptado
+              ))
             """)
     Page<Subasta> buscar(@Param("estado") EstadoSubasta estado,
             @Param("categoria") CategoriaSubasta categoria,
             @Param("fecha") LocalDate fecha,
+            @Param("conCatalogo") Boolean conCatalogo,
             Pageable pageable);
 
     @Query("""

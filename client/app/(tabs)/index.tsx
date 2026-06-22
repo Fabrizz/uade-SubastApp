@@ -271,6 +271,7 @@ export default function Home() {
           params: {
             query: {
               estado: targetEstado,
+              conCatalogo: true,
               pageable: { page: 0, size: 100 }
             }
           },
