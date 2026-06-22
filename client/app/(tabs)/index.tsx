@@ -123,7 +123,7 @@ function AuctionCard({ subasta, userCategory, isAuthenticated, isLive, token }: 
 
   const handlePress = () => {
     // Anyone can open the preview — pujar/join gating happens inside the auction screen.
-    router.push({ pathname: "/auctions/[id]", params: { id: String(subasta.identificador) } });
+    router.push({ pathname: "/auctions/[id]", params: { id: String(subasta.identificador), referrer: "home" } });
   };
 
   return (

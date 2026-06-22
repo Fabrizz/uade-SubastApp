@@ -52,7 +52,7 @@ function canAccessSubasta(userCategory?: string, subastaCategoria?: string): boo
 }
 
 export default function AuctionDetailScreen() {
-  const { id } = useLocalSearchParams();
+  const { id, referrer } = useLocalSearchParams<{ id: string; referrer?: string }>();
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -339,7 +339,12 @@ export default function AuctionDetailScreen() {
   };
 
   // Payment methods checks
-  const verifiedMethods = paymentMethods.filter(mp => mp.verificado && mp.activo);
+  const verifiedMethods = paymentMethods.filter(mp => {
+    const isOk = mp.verificado && mp.activo;
+    if (!isOk) return false;
+    if (!currentSubasta?.moneda) return true; // fallback
+    return mp.moneda === currentSubasta.moneda;
+  });
   const hasVerifiedPayment = verifiedMethods.length > 0;
 
   const handlePujarAhoraClick = () => {
@@ -351,9 +356,10 @@ export default function AuctionDetailScreen() {
 
     // 1. Payment gating validation
     if (!hasVerifiedPayment) {
+      const targetCurrency = currentSubasta?.moneda || "la moneda correspondiente";
       Alert.alert(
         "Medio de Pago Requerido",
-        "Solo puedes pujar si tienes al menos un medio de pago verificado y activo. Ve a tu Perfil para registrar y verificar tus medios de pago.",
+        `Solo puedes pujar si tienes al menos un medio de pago verificado y activo en ${targetCurrency}. Ve a tu Perfil para registrar y verificar tus medios de pago.`,
         [
           { text: "Cancelar", style: "cancel" },
           { text: "Ir a Perfil", onPress: () => router.push("/(tabs)/profile") }
@@ -422,6 +428,19 @@ export default function AuctionDetailScreen() {
       <HeaderComp
         back
         backFallback="/(tabs)/auctions"
+        onBack={() => {
+          if (referrer === "home") {
+            router.replace("/");
+          } else if (referrer === "notifications") {
+            router.replace("/(tabs)/notifications");
+          } else {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace("/(tabs)/auctions");
+            }
+          }
+        }}
         outlet={
           <View className="flex-row items-center justify-center gap-2">
             <ExternalLink href="https://youtube.com" asChild>

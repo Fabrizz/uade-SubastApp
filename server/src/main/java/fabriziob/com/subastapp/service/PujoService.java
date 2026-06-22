@@ -31,6 +31,7 @@ import fabriziob.com.subastapp.entity.enums.EstadoSubasta;
 import fabriziob.com.subastapp.entity.enums.Moneda;
 import fabriziob.com.subastapp.entity.enums.TipoMedioPago;
 import fabriziob.com.subastapp.repository.AsistenteRepository;
+import fabriziob.com.subastapp.repository.ClienteRepository;
 import fabriziob.com.subastapp.repository.ItemCatalogoRepository;
 import fabriziob.com.subastapp.repository.MedioPagoChequeRepository;
 import fabriziob.com.subastapp.repository.MedioPagoCuentaRepository;
@@ -56,8 +57,11 @@ public class PujoService {
         private final MedioPagoTarjetaRepository tarjetaRepository;
         private final RegistroDeSubastaRepository registroRepository;
         private final RegistroDeSubastaExtraRepository registroExtraRepository;
+        private final ClienteRepository clienteRepository;
         private final SimpMessagingTemplate messagingTemplate;
         private final NotificacionService notificacionService;
+
+        private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(PujoService.class);
 
         // ─── crear pujo ─────────────────────────────────────────────────────────
 
@@ -418,6 +422,61 @@ public class PujoService {
                                                         + pujo.getImporte() + " + comisión " + comision
                                                         + " = " + total + " " + monedaSubasta.name()
                                                         + " (más el costo de envío a definir).");
+                } else {
+                        // NO ONE BID -> Company buys at base value and keeps it in the warehouse
+                        Cliente clienteEmpresa = clienteRepository.findAll().stream()
+                                        .filter(c -> c.getCategoria() == fabriziob.com.subastapp.entity.enums.ClienteCategoria.admin)
+                                        .findFirst()
+                                        .orElse(null);
+
+                        if (clienteEmpresa == null) {
+                                clienteEmpresa = clienteRepository.findAll().stream()
+                                                .findFirst()
+                                                .orElse(null);
+                        }
+
+                        if (clienteEmpresa != null) {
+                                BigDecimal basePrice = item.getPrecioBase() != null ? item.getPrecioBase() : BigDecimal.ZERO;
+                                RegistroDeSubasta registro = RegistroDeSubasta.builder()
+                                                .subasta(subasta)
+                                                .duenio(item.getProducto().getDuenio())
+                                                .producto(item.getProducto())
+                                                .cliente(clienteEmpresa)
+                                                .importe(basePrice)
+                                                .comision(BigDecimal.ZERO)
+                                                .build();
+                                registro = registroRepository.save(registro);
+
+                                RegistroDeSubastaExtra registroExtra = RegistroDeSubastaExtra.builder()
+                                                .registroSubasta(registro)
+                                                .medioEnvio(fabriziob.com.subastapp.entity.enums.MedioEnvio.RETIRO_DEPOSITO)
+                                                .costoEnvio(BigDecimal.ZERO)
+                                                .direccionEnvio(null)
+                                                .paisEnvio(null)
+                                                .build();
+                                registroExtraRepository.save(registroExtra);
+
+                                if (item.getProducto() != null && item.getProducto().getProductoExtra() != null) {
+                                        item.getProducto().getProductoExtra().setDeposito("Almacén");
+                                }
+
+                                log.info("Subasta {} - Item {} sin pujas. Autocomprado por la empresa (Cliente ID: {}) al valor base: {}",
+                                                subasta.getIdentificador(), item.getIdentificador(), clienteEmpresa.getIdentificador(), basePrice);
+
+                                // Notify the original owner that the company bought the item
+                                if (item.getProducto().getDuenio() != null) {
+                                        String descripcion = item.getProducto().getDescripcionCatalogo();
+                                        notificacionService.notificarCliente(
+                                                        item.getProducto().getDuenio().getIdentificador(),
+                                                        WsNotificacionService.Tipo.success,
+                                                        "subasta",
+                                                        "Artículo comprado por la empresa",
+                                                        "Tu artículo \"" + descripcion + "\" no recibió ofertas en la subasta y fue adquirido automáticamente por la empresa al valor base de " 
+                                                                        + basePrice + " " + (subasta.getSubastaExtra() != null ? subasta.getSubastaExtra().getMoneda().name() : "ARS") + ".");
+                                }
+                        } else {
+                                log.warn("No se pudo autocomprar el Item {} porque no hay ningún cliente registrado en el sistema.", item.getIdentificador());
+                        }
                 }
 
                 messagingTemplate.convertAndSend("/topic/subastas/" + subasta.getIdentificador(),
