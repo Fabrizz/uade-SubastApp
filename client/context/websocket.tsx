@@ -17,6 +17,23 @@ interface WebSocketContextValue {
 // Converts http(s):// → ws(s):// and appends the native (non-SockJS) STOMP endpoint
 const WS_URL = API_BASE.replace(/^https/, 'wss').replace(/^http/, 'ws') + '/api/v1/ws/native';
 
+const TRACE_MAX_LEN = 200;
+
+function truncateTrace(body: unknown): string {
+  if (body === undefined) return "";
+  const text = (typeof body === "string" ? body : JSON.stringify(body)).replace(/\s*\n\s*/g, "");
+  return text.length > TRACE_MAX_LEN ? `${text.slice(0, TRACE_MAX_LEN)}…` : text;
+}
+
+// Logs every incoming STOMP message so websocket traffic is visible in the console
+// without each subscriber adding its own logging, mirroring lib/api.ts's REQUEST/RESPONSE logs.
+function withIncomingLog(topic: string, callback: (msg: IMessage) => void) {
+  return (msg: IMessage) => {
+    console.info(`[WS] [MESSAGE] ${topic}`, truncateTrace(msg.body));
+    callback(msg);
+  };
+}
+
 // ─── Context ──────────────────────────────────────────────────────────────────
 
 const WebSocketContext = createContext<WebSocketContextValue | null>(null);
@@ -60,7 +77,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         setIsConnected(true);
         setIsConnecting(false);
         setConnectionError(null);
-        client.subscribe('/user/queue/notificaciones', (msg: IMessage) => {
+        client.subscribe('/user/queue/notificaciones', withIncomingLog('/user/queue/notificaciones', (msg: IMessage) => {
           try {
             const notif: WsNotification = JSON.parse(msg.body);
             useNotificacionesStore.getState().addNotification(notif);
@@ -76,10 +93,10 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           } catch {
             // malformed message — ignore
           }
-        });
+        }));
         // Re-subscribe to any topics registered before/during reconnect
         topicCallbacksRef.current.forEach((cb, topic) => {
-          const sub = client.subscribe(topic, cb);
+          const sub = client.subscribe(topic, withIncomingLog(topic, cb));
           stompSubsRef.current.set(topic, sub);
         });
       },
@@ -128,7 +145,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const subscribeToTopic = useCallback((topic: string, callback: (msg: IMessage) => void) => {
     topicCallbacksRef.current.set(topic, callback);
     if (clientRef.current?.connected) {
-      const sub = clientRef.current.subscribe(topic, callback);
+      const sub = clientRef.current.subscribe(topic, withIncomingLog(topic, callback));
       stompSubsRef.current.set(topic, sub);
     }
     return () => {
