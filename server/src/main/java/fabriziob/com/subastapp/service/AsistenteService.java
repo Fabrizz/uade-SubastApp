@@ -17,6 +17,7 @@ import fabriziob.com.subastapp.entity.Cliente;
 import fabriziob.com.subastapp.entity.Subasta;
 import fabriziob.com.subastapp.entity.enums.CategoriaSubasta;
 import fabriziob.com.subastapp.entity.enums.ClienteCategoria;
+import fabriziob.com.subastapp.entity.enums.EstadoDetalladoSubasta;
 import fabriziob.com.subastapp.repository.AsistenciaActualRepository;
 import fabriziob.com.subastapp.repository.AsistenteRepository;
 import fabriziob.com.subastapp.repository.ClienteRepository;
@@ -45,6 +46,11 @@ public class AsistenteService {
                 Cliente cliente = clienteRepository.findById(req.getClienteId())
                                 .orElseThrow(() -> new EntityNotFoundException(
                                                 "Cliente no encontrado: " + req.getClienteId()));
+
+                // Gating por estado detallado: la subasta debe estar en curso.
+                if (subasta.getSubastaExtra() == null || subasta.getSubastaExtra().getEstadoDetallado() != EstadoDetalladoSubasta.en_curso) {
+                        throw new IllegalStateException("La subasta no ha comenzado o ya ha finalizado.");
+                }
 
                 // Gating por categoría: la categoría de la subasta debe ser ≤ la del cliente.
                 if (!categoriaPermite(subasta.getCategoria(), cliente.getCategoria()))
