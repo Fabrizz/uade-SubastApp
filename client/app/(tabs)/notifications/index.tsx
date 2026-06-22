@@ -69,7 +69,7 @@ function useAccionNav() {
     // /subastas/{id}/catalogo/items/{itemId} → open the auction
     const item = accion.match(/\/subastas\/(\d+)/);
     if (item) {
-      router.push({ pathname: "/auctions/[id]", params: { id: item[1] } });
+      router.push({ pathname: "/auctions/[id]", params: { id: item[1], referrer: "notifications" } });
       return;
     }
   };
