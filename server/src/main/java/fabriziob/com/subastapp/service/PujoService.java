@@ -97,6 +97,13 @@ public class PujoService {
 
                 Cliente cliente = asistente.getCliente();
 
+                // Un dueño no debería poder pujar por su propio artículo
+                if (item.getProducto() != null && item.getProducto().getDuenio() != null) {
+                        if (cliente.getIdentificador().equals(item.getProducto().getDuenio().getIdentificador())) {
+                                throw new IllegalArgumentException("No puedes pujar por tu propio artículo");
+                        }
+                }
+
                 // (#11) Guard cliente operativo
                 validarClienteOperativo(cliente);
 
