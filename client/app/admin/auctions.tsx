@@ -105,6 +105,8 @@ export default function AdminAuctionsScreen() {
   const [nombreColeccion, setNombreColeccion] = useState("");
   const [fecha, setFecha] = useState(getDefaultFutureDate());
   const [hora, setHora] = useState("18:00");
+  const [fechaFin, setFechaFin] = useState(getDefaultFutureDate());
+  const [horaFin, setHoraFin] = useState("20:00");
   const [categoria, setCategoria] = useState<"comun" | "especial" | "plata" | "oro" | "platino">("comun");
   const [moneda, setMoneda] = useState<"ARS" | "USD">("USD");
   const [ubicacion, setUbicacion] = useState("");
@@ -596,6 +598,22 @@ export default function AdminAuctionsScreen() {
       return;
     }
 
+    // Fecha/hora de fin validation
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaFin)) {
+      Alert.alert("Fecha de Fin Inválida", "La fecha de fin debe tener el formato AAAA-MM-DD.");
+      return;
+    }
+    if (!/^\d{2}:\d{2}(:\d{2})?$/.test(horaFin)) {
+      Alert.alert("Hora de Fin Inválida", "La hora de fin debe tener el formato HH:MM.");
+      return;
+    }
+    const dtInicio = new Date(`${fecha}T${hora.length === 5 ? hora : hora.slice(0, 5)}`);
+    const dtFin = new Date(`${fechaFin}T${horaFin.length === 5 ? horaFin : horaFin.slice(0, 5)}`);
+    if (dtFin <= dtInicio) {
+      Alert.alert("Fecha de Fin Inválida", "La fecha y hora de fin debe ser posterior a la de inicio.");
+      return;
+    }
+
     // Date logic verification: must be at least 10 days in the future
     const parsedDate = new Date(fecha + "T00:00:00");
     const diffTime = parsedDate.getTime() - Date.now();
@@ -621,7 +639,7 @@ export default function AdminAuctionsScreen() {
       const payload = {
         fecha,
         hora: hora.length === 5 ? `${hora}:00` : hora,
-        estado: "abierta" as const, // default open for bidding registration
+        estado: "abierta" as const,
         ubicacion,
         capacidadAsistentes: Number(capacidadAsistentes),
         tieneDeposito: tieneDeposito ? "si" : "no",
@@ -631,6 +649,8 @@ export default function AdminAuctionsScreen() {
         esColeccion,
         nombreColeccion: esColeccion ? nombreColeccion : undefined,
         subastadorId: selectedSubastador ? Number(selectedSubastador) : undefined,
+        fechaFin,
+        horaFin: horaFin.length === 5 ? `${horaFin}:00` : horaFin,
       };
 
       const { error } = await api.POST("/api/v1/subastas", {
@@ -649,6 +669,8 @@ export default function AdminAuctionsScreen() {
       setNombreColeccion("");
       setFecha(getDefaultFutureDate());
       setHora("18:00");
+      setFechaFin(getDefaultFutureDate());
+      setHoraFin("20:00");
       setCategoria("comun");
       setMoneda("USD");
       setUbicacion("");
@@ -853,6 +875,20 @@ export default function AdminAuctionsScreen() {
                             {s.esColeccion === true || s.esColeccion === "si" ? `Colección (${s.nombreColeccion || ""})` : "General"}
                           </Text>
                         </View>
+                        {s.fechaFin && (
+                          <View className="flex-row justify-between items-center">
+                            <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Fin programado</Text>
+                            <Text className="text-neutral-300 text-xs font-manrope-medium">
+                              {s.fechaFin} {s.horaFin?.slice(0, 5)}
+                            </Text>
+                          </View>
+                        )}
+                        {s.itemActualId && (
+                          <View className="flex-row justify-between items-center">
+                            <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Ítem en subasta</Text>
+                            <Text className="text-emerald-400 text-xs font-manrope-bold">#{s.itemActualId}</Text>
+                          </View>
+                        )}
                       </View>
 
                       <TouchableOpacity
@@ -1194,6 +1230,39 @@ export default function AdminAuctionsScreen() {
                     placeholderTextColor="#525252"
                     value={hora}
                     onChangeText={setHora}
+                    editable={!isSubmitting}
+                  />
+                </View>
+
+                {/* Fecha Fin input */}
+                <View>
+                  <Text className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-2 ml-1">
+                    Fecha de Fin (AAAA-MM-DD)
+                  </Text>
+                  <TextInput
+                    className="bg-neutral-900 border border-neutral-700 px-4 py-3 rounded-xl text-white text-base"
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="#525252"
+                    value={fechaFin}
+                    onChangeText={setFechaFin}
+                    editable={!isSubmitting}
+                  />
+                  <Text className="text-neutral-500 text-[10px] italic mt-1 ml-1">
+                    La duración total se divide equitativamente entre los artículos (mínimo 10 min c/u)
+                  </Text>
+                </View>
+
+                {/* Hora Fin input */}
+                <View>
+                  <Text className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-2 ml-1">
+                    Hora de Fin (HH:MM)
+                  </Text>
+                  <TextInput
+                    className="bg-neutral-900 border border-neutral-700 px-4 py-3 rounded-xl text-white text-base"
+                    placeholder="20:00"
+                    placeholderTextColor="#525252"
+                    value={horaFin}
+                    onChangeText={setHoraFin}
                     editable={!isSubmitting}
                   />
                 </View>

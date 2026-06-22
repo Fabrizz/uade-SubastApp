@@ -1,5 +1,6 @@
 package fabriziob.com.subastapp.controller.subasta;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -34,4 +35,8 @@ public class SubastaResponse {
     private EstadoDetalladoSubasta estadoDetallado;
     private Boolean esColeccion;
     private String nombreColeccion;
+    private LocalDate fechaFin;
+    private LocalTime horaFin;
+    private Integer itemActualId;
+    private Instant inicioItemActualTs;
 }
