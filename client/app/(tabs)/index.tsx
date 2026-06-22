@@ -299,9 +299,9 @@ export default function Home() {
   ];
 
   const filteredSubastas = subastas.filter((s) => {
-    // Defensive guard: keep finished auctions out of the active tabs (the API already
-    // filters by estado, but admin sees everything and estadoDetallado is more granular).
-    if (category !== "terminadas" && s.estadoDetallado === "finalizada") return false;
+    if (category === "terminadas" && s.estadoDetallado !== "cerrada" && s.estadoDetallado !== "finalizada") return false;
+    if (category === "empezando" && s.estadoDetallado !== "en_curso") return false;
+    if (category === "top" && (s.estadoDetallado === "cerrada" || s.estadoDetallado === "finalizada")) return false;
     const q = search.toLowerCase().trim();
     if (!q) return true;
     const title = (s.nombreColeccion || s.ubicacion || `Subasta ${s.categoria}`).toLowerCase();

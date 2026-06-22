@@ -62,7 +62,7 @@ export default function AuctionAcceptedScreen() {
           params: { path: { id: productoId } },
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (data) {
+        if (data && (data.seguroObj || data.seguro)) {
           setSeguroData(data);
         }
       } catch (err) {
@@ -321,7 +321,7 @@ export default function AuctionAcceptedScreen() {
               <View className="flex-row justify-between items-center px-1">
                 <Text className="text-neutral-400 text-xs font-manrope">Póliza N°:</Text>
                 <Text className="text-emerald-400 text-xs font-bold font-mono">
-                  {seguroData.seguroObj?.nroPoliza || seguroData.seguro || "No registrada"}
+                  {seguroData.seguroObj?.nroPoliza || seguroData.seguro}
                 </Text>
               </View>
               {seguroData.seguroObj?.compania ? (
@@ -340,6 +340,12 @@ export default function AuctionAcceptedScreen() {
                   </Text>
                 </View>
               ) : null}
+            </View>
+          ) : estadoAceptacion === "espera" ? (
+            <View className="border-t border-neutral-800/80 pt-3 mt-3">
+              <Text className="text-neutral-500 text-xs text-center italic px-2">
+                La póliza se registrará una vez que aceptes la propuesta.
+              </Text>
             </View>
           ) : null}
         </View>
