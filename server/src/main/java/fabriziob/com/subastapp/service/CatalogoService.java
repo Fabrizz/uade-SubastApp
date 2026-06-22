@@ -142,6 +142,23 @@ public class CatalogoService {
                                 .orElseThrow(() -> new EntityNotFoundException(
                                                 "Producto no encontrado: " + req.getProductoId()));
 
+                if (catalogo.getSubasta() != null && catalogo.getSubasta().getSubastaExtra() != null) {
+                        Boolean esColeccion = catalogo.getSubasta().getSubastaExtra().getEsColeccion();
+                        if (Boolean.TRUE.equals(esColeccion)) {
+                                List<ItemCatalogo> itemsExistentes = itemRepository.findByCatalogo_Identificador(catalogo.getIdentificador());
+                                if (itemsExistentes != null && !itemsExistentes.isEmpty()) {
+                                        ItemCatalogo primerItem = itemsExistentes.get(0);
+                                        if (primerItem.getProducto() != null && primerItem.getProducto().getDuenio() != null) {
+                                                Integer duenioExclusivoId = primerItem.getProducto().getDuenio().getIdentificador();
+                                                if (producto.getDuenio() == null || !producto.getDuenio().getIdentificador().equals(duenioExclusivoId)) {
+                                                        throw new IllegalArgumentException(
+                                                                        "No se puede agregar el artículo. Esta subasta es una colección y solo permite artículos del propietario del primer lote.");
+                                                }
+                                        }
+                                }
+                        }
+                }
+
                 ItemCatalogo item = ItemCatalogo.builder()
                                 .catalogo(catalogo)
                                 .producto(producto)
@@ -150,6 +167,11 @@ public class CatalogoService {
                                 .subastado("no")
                                 .build();
                 item = itemRepository.save(item);
+
+                // Generar póliza de seguro automáticamente al crear la propuesta
+                crearSeguroAutomatico(producto, req.getPrecioBase());
+                productoRepository.save(producto);
+
                 return toItemResponse(item);
         }
 
@@ -187,6 +209,7 @@ public class CatalogoService {
                                         String titulo = p.getProductoExtra() != null && p.getProductoExtra().getTitulo() != null
                                                         ? p.getProductoExtra().getTitulo()
                                                         : p.getDescripcionCompleta();
+                                        String nroPoliza = p.getSeguro();
 
                                         // 1. Notify user
                                         if (duenioId != null) {
@@ -207,6 +230,11 @@ public class CatalogoService {
 
                                         // 4. Delete Producto (which cascades to ProductoExtra)
                                         productoRepository.delete(p);
+
+                                        // 5. Delete Seguro if exists
+                                        if (nroPoliza != null) {
+                                                seguroRepository.deleteById(nroPoliza);
+                                        }
 
                                         return null;
                                 }

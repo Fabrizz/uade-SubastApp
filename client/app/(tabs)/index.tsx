@@ -299,7 +299,7 @@ export default function Home() {
   ];
 
   const filteredSubastas = subastas.filter((s) => {
-    if (category === "terminadas" && s.estadoDetallado !== "cerrada" && s.estadoDetallado !== "finalizada") return false;
+    if (category === "terminadas" && s.estadoDetallado !== "finalizada") return false;
     if (category === "empezando" && s.estadoDetallado !== "en_curso") return false;
     if (category === "top" && (s.estadoDetallado === "cerrada" || s.estadoDetallado === "finalizada")) return false;
     const q = search.toLowerCase().trim();

@@ -4,7 +4,7 @@ import { api, API_BASE } from "@/lib/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { Calendar, Clock, MapPin, Plus, Users, X, DollarSign, Check, Gavel, ChevronDown, ChevronUp, User, Play } from "lucide-react-native";
 import * as FileSystem from "expo-file-system/legacy";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Alert,
   ScrollView,
@@ -84,6 +84,21 @@ export default function AdminAuctionsScreen() {
   const [comision, setComision] = useState("10");
   const [isAddingLot, setIsAddingLot] = useState(false);
   const [showProductDropdown, setShowProductDropdown] = useState(false);
+
+  const selectableProducts = useMemo(() => {
+    return products.filter((p) => {
+      if (p.estadoBien !== "aceptado") return false;
+      const isColeccion = selectedSubastaForCatalog?.esColeccion === true || selectedSubastaForCatalog?.esColeccion === "si";
+      if (isColeccion && catalogItems.length > 0) {
+        const firstItem = catalogItems[0];
+        const firstProduct = products.find((prod) => prod.identificador === firstItem.productoId);
+        if (firstProduct && p.duenio !== firstProduct.duenio) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [products, selectedSubastaForCatalog, catalogItems]);
 
   // Physical Approval Form States
   const [physicalApprovalModalVisible, setPhysicalApprovalModalVisible] = useState(false);
@@ -1907,13 +1922,15 @@ export default function AdminAuctionsScreen() {
                         <View className="bg-neutral-950 border border-neutral-800 rounded-xl mt-1.5 p-2 max-h-48">
                           {productsLoading ? (
                             <ActivityIndicator size="small" color="#d8b4fe" className="py-4" />
-                                                    ) : products.filter((p) => p.estadoBien === "aceptado").length === 0 ? (
-                            <Text className="text-neutral-500 text-xs italic p-3 text-center">No hay artículos aceptados disponibles.</Text>
+                          ) : selectableProducts.length === 0 ? (
+                            <Text className="text-neutral-500 text-xs italic p-3 text-center">
+                              {selectedSubastaForCatalog?.esColeccion && catalogItems.length > 0
+                                ? "No hay artículos aceptados disponibles de este propietario."
+                                : "No hay artículos aceptados disponibles."}
+                            </Text>
                           ) : (
                             <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={true}>
-                              {products
-                                .filter((p) => p.estadoBien === "aceptado")
-                                .map((p) => {
+                              {selectableProducts.map((p) => {
                                   const isSel = selectedProduct === String(p.identificador);
                                   return (
                                     <TouchableOpacity
