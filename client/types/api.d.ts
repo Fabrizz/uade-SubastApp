@@ -1729,6 +1729,8 @@ export interface components {
             identificador?: number;
             matricula?: string;
             region?: string;
+            nombre?: string;
+            email?: string;
         };
         PersonaUpdateRequest: {
             nombre?: string;
@@ -1819,6 +1821,9 @@ export interface components {
             moneda?: components["schemas"]["Moneda"];
             esColeccion?: boolean;
             nombreColeccion?: string;
+            /** Format: date */
+            fechaFin?: string;
+            horaFin?: string;
         };
         /** @enum {string} */
         EstadoDetalladoSubasta: "en_espera" | "creada" | "publicada" | "en_curso" | "cerrada" | "finalizada";
@@ -1844,6 +1849,13 @@ export interface components {
             estadoDetallado?: components["schemas"]["EstadoDetalladoSubasta"];
             esColeccion?: boolean;
             nombreColeccion?: string;
+            /** Format: date */
+            fechaFin?: string;
+            horaFin?: string;
+            /** Format: int32 */
+            itemActualId?: number;
+            inicioItemActualTs?: string;
+            finItemActualTs?: string;
         };
         /** @enum {string} */
         MedioEnvio: "ENVIO_DOMICILIO" | "RETIRO_DEPOSITO";
@@ -2294,12 +2306,12 @@ export interface components {
             /** Format: int64 */
             offset?: number;
             paged?: boolean;
-            sort?: components["schemas"]["SortObject"];
             unpaged?: boolean;
-            /** Format: int32 */
-            pageNumber?: number;
+            sort?: components["schemas"]["SortObject"];
             /** Format: int32 */
             pageSize?: number;
+            /** Format: int32 */
+            pageNumber?: number;
         };
         SortObject: {
             empty?: boolean;
@@ -3106,6 +3118,8 @@ export interface operations {
                 categoria?: components["schemas"]["CategoriaSubasta"];
                 /** @description Filtrar por fecha exacta (yyyy-MM-dd) */
                 fecha?: string;
+                /** @description Filtrar solo subastas con catálogo con ítems aceptados */
+                conCatalogo?: boolean;
                 pageable: components["schemas"]["Pageable"];
             };
             header?: never;

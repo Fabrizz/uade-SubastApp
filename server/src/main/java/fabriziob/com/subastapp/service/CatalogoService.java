@@ -1,6 +1,9 @@
 package fabriziob.com.subastapp.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
+import java.util.Random;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -19,29 +22,53 @@ import fabriziob.com.subastapp.controller.subasta.ItemCatalogoRequest;
 import fabriziob.com.subastapp.controller.subasta.ItemCatalogoResponse;
 import fabriziob.com.subastapp.entity.Catalogo;
 import fabriziob.com.subastapp.entity.Empleado;
+import fabriziob.com.subastapp.entity.Foto;
 import fabriziob.com.subastapp.entity.ItemCatalogo;
 import fabriziob.com.subastapp.entity.Producto;
+import fabriziob.com.subastapp.entity.Seguro;
 import fabriziob.com.subastapp.entity.Subasta;
 import fabriziob.com.subastapp.entity.enums.EstadoAceptacionItem;
 import fabriziob.com.subastapp.repository.CatalogoRepository;
 import fabriziob.com.subastapp.repository.EmpleadoRepository;
+import fabriziob.com.subastapp.repository.FotoRepository;
 import fabriziob.com.subastapp.repository.ItemCatalogoRepository;
 import fabriziob.com.subastapp.repository.ProductoRepository;
+import fabriziob.com.subastapp.repository.SeguroRepository;
 import fabriziob.com.subastapp.repository.SubastaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import fabriziob.com.subastapp.service.WsNotificacionService;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class CatalogoService {
 
+        // Porcentaje del precio base que se cobra como prima al asegurar un bien aceptado (TPO: "se le
+        // contrata un seguro en función del valor base del bien", sin fórmula exacta especificada).
+        private static final BigDecimal SEGURO_PORCENTAJE_PRECIO_BASE = new BigDecimal("0.10");
+
+        // Compañías de seguro de fantasía usadas para la póliza generada automáticamente al aceptar un ítem.
+        private static final List<String> COMPANIAS_SEGURO = List.of(
+                        "Protección Total S.A.",
+                        "Aseguradora del Sur",
+                        "Confianza Seguros",
+                        "Patrimonio Seguro S.A.",
+                        "Resguardo Compañía de Seguros",
+                        "Vanguardia Seguros",
+                        "Escudo Mutual de Seguros",
+                        "Garantía Plena S.A.",
+                        "Horizonte Aseguradora",
+                        "Custodia Seguros Generales");
+
         private final CatalogoRepository catalogoRepository;
         private final ItemCatalogoRepository itemRepository;
         private final SubastaRepository subastaRepository;
         private final EmpleadoRepository empleadoRepository;
         private final ProductoRepository productoRepository;
+        private final SeguroRepository seguroRepository;
         private final NotificacionService notificacionService;
+        private final FotoRepository fotoRepository;
 
         // ─── lecturas ──────────────────────────────────────────────────────────
 
@@ -50,6 +77,7 @@ public class CatalogoService {
                 verificarSubasta(subastaId);
                 List<ItemCatalogoResponse> all = catalogoRepository.findBySubasta_Identificador(subastaId).stream()
                                 .flatMap(c -> itemRepository.findByCatalogoIdWithProducto(c.getIdentificador()).stream())
+                                .filter(i -> i.getEstadoAceptacion() == EstadoAceptacionItem.aceptado)
                                 .map(this::toItemResponse)
                                 .toList();
 
@@ -133,34 +161,58 @@ public class CatalogoService {
                 if (req.getEstadoAceptacion() != null) {
                         item.setEstadoAceptacion(req.getEstadoAceptacion());
 
-                        // Update the product's EstadoBien as appropriate
                         if (item.getProducto() != null) {
                                 Producto p = item.getProducto();
+
                                 if (req.getEstadoAceptacion() == EstadoAceptacionItem.aceptado) {
                                         if (p.getProductoExtra() != null) {
                                                 p.getProductoExtra().setEstadoBien(fabriziob.com.subastapp.entity.enums.EstadoBien.aceptado);
                                         }
-                                } else if (req.getEstadoAceptacion() == EstadoAceptacionItem.rechazado) {
-                                        if (p.getProductoExtra() != null) {
-                                                p.getProductoExtra().setEstadoBien(fabriziob.com.subastapp.entity.enums.EstadoBien.devuelto);
-                                        }
-                                }
-                                productoRepository.save(p);
+                                        crearSeguroAutomatico(p, item.getPrecioBase());
+                                        productoRepository.save(p);
 
-                                if (req.getEstadoAceptacion() == EstadoAceptacionItem.aceptado && p.getDuenio() != null) {
+                                        if (p.getDuenio() != null) {
+                                                String titulo = p.getProductoExtra() != null && p.getProductoExtra().getTitulo() != null
+                                                                ? p.getProductoExtra().getTitulo()
+                                                                : p.getDescripcionCompleta();
+                                                notificacionService.notificarCliente(
+                                                                p.getDuenio().getIdentificador(),
+                                                                WsNotificacionService.Tipo.success,
+                                                                "subasta",
+                                                                "¡Tu artículo fue aceptado para subastar!",
+                                                                "\"" + titulo + "\" fue aceptado y se incluyó en el catálogo de la subasta.");
+                                        }
+                                } else if (req.getEstadoAceptacion() == EstadoAceptacionItem.rechazado) {
+                                        Integer duenioId = p.getDuenio() != null ? p.getDuenio().getIdentificador() : null;
                                         String titulo = p.getProductoExtra() != null && p.getProductoExtra().getTitulo() != null
                                                         ? p.getProductoExtra().getTitulo()
                                                         : p.getDescripcionCompleta();
-                                        notificacionService.notificarCliente(
-                                                        p.getDuenio().getIdentificador(),
-                                                        WsNotificacionService.Tipo.success,
-                                                        "subasta",
-                                                        "¡Tu artículo fue aceptado para subastar!",
-                                                        "\"" + titulo + "\" fue aceptado y se incluyó en el catálogo de la subasta.");
+
+                                        // 1. Notify user
+                                        if (duenioId != null) {
+                                                notificacionService.notificarCliente(
+                                                                duenioId,
+                                                                WsNotificacionService.Tipo.warning,
+                                                                "subasta",
+                                                                "Propuesta comercial rechazada: " + titulo,
+                                                                "Has rechazado la propuesta comercial. Se procederá con la devolución del artículo '" + titulo + "' a tu dirección registrada.");
+                                        }
+
+                                        // 2. Delete ItemCatalogo first to avoid FK constraint violation
+                                        itemRepository.delete(item);
+
+                                        // 3. Delete Foto entities
+                                        List<Foto> fotos = fotoRepository.findByProducto(p.getIdentificador());
+                                        fotoRepository.deleteAll(fotos);
+
+                                        // 4. Delete Producto (which cascades to ProductoExtra)
+                                        productoRepository.delete(p);
+
+                                        return null;
                                 }
                         }
                 }
-                
+
                 item = itemRepository.save(item);
                 return toItemResponse(item);
         }
@@ -196,6 +248,26 @@ public class CatalogoService {
 
         // ─── helpers ───────────────────────────────────────────────────────────
 
+        // El TPO indica que todo bien aceptado para subasta se asegura en función de su valor base;
+        // se genera la póliza acá mismo en vez de requerir un alta manual separada vía /api/v1/seguros.
+        private void crearSeguroAutomatico(Producto producto, BigDecimal precioBase) {
+                if (producto.getSeguro() != null || precioBase == null)
+                        return;
+
+                String nroPoliza = "POL-" + producto.getIdentificador();
+                String compania = COMPANIAS_SEGURO.get(new Random().nextInt(COMPANIAS_SEGURO.size()));
+                BigDecimal importe = precioBase.multiply(SEGURO_PORCENTAJE_PRECIO_BASE).setScale(2, RoundingMode.HALF_UP);
+
+                Seguro seguro = Seguro.builder()
+                                .nroPoliza(nroPoliza)
+                                .compania(compania)
+                                .polizaCombinada("no")
+                                .importe(importe)
+                                .build();
+                seguroRepository.save(seguro);
+                producto.setSeguro(nroPoliza);
+        }
+
         private void verificarSubasta(Integer subastaId) {
                 if (!subastaRepository.existsById(subastaId))
                         throw new EntityNotFoundException("Subasta no encontrada: " + subastaId);
@@ -216,7 +288,9 @@ public class CatalogoService {
 
         private CatalogoResponse toCatalogoResponse(Catalogo c) {
                 List<ItemCatalogoResponse> items = c.getItems() == null ? List.of()
-                                : c.getItems().stream().map(this::toItemResponse).toList();
+                                : c.getItems().stream()
+                                                .filter(i -> i.getEstadoAceptacion() == EstadoAceptacionItem.aceptado)
+                                                .map(this::toItemResponse).toList();
                 Empleado responsable = c.getResponsable();
                 return CatalogoResponse.builder()
                                 .identificador(c.getIdentificador())

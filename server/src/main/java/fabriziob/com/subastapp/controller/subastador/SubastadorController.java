@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import fabriziob.com.subastapp.entity.Persona;
 import fabriziob.com.subastapp.entity.Subastador;
 import fabriziob.com.subastapp.repository.SubastadorService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -113,10 +114,13 @@ public class SubastadorController {
     }
 
     private SubastadorResponse toResponse(Subastador s) {
+        Persona p = s.getPersona();
         return SubastadorResponse.builder()
                 .identificador(s.getIdentificador())
                 .matricula(s.getMatricula())
                 .region(s.getRegion())
+                .nombre(p != null ? p.getNombre() : null)
+                .email(p != null && p.getPersonaExtra() != null ? p.getPersonaExtra().getEmail() : null)
                 .build();
     }
 }

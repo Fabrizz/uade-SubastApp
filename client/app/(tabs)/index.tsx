@@ -271,6 +271,7 @@ export default function Home() {
           params: {
             query: {
               estado: targetEstado,
+              conCatalogo: true,
               pageable: { page: 0, size: 100 }
             }
           },
@@ -298,6 +299,9 @@ export default function Home() {
   ];
 
   const filteredSubastas = subastas.filter((s) => {
+    // Defensive guard: keep finished auctions out of the active tabs (the API already
+    // filters by estado, but admin sees everything and estadoDetallado is more granular).
+    if (category !== "terminadas" && s.estadoDetallado === "finalizada") return false;
     const q = search.toLowerCase().trim();
     if (!q) return true;
     const title = (s.nombreColeccion || s.ubicacion || `Subasta ${s.categoria}`).toLowerCase();

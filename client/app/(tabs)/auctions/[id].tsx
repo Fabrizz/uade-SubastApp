@@ -1,12 +1,14 @@
 import HeaderComp from "@/components/HeaderComp";
 import { ExternalLink } from "@/components/external-link";
 import { CategoryPill } from "@/components/ui/CategoryPill";
+import { CuentaRegresiva } from "@/components/ui/CuentaRegresiva";
 import { useAuth } from "@/context/auth";
 import { useWebSocket } from "@/context/websocket";
 import { api, API_BASE } from "@/lib/api";
 import { getBidBounds, useSubastaStore } from "@/lib/subastas.store";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { usePreventRemove } from "@react-navigation/native";
+import { useLocalSearchParams, useRouter, useNavigation } from "expo-router";
 import { Clock, FileText, Gavel, Hammer, Info, Lock, LogIn, MapPin, Video } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -52,6 +54,7 @@ function canAccessSubasta(userCategory?: string, subastaCategoria?: string): boo
 export default function AuctionDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { token, user } = useAuth();
   const { subscribeToTopic } = useWebSocket();
@@ -63,6 +66,7 @@ export default function AuctionDetailScreen() {
     itemActual,
     mejorPuja,
     pujas,
+    finalizada,
     isLoading: isStoreLoading,
     isPlacingBid,
     error: storeError,
@@ -149,6 +153,18 @@ export default function AuctionDetailScreen() {
       leaveSubasta(token ?? undefined);
     };
   }, [id, token, user?.id, leaveSubasta, checkAsistencia, subscribeToTopic]);
+
+  // Prevent leaving if current user is the highest bidder of the active item
+  const isHighestBidder = !!(itemActual && itemActual.subastado !== "si" && pujas[0] && pujas[0].clienteId === user?.id);
+  usePreventRemove(
+    isHighestBidder,
+    () => {
+      Alert.alert(
+        "Acción no permitida",
+        "No puedes abandonar la subasta siendo el máximo postor del lote activo."
+      );
+    }
+  );
 
   // 2. Fetch full product details for the current active item
   useEffect(() => {
@@ -273,6 +289,16 @@ export default function AuctionDetailScreen() {
     }
 
     if (otherSubastaId !== null && otherSubastaId !== Number(id)) {
+      // Check if user is the highest bidder of the active joined auction
+      const isHighest = itemActual && itemActual.subastado !== "si" && pujas[0] && pujas[0].clienteId === user?.id;
+      if (isHighest) {
+        Alert.alert(
+          "Cambio no permitido",
+          `No puedes unirte a otra subasta mientras sigas siendo el máximo postor del lote activo en la subasta "${subasta?.nombreColeccion || "tu subasta activa"}".`
+        );
+        return;
+      }
+
       Alert.alert(
         "Cambiar de subasta",
         `Ya estás participando en la subasta "${subasta?.nombreColeccion || "otra subasta"}". ¿Deseas abandonarla e ingresar a esta subasta?`,
@@ -292,6 +318,14 @@ export default function AuctionDetailScreen() {
   };
 
   const handleAbandon = () => {
+    const isHighest = itemActual && itemActual.subastado !== "si" && pujas[0] && pujas[0].clienteId === user?.id;
+    if (isHighest) {
+      Alert.alert(
+        "Acción no permitida",
+        "No puedes abandonar la subasta siendo el máximo postor del lote activo."
+      );
+      return;
+    }
     leaveSubasta(token ?? undefined);
     setBidAmount("");
     setValidationError(null);
@@ -501,14 +535,32 @@ export default function AuctionDetailScreen() {
             </View>
             
             {isJoined && (
-              <View className="absolute top-4 right-8 flex-row items-center bg-[#2dd4bf] px-3.5 py-1.5 rounded-full gap-1.5 shadow-lg shadow-black/40">
-                <View className="bg-red-500 rounded-full w-5 h-5 items-center justify-center">
-                  <Clock size={10} color="white" strokeWidth={3} />
+              finalizada ? (
+                <View className="absolute top-4 right-8 flex-row items-center bg-neutral-800 px-3.5 py-1.5 rounded-full gap-1.5 shadow-lg shadow-black/40">
+                  <Text className="text-neutral-300 text-xs font-manrope-bold uppercase">
+                    Finalizada
+                  </Text>
                 </View>
-                <Text className="text-black text-xs font-manrope-bold">
-                  En Curso
-                </Text>
-              </View>
+              ) : currentSubasta?.finItemActualTs ? (
+                <View className="absolute top-4 right-8 flex-row items-center bg-[#2dd4bf] px-3.5 py-1.5 rounded-full gap-1.5 shadow-lg shadow-black/40">
+                  <View className="bg-red-500 rounded-full w-5 h-5 items-center justify-center">
+                    <Clock size={10} color="white" strokeWidth={3} />
+                  </View>
+                  <CuentaRegresiva
+                    endsAt={new Date(currentSubasta.finItemActualTs).getTime()}
+                    className="text-black text-xs font-manrope-bold"
+                  />
+                </View>
+              ) : (
+                <View className="absolute top-4 right-8 flex-row items-center bg-[#2dd4bf] px-3.5 py-1.5 rounded-full gap-1.5 shadow-lg shadow-black/40">
+                  <View className="bg-red-500 rounded-full w-5 h-5 items-center justify-center">
+                    <Clock size={10} color="white" strokeWidth={3} />
+                  </View>
+                  <Text className="text-black text-xs font-manrope-bold">
+                    En Curso
+                  </Text>
+                </View>
+              )
             )}
           </View>
 
@@ -611,6 +663,28 @@ export default function AuctionDetailScreen() {
                 </View>
               </View>
             </>
+          ) : finalizada ? (
+            <View className="px-4 mb-6">
+              <View className="border border-neutral-800 rounded-3xl p-6 bg-[#151515] items-center">
+                <Gavel size={32} color="#d8b4fe" />
+                <Text className="text-white text-lg font-montserrat-bold mt-3 mb-1">
+                  Subasta finalizada
+                </Text>
+                <Text className="text-neutral-400 text-xs text-center mb-5 font-manrope">
+                  Se subastaron todos los lotes. Ya no se pueden realizar pujas.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    leaveSubasta(token ?? undefined);
+                    router.replace("/(tabs)");
+                  }}
+                  activeOpacity={0.8}
+                  className="bg-purple-700 px-6 py-3 rounded-2xl items-center justify-center"
+                >
+                  <Text className="text-white text-sm font-manrope-bold">Volver al inicio</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           ) : (
             <>
               {/* Pujar Ahora and Monto a Pujar Inputs */}

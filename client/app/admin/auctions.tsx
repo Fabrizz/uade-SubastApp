@@ -2,7 +2,7 @@ import HeaderComp from "@/components/HeaderComp";
 import { useAuth } from "@/context/auth";
 import { api, API_BASE } from "@/lib/api";
 import { LinearGradient } from "expo-linear-gradient";
-import { Calendar, Clock, MapPin, Plus, Users, X, DollarSign, Check, Gavel, ChevronDown, ChevronUp, User } from "lucide-react-native";
+import { Calendar, Clock, MapPin, Plus, Users, X, DollarSign, Check, Gavel, ChevronDown, ChevronUp, User, Play } from "lucide-react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -91,6 +91,7 @@ export default function AdminAuctionsScreen() {
   const [physicalBasePrice, setPhysicalBasePrice] = useState("");
   const [physicalCommission, setPhysicalCommission] = useState("10");
   const [physicalSubastaId, setPhysicalSubastaId] = useState("");
+  const [physicalMoneda, setPhysicalMoneda] = useState<"ARS" | "USD">("ARS");
 
   // Quick Product/Owner Registration States
   const [newProductTitle, setNewProductTitle] = useState("");
@@ -105,6 +106,8 @@ export default function AdminAuctionsScreen() {
   const [nombreColeccion, setNombreColeccion] = useState("");
   const [fecha, setFecha] = useState(getDefaultFutureDate());
   const [hora, setHora] = useState("18:00");
+  const [fechaFin, setFechaFin] = useState(getDefaultFutureDate());
+  const [horaFin, setHoraFin] = useState("20:00");
   const [categoria, setCategoria] = useState<"comun" | "especial" | "plata" | "oro" | "platino">("comun");
   const [moneda, setMoneda] = useState<"ARS" | "USD">("USD");
   const [ubicacion, setUbicacion] = useState("");
@@ -113,6 +116,7 @@ export default function AdminAuctionsScreen() {
   const [seguridadPropia, setSeguridadPropia] = useState(true);
   const [esColeccion, setEsColeccion] = useState(false);
   const [selectedSubastador, setSelectedSubastador] = useState<string>("");
+  const [startingId, setStartingId] = useState<number | null>(null);
 
   // Load subastas and subastadores on mount
   const loadData = useCallback(async () => {
@@ -183,6 +187,102 @@ export default function AdminAuctionsScreen() {
       setCatalogExists(false);
     } finally {
       setCatalogLoading(false);
+    }
+  };
+
+  const handleAdjudicarLote = async (item: any) => {
+    if (!token || !selectedSubastaForCatalog) return;
+    try {
+      // 1. Get all bids for the item
+      const { data: pujasData, error: errPujas } = await api.GET(
+        "/api/v1/subastas/{id}/catalogo/items/{idItem}/pujos",
+        {
+          params: {
+            path: {
+              id: selectedSubastaForCatalog.identificador,
+              idItem: item.identificador,
+            },
+          },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (errPujas || !pujasData) {
+        throw new Error("No se pudieron cargar las pujas del lote.");
+      }
+
+      const pujas = (Array.isArray(pujasData)
+        ? pujasData
+        : (pujasData as any)?.content ?? []) as any[];
+
+      if (pujas.length === 0) {
+        Alert.alert("Lote sin pujas", "No se puede adjudicar un lote que no recibió ninguna oferta.");
+        return;
+      }
+
+      // Pujas are returned ordered by amount DESC (highest first)
+      const topPujo = pujas[0];
+      const clienteId = topPujo.clienteId;
+
+      if (!clienteId) {
+        throw new Error("El postor líder no tiene un ID de cliente válido.");
+      }
+
+      // 2. Fetch the winner's payment methods
+      const { data: mediosPago, error: errMedios } = await api.GET(
+        "/api/v1/clientes/{id}/medios-pago",
+        {
+          params: { path: { id: clienteId } },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (errMedios || !mediosPago) {
+        throw new Error("No se pudieron obtener los medios de pago del ganador.");
+      }
+
+      // Find compatible verified/active payment method matching subasta currency
+      const subastaMoneda = selectedSubastaForCatalog.moneda || "ARS";
+      const medioValido = mediosPago.find(
+        (m: any) => m.verificado && m.activo && m.moneda === subastaMoneda
+      );
+
+      if (!medioValido) {
+        Alert.alert(
+          "Error de pago",
+          `El ganador no tiene un medio de pago verificado y activo en la moneda ${subastaMoneda} de la subasta.`
+        );
+        return;
+      }
+
+      // 3. Mark as winner!
+      const { error: errGanador } = await api.PATCH(
+        "/api/v1/subastas/{id}/catalogo/items/{idItem}/pujos/{idPujo}/ganador",
+        {
+          params: {
+            path: {
+              id: selectedSubastaForCatalog.identificador,
+              idItem: item.identificador,
+              idPujo: topPujo.identificador,
+            },
+          },
+          headers: { Authorization: `Bearer ${token}` },
+          body: {
+            medioPagoCompradorId: medioValido.identificador,
+          },
+        }
+      );
+
+      if (errGanador) {
+        throw new Error((errGanador as any)?.message ?? "Error en el servidor al adjudicar el lote.");
+      }
+
+      Alert.alert("Éxito", `El lote #${item.identificador} fue adjudicado exitosamente a ${topPujo.clienteNombre || `Postor #${topPujo.numeroPostor}`} por un monto de ${topPujo.importe}.`);
+      
+      // Refresh catalog items list
+      fetchCatalogData(selectedSubastaForCatalog.identificador);
+    } catch (error: any) {
+      Alert.alert("Error al adjudicar", error.message || "Ocurrió un error inesperado.");
     }
   };
 
@@ -355,6 +455,7 @@ export default function AdminAuctionsScreen() {
       setPhysicalBasePrice("");
       setPhysicalCommission("10");
       setPhysicalSubastaId("");
+      setPhysicalMoneda("ARS");
       
       await fetchProducts();
     } catch (err: any) {
@@ -584,6 +685,11 @@ export default function AdminAuctionsScreen() {
       return;
     }
 
+    if (!selectedSubastador) {
+      Alert.alert("Martillero Obligatorio", "Por favor selecciona un martillero / subastador.");
+      return;
+    }
+
     // Date format validation
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
       Alert.alert("Fecha Inválida", "La fecha debe tener el formato AAAA-MM-DD (ej: 2026-07-20).");
@@ -593,6 +699,22 @@ export default function AdminAuctionsScreen() {
     // Time format validation
     if (!/^\d{2}:\d{2}(:\d{2})?$/.test(hora)) {
       Alert.alert("Hora Inválida", "La hora debe tener el formato HH:MM (ej: 18:30).");
+      return;
+    }
+
+    // Fecha/hora de fin validation
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaFin)) {
+      Alert.alert("Fecha de Fin Inválida", "La fecha de fin debe tener el formato AAAA-MM-DD.");
+      return;
+    }
+    if (!/^\d{2}:\d{2}(:\d{2})?$/.test(horaFin)) {
+      Alert.alert("Hora de Fin Inválida", "La hora de fin debe tener el formato HH:MM.");
+      return;
+    }
+    const dtInicio = new Date(`${fecha}T${hora.length === 5 ? hora : hora.slice(0, 5)}`);
+    const dtFin = new Date(`${fechaFin}T${horaFin.length === 5 ? horaFin : horaFin.slice(0, 5)}`);
+    if (dtFin <= dtInicio) {
+      Alert.alert("Fecha de Fin Inválida", "La fecha y hora de fin debe ser posterior a la de inicio.");
       return;
     }
 
@@ -621,7 +743,7 @@ export default function AdminAuctionsScreen() {
       const payload = {
         fecha,
         hora: hora.length === 5 ? `${hora}:00` : hora,
-        estado: "abierta" as const, // default open for bidding registration
+        estado: "abierta" as const,
         ubicacion,
         capacidadAsistentes: Number(capacidadAsistentes),
         tieneDeposito: tieneDeposito ? "si" : "no",
@@ -631,6 +753,8 @@ export default function AdminAuctionsScreen() {
         esColeccion,
         nombreColeccion: esColeccion ? nombreColeccion : undefined,
         subastadorId: selectedSubastador ? Number(selectedSubastador) : undefined,
+        fechaFin,
+        horaFin: horaFin.length === 5 ? `${horaFin}:00` : horaFin,
       };
 
       const { error } = await api.POST("/api/v1/subastas", {
@@ -649,6 +773,8 @@ export default function AdminAuctionsScreen() {
       setNombreColeccion("");
       setFecha(getDefaultFutureDate());
       setHora("18:00");
+      setFechaFin(getDefaultFutureDate());
+      setHoraFin("20:00");
       setCategoria("comun");
       setMoneda("USD");
       setUbicacion("");
@@ -668,6 +794,47 @@ export default function AdminAuctionsScreen() {
     }
   };
 
+  // Start the auction: triggers the backend timer (en_curso) — sets the first item and
+  // begins the scheduled per-item advancement. This is the only way to start it from the app.
+  const handleIniciarSubasta = async (subasta: any) => {
+    if (!token) return;
+    Alert.alert(
+      "Iniciar subasta",
+      `¿Iniciar la subasta #${subasta.identificador}? Se arrancará el cronómetro y los lotes avanzarán automáticamente.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Iniciar",
+          style: "default",
+          onPress: async () => {
+            setStartingId(subasta.identificador);
+            try {
+              const { error } = await api.PATCH("/api/v1/subastas/{id}/estado-detallado", {
+                params: {
+                  path: { id: subasta.identificador },
+                  query: { estadoDetallado: "en_curso" },
+                },
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (error) {
+                throw new Error(
+                  (error as any)?.mensaje ?? (error as any)?.message ?? "No se pudo iniciar la subasta",
+                );
+              }
+              Alert.alert("Subasta iniciada", "El cronómetro comenzó y el primer lote está en subasta.");
+              setLoading(true);
+              loadData();
+            } catch (err: any) {
+              Alert.alert("No se pudo iniciar", err.message || "Error al iniciar la subasta");
+            } finally {
+              setStartingId(null);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const filteredSubastas = subastas.filter((s) => {
     const q = search.toLowerCase();
     if (!q) return true;
@@ -676,6 +843,10 @@ export default function AdminAuctionsScreen() {
     const cat = (s.categoria || "").toLowerCase();
     return nameStr.includes(q) || loc.includes(q) || cat.includes(q);
   });
+
+  const physicalFilteredSubastas = subastas.filter(
+    (s) => (s.moneda || "ARS") === physicalMoneda
+  );
 
   return (
     <LinearGradient colors={["#000000", "#180120", "#3d0145"]} style={{ flex: 1 }}>
@@ -853,6 +1024,20 @@ export default function AdminAuctionsScreen() {
                             {s.esColeccion === true || s.esColeccion === "si" ? `Colección (${s.nombreColeccion || ""})` : "General"}
                           </Text>
                         </View>
+                        {s.fechaFin && (
+                          <View className="flex-row justify-between items-center">
+                            <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Fin programado</Text>
+                            <Text className="text-neutral-300 text-xs font-manrope-medium">
+                              {s.fechaFin} {s.horaFin?.slice(0, 5)}
+                            </Text>
+                          </View>
+                        )}
+                        {s.itemActualId && (
+                          <View className="flex-row justify-between items-center">
+                            <Text className="text-neutral-500 text-[10px] uppercase font-manrope-bold">Ítem en subasta</Text>
+                            <Text className="text-emerald-400 text-xs font-manrope-bold">#{s.itemActualId}</Text>
+                          </View>
+                        )}
                       </View>
 
                       <TouchableOpacity
@@ -870,6 +1055,29 @@ export default function AdminAuctionsScreen() {
                         <Gavel size={14} color="#d8b4fe" />
                         <Text className="text-purple-300 text-xs font-bold font-manrope-bold">Gestionar Lotes (Catálogo)</Text>
                       </TouchableOpacity>
+
+                      {/* Iniciar subasta: solo si todavía no está en curso ni cerrada */}
+                      {s.estado !== "cerrada" &&
+                        !["en_curso", "cerrada", "finalizada"].includes(s.estadoDetallado ?? "") && (
+                          <TouchableOpacity
+                            onPress={() => handleIniciarSubasta(s)}
+                            disabled={startingId === s.identificador}
+                            activeOpacity={0.8}
+                            className="mt-3 py-2.5 rounded-xl items-center justify-center flex-row gap-2 border border-emerald-700/60"
+                            style={{ backgroundColor: "#06312a" }}
+                          >
+                            {startingId === s.identificador ? (
+                              <ActivityIndicator size="small" color="#34d399" />
+                            ) : (
+                              <>
+                                <Play size={14} color="#34d399" />
+                                <Text className="text-emerald-400 text-xs font-bold font-manrope-bold">
+                                  Iniciar subasta
+                                </Text>
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        )}
                     </View>
                   );
                 })}
@@ -1077,7 +1285,10 @@ export default function AdminAuctionsScreen() {
                                   setSelectedProductForPhysicalApproval(p);
                                   setPhysicalBasePrice("");
                                   setPhysicalCommission("10");
-                                  setPhysicalSubastaId(subastas.length > 0 ? String(subastas[0].identificador) : "");
+                                  const defaultMoneda = "ARS";
+                                  setPhysicalMoneda(defaultMoneda);
+                                  const firstSubastaOfMoneda = subastas.find(s => (s.moneda || "ARS") === defaultMoneda);
+                                  setPhysicalSubastaId(firstSubastaOfMoneda ? String(firstSubastaOfMoneda.identificador) : "");
                                   setPhysicalApprovalModalVisible(true);
                                 } else {
                                   handleApproveProduct(p.identificador);
@@ -1194,6 +1405,39 @@ export default function AdminAuctionsScreen() {
                     placeholderTextColor="#525252"
                     value={hora}
                     onChangeText={setHora}
+                    editable={!isSubmitting}
+                  />
+                </View>
+
+                {/* Fecha Fin input */}
+                <View>
+                  <Text className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-2 ml-1">
+                    Fecha de Fin (AAAA-MM-DD)
+                  </Text>
+                  <TextInput
+                    className="bg-neutral-900 border border-neutral-700 px-4 py-3 rounded-xl text-white text-base"
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="#525252"
+                    value={fechaFin}
+                    onChangeText={setFechaFin}
+                    editable={!isSubmitting}
+                  />
+                  <Text className="text-neutral-500 text-[10px] italic mt-1 ml-1">
+                    La duración total se divide equitativamente entre los artículos (mínimo 10 min c/u)
+                  </Text>
+                </View>
+
+                {/* Hora Fin input */}
+                <View>
+                  <Text className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-2 ml-1">
+                    Hora de Fin (HH:MM)
+                  </Text>
+                  <TextInput
+                    className="bg-neutral-900 border border-neutral-700 px-4 py-3 rounded-xl text-white text-base"
+                    placeholder="20:00"
+                    placeholderTextColor="#525252"
+                    value={horaFin}
+                    onChangeText={setHoraFin}
                     editable={!isSubmitting}
                   />
                 </View>
@@ -1328,8 +1572,12 @@ export default function AdminAuctionsScreen() {
                             }`}
                           >
                             <View>
-                              <Text className="text-white text-xs font-semibold">Martillero Matrícula: {sub.matricula}</Text>
-                              <Text className="text-neutral-500 text-[10px] mt-0.5">Región: {sub.region || "N/A"} | ID: {sub.identificador}</Text>
+                              <Text className="text-white text-xs font-semibold">
+                                {sub.nombre ? sub.nombre : `Martillero Matrícula: ${sub.matricula}`}
+                              </Text>
+                              <Text className="text-neutral-500 text-[10px] mt-0.5">
+                                {sub.nombre ? `Matrícula: ${sub.matricula} | ` : ""}Región: {sub.region || "N/A"} | ID: {sub.identificador}
+                              </Text>
                             </View>
                             {isSelected && (
                               <View className="w-5 h-5 bg-purple-600 rounded-full items-center justify-center">
@@ -1751,7 +1999,7 @@ export default function AdminAuctionsScreen() {
                 {/* Precio Base Input */}
                 <View>
                   <Text className="text-purple-400 text-[10px] font-bold uppercase tracking-wider mb-2 ml-1">
-                    Precio Base (USD / ARS)
+                    Precio Base
                   </Text>
                   <TextInput
                     className="bg-neutral-950 border border-neutral-800 px-4 py-3 rounded-xl text-white text-sm font-manrope"
@@ -1762,6 +2010,37 @@ export default function AdminAuctionsScreen() {
                     onChangeText={setPhysicalBasePrice}
                     editable={!isModerating}
                   />
+                </View>
+
+                {/* Moneda Selector */}
+                <View>
+                  <Text className="text-purple-400 text-[10px] font-bold uppercase tracking-wider mb-2 ml-1">
+                    Moneda
+                  </Text>
+                  <View className="flex-row gap-2">
+                    {["ARS", "USD"].map((mon) => {
+                      const isActive = physicalMoneda === mon;
+                      return (
+                        <TouchableOpacity
+                          key={mon}
+                          onPress={() => {
+                            setPhysicalMoneda(mon as "ARS" | "USD");
+                            const firstSubastaOfMoneda = subastas.find(s => (s.moneda || "ARS") === mon);
+                            setPhysicalSubastaId(firstSubastaOfMoneda ? String(firstSubastaOfMoneda.identificador) : "");
+                          }}
+                          className={`flex-1 py-3 rounded-xl items-center border ${
+                            isActive
+                              ? "bg-purple-950/45 border-purple-500"
+                              : "bg-neutral-950 border-neutral-800"
+                          }`}
+                        >
+                          <Text className={`text-xs font-bold ${isActive ? "text-purple-400" : "text-neutral-400"}`}>
+                            {mon}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 </View>
 
                 {/* Comisión Input */}
@@ -1786,14 +2065,14 @@ export default function AdminAuctionsScreen() {
                     Asignar a Subasta
                   </Text>
                   
-                  {subastas.length === 0 ? (
+                  {physicalFilteredSubastas.length === 0 ? (
                     <Text className="text-rose-400 text-xs italic p-2 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-                      No hay subastas registradas en el sistema. Debes crear una subasta antes de poder aprobar físicamente este artículo.
+                      No hay subastas en {physicalMoneda} registradas en el sistema. Debes crear una subasta en esta moneda antes de poder aprobar físicamente este artículo.
                     </Text>
                   ) : (
                     <View className="border border-neutral-800 bg-neutral-950/60 rounded-xl p-2 max-h-56">
                       <ScrollView nestedScrollEnabled={true}>
-                        {subastas.map((s) => {
+                        {physicalFilteredSubastas.map((s) => {
                           const isSelected = physicalSubastaId === String(s.identificador);
                           return (
                             <TouchableOpacity

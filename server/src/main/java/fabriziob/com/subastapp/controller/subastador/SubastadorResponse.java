@@ -13,4 +13,6 @@ public class SubastadorResponse {
     private Integer identificador;
     private String matricula;
     private String region;
+    private String nombre;
+    private String email;
 }
