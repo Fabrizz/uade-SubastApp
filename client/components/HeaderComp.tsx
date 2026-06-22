@@ -16,6 +16,7 @@ export default function HeaderComp({
   inline = false,
   back = false,
   backFallback = "/admin",
+  onBack,
 }: {
   children?: React.ReactNode
   outlet?: React.ReactNode
@@ -24,6 +25,7 @@ export default function HeaderComp({
   back?: boolean
   inline?: boolean
   backFallback?: string
+  onBack?: () => void
 }) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -43,7 +45,9 @@ export default function HeaderComp({
         {back && (
             <TouchableOpacity
               onPress={() => {
-                if (router.canGoBack()) {
+                if (onBack) {
+                  onBack();
+                } else if (router.canGoBack()) {
                   router.back();
                 } else {
                   router.replace(backFallback as any);

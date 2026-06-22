@@ -52,7 +52,7 @@ function canAccessSubasta(userCategory?: string, subastaCategoria?: string): boo
 }
 
 export default function AuctionDetailScreen() {
-  const { id } = useLocalSearchParams();
+  const { id, referrer } = useLocalSearchParams<{ id: string; referrer?: string }>();
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -256,6 +256,7 @@ export default function AuctionDetailScreen() {
   // so this catches "already attending elsewhere" even on the first subasta screen opened.
   const otherSubastaId = subasta?.identificador ?? null;
   const attendingElsewhere = isAuthenticated && !isJoined && otherSubastaId !== null && otherSubastaId !== Number(id);
+  const isOwnAuction = isAuthenticated && currentSubasta?.subastadorId === user?.id;
 
   const handleJoin = async () => {
     if (!token || !user?.id) {
@@ -263,6 +264,11 @@ export default function AuctionDetailScreen() {
       return;
     }
     if (!id || categoryInsufficient) return;
+
+    if (isOwnAuction) {
+      Alert.alert("No permitido", "No podés unirte a una subasta que organizás vos.");
+      return;
+    }
 
     if (!isAuctionLive) {
       Alert.alert(
@@ -333,7 +339,12 @@ export default function AuctionDetailScreen() {
   };
 
   // Payment methods checks
-  const verifiedMethods = paymentMethods.filter(mp => mp.verificado && mp.activo);
+  const verifiedMethods = paymentMethods.filter(mp => {
+    const isOk = mp.verificado && mp.activo;
+    if (!isOk) return false;
+    if (!currentSubasta?.moneda) return true; // fallback
+    return mp.moneda === currentSubasta.moneda;
+  });
   const hasVerifiedPayment = verifiedMethods.length > 0;
 
   const handlePujarAhoraClick = () => {
@@ -345,9 +356,10 @@ export default function AuctionDetailScreen() {
 
     // 1. Payment gating validation
     if (!hasVerifiedPayment) {
+      const targetCurrency = currentSubasta?.moneda || "la moneda correspondiente";
       Alert.alert(
         "Medio de Pago Requerido",
-        "Solo puedes pujar si tienes al menos un medio de pago verificado y activo. Ve a tu Perfil para registrar y verificar tus medios de pago.",
+        `Solo puedes pujar si tienes al menos un medio de pago verificado y activo en ${targetCurrency}. Ve a tu Perfil para registrar y verificar tus medios de pago.`,
         [
           { text: "Cancelar", style: "cancel" },
           { text: "Ir a Perfil", onPress: () => router.push("/(tabs)/profile") }
@@ -416,6 +428,19 @@ export default function AuctionDetailScreen() {
       <HeaderComp
         back
         backFallback="/(tabs)/auctions"
+        onBack={() => {
+          if (referrer === "home") {
+            router.replace("/");
+          } else if (referrer === "notifications") {
+            router.replace("/(tabs)/notifications");
+          } else {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace("/(tabs)/auctions");
+            }
+          }
+        }}
         outlet={
           <View className="flex-row items-center justify-center gap-2">
             <ExternalLink href="https://youtube.com" asChild>
@@ -575,13 +600,13 @@ export default function AuctionDetailScreen() {
                 </View>
                 <TouchableOpacity
                   onPress={handleJoin}
-                  disabled={isStoreLoading || categoryInsufficient || (isAuthenticated && !isAuctionLive)}
+                  disabled={isStoreLoading || categoryInsufficient || isOwnAuction || !isAuctionLive}
                   activeOpacity={0.8}
                   className="flex-[2] mr-3 rounded-2xl overflow-hidden"
                 >
                   <LinearGradient
                     colors={
-                      categoryInsufficient || (isAuthenticated && !isAuctionLive)
+                      categoryInsufficient || isOwnAuction || !isAuctionLive
                         ? ["#4b5563", "#4b5563"]
                         : ["#4ade80", "#2dd4bf"]
                     }
@@ -607,6 +632,11 @@ export default function AuctionDetailScreen() {
                       <>
                         <Lock size={20} color="#d1d5db" />
                         <Text className="text-neutral-300 text-xl font-manrope-bold">Bloqueado</Text>
+                      </>
+                    ) : isOwnAuction ? (
+                      <>
+                        <Hammer size={20} color="#d1d5db" />
+                        <Text className="text-neutral-300 text-xl font-manrope-bold">Tu Subasta</Text>
                       </>
                     ) : isAuctionEnded ? (
                       <>

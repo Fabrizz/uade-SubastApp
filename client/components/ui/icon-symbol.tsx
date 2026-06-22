@@ -1,5 +1,6 @@
 // Fallback for using MaterialIcons on Android and web.
 
+// eslint-disable-next-line import/no-unresolved
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
 import { ComponentProps } from 'react';
