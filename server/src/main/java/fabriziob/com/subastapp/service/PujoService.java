@@ -13,6 +13,7 @@ import fabriziob.com.subastapp.controller.subasta.MarcarGanadorRequest;
 import fabriziob.com.subastapp.controller.subasta.PujoRequest;
 import fabriziob.com.subastapp.controller.subasta.PujoResponse;
 import fabriziob.com.subastapp.controller.subasta.SubastaEventoResponse;
+import fabriziob.com.subastapp.controller.subasta.SubastaEventoResponse;
 import fabriziob.com.subastapp.entity.Asistente;
 import fabriziob.com.subastapp.entity.Catalogo;
 import fabriziob.com.subastapp.entity.Cliente;
@@ -353,6 +354,74 @@ public class PujoService {
                                         "El importe máximo permitido es " + maximo
                                                         + " (mejorActual + 20% del precio base)");
         }
+
+        // ─── cierre automático por scheduler ────────────────────────────────────
+
+        @Transactional
+        public void cerrarItemAutomatico(Subasta subasta, ItemCatalogo item) {
+                Optional<Pujo> mejorPujo = pujoRepository
+                                .findTopByItem_IdentificadorOrderByImporteDesc(item.getIdentificador());
+
+                item.setSubastado("si");
+                itemRepository.save(item);
+
+                if (mejorPujo.isPresent()) {
+                        Pujo pujo = mejorPujo.get();
+                        pujo.setGanador("si");
+                        pujoRepository.save(pujo);
+
+                        Cliente cliente = pujo.getAsistente().getCliente();
+                        Moneda monedaSubasta = subasta.getSubastaExtra() != null
+                                        ? subasta.getSubastaExtra().getMoneda()
+                                        : Moneda.ARS;
+
+                        List<MedioPago> mediosValidos = mediosValidosParaPujar(
+                                        cliente.getIdentificador(), monedaSubasta, subasta.getFecha());
+                        MedioPago medio = mediosValidos.isEmpty() ? null : mediosValidos.get(0);
+
+                        RegistroDeSubasta registro = RegistroDeSubasta.builder()
+                                        .subasta(subasta)
+                                        .duenio(item.getProducto().getDuenio())
+                                        .producto(item.getProducto())
+                                        .cliente(cliente)
+                                        .importe(pujo.getImporte())
+                                        .comision(item.getComision() != null ? item.getComision() : BigDecimal.ZERO)
+                                        .build();
+                        registro = registroRepository.save(registro);
+
+                        RegistroDeSubastaExtra registroExtra = RegistroDeSubastaExtra.builder()
+                                        .registroSubasta(registro)
+                                        .medioPagoComprador(medio)
+                                        .build();
+                        registroExtraRepository.save(registroExtra);
+
+                        messagingTemplate.convertAndSend(
+                                        "/topic/subastas/" + subasta.getIdentificador() + "/ganadores",
+                                        toResponse(pujo));
+
+                        BigDecimal comision = item.getComision() != null ? item.getComision() : BigDecimal.ZERO;
+                        BigDecimal total = pujo.getImporte().add(comision);
+                        String descripcion = item.getProducto() != null
+                                        ? item.getProducto().getDescripcionCatalogo()
+                                        : "un ítem";
+                        notificacionService.notificarCliente(cliente.getIdentificador(),
+                                        WsNotificacionService.Tipo.success, "pago",
+                                        "¡Ganaste la subasta!",
+                                        "Te adjudicaste \"" + descripcion + "\". Debés abonar: pujado "
+                                                        + pujo.getImporte() + " + comisión " + comision
+                                                        + " = " + total + " " + monedaSubasta.name()
+                                                        + " (más el costo de envío a definir).");
+                }
+
+                messagingTemplate.convertAndSend("/topic/subastas/" + subasta.getIdentificador(),
+                                SubastaEventoResponse.builder()
+                                                .tipo("ITEM_SUBASTADO")
+                                                .subastaId(subasta.getIdentificador())
+                                                .itemId(item.getIdentificador())
+                                                .build());
+        }
+
+        // ────────────────────────────────────────────────────────────────────────
 
         private PujoResponse toResponse(Pujo p) {
                 Cliente c = p.getAsistente() != null ? p.getAsistente().getCliente() : null;

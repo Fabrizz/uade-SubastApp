@@ -1821,6 +1821,9 @@ export interface components {
             moneda?: components["schemas"]["Moneda"];
             esColeccion?: boolean;
             nombreColeccion?: string;
+            /** Format: date */
+            fechaFin?: string;
+            horaFin?: string;
         };
         /** @enum {string} */
         EstadoDetalladoSubasta: "en_espera" | "creada" | "publicada" | "en_curso" | "cerrada" | "finalizada";
@@ -1846,6 +1849,13 @@ export interface components {
             estadoDetallado?: components["schemas"]["EstadoDetalladoSubasta"];
             esColeccion?: boolean;
             nombreColeccion?: string;
+            /** Format: date */
+            fechaFin?: string;
+            horaFin?: string;
+            /** Format: int32 */
+            itemActualId?: number;
+            inicioItemActualTs?: string;
+            finItemActualTs?: string;
         };
         /** @enum {string} */
         MedioEnvio: "ENVIO_DOMICILIO" | "RETIRO_DEPOSITO";
