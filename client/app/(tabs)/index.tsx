@@ -299,17 +299,19 @@ export default function Home() {
     { key: "terminadas", label: "Terminadas" },
   ];
 
-  const filteredSubastas = subastas.filter((s) => {
-    if (category === "terminadas" && s.estadoDetallado !== "finalizada") return false;
-    if (category === "empezando" && s.estadoDetallado !== "en_curso") return false;
-    if (category === "top" && (s.estadoDetallado === "cerrada" || s.estadoDetallado === "finalizada")) return false;
-    const q = search.toLowerCase().trim();
-    if (!q) return true;
-    const title = (s.nombreColeccion || s.ubicacion || `Subasta ${s.categoria}`).toLowerCase();
-    const cat = (s.categoria || "").toLowerCase();
-    const loc = (s.ubicacion || "").toLowerCase();
-    return title.includes(q) || cat.includes(q) || loc.includes(q);
-  });
+  const filteredSubastas = subastas
+    .filter((s) => {
+      if (category === "terminadas" && s.estadoDetallado !== "finalizada") return false;
+      if (category === "empezando" && s.estadoDetallado !== "en_curso") return false;
+      if (category === "top" && (s.estadoDetallado === "cerrada" || s.estadoDetallado === "finalizada")) return false;
+      const q = search.toLowerCase().trim();
+      if (!q) return true;
+      const title = (s.nombreColeccion || s.ubicacion || `Subasta ${s.categoria}`).toLowerCase();
+      const cat = (s.categoria || "").toLowerCase();
+      const loc = (s.ubicacion || "").toLowerCase();
+      return title.includes(q) || cat.includes(q) || loc.includes(q);
+    })
+    .reverse();
 
   return (
     <View className="flex-1 bg-black">
