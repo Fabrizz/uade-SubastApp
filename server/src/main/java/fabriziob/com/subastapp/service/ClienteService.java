@@ -137,8 +137,16 @@ public class ClienteService {
         Cliente cliente = findById(id);
         ClienteExtra extra = requireExtra(cliente);
         BigDecimal actual = extra.getMultaPendiente() == null ? BigDecimal.ZERO : extra.getMultaPendiente();
-        extra.setMultaPendiente(actual.add(monto));
+        BigDecimal nuevoTotal = actual.add(monto);
+        extra.setMultaPendiente(nuevoTotal);
         extra.setEstadoOperativo("suspendido");
+
+        notificacionService.notificarCliente(id,
+                WsNotificacionService.Tipo.warning, "multa",
+                "Multa asignada",
+                "Se te asignó una multa de " + monto
+                        + ". Tu cuenta quedó suspendida hasta saldar el total pendiente de " + nuevoTotal + ".");
+
         return cliente;
     }
 

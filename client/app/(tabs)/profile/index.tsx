@@ -14,13 +14,13 @@ import {
   IdCard,
   LogOut,
   MapPin,
+  RefreshCw,
   Shield,
   User,
 } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StatusBar,
   Text,
@@ -36,7 +36,7 @@ export default function ProfileScreen() {
 
   const [profile, setProfile] = useState<PersonaProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saldandoMulta, setSaldandoMulta] = useState(false);
+  const [recargandoMulta, setRecargandoMulta] = useState(false);
 
   const loadProfile = useCallback(() => {
     const userId = user?.id ?? null;
@@ -65,37 +65,13 @@ export default function ProfileScreen() {
     }, [loadProfile])
   );
 
-  const handleSaldarMulta = () => {
-    if (!token || !user?.id) return;
-    const amount = user?.multaPendiente
-      ? `$${user.multaPendiente.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`
-      : "la multa";
-    Alert.alert(
-      "Saldar multa",
-      `¿Confirmás el pago de ${amount}? Tu cuenta será rehabilitada para participar en subastas.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Confirmar pago",
-          onPress: async () => {
-            setSaldandoMulta(true);
-            try {
-              const { error } = await api.PATCH("/api/v1/clientes/{id}/multa/saldar", {
-                params: { path: { id: user.id! } },
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              if (error) throw new Error("No se pudo saldar la multa.");
-              await refreshUser();
-              Alert.alert("Multa saldada", "Tu cuenta fue rehabilitada correctamente.");
-            } catch {
-              Alert.alert("Error", "No se pudo completar el pago de la multa.");
-            } finally {
-              setSaldandoMulta(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleRecargarMulta = async () => {
+    setRecargandoMulta(true);
+    try {
+      await refreshUser();
+    } finally {
+      setRecargandoMulta(false);
+    }
   };
 
   const nombre = profile?.nombre ?? user?.name ?? user?.email?.split("@")[0] ?? "—";
@@ -190,14 +166,17 @@ export default function ProfileScreen() {
                 ${(user?.multaPendiente ?? 0).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
               </Text>
               <TouchableOpacity
-                onPress={handleSaldarMulta}
-                disabled={saldandoMulta}
-                className="bg-rose-500 px-4 py-2 rounded-xl"
+                onPress={handleRecargarMulta}
+                disabled={recargandoMulta}
+                className="bg-rose-500 px-4 py-2 rounded-xl flex-row items-center gap-2"
               >
-                {saldandoMulta ? (
+                {recargandoMulta ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
-                  <Text className="text-white font-manrope-bold text-sm">Saldar multa</Text>
+                  <>
+                    <RefreshCw size={14} color="white" />
+                    <Text className="text-white font-manrope-bold text-sm">Recargar</Text>
+                  </>
                 )}
               </TouchableOpacity>
             </View>

@@ -107,7 +107,7 @@ async function syncCliente(tok: string, base: User): Promise<User> {
     return {
       ...base,
       estadoOperativo: data.estadoOperativo ?? base.estadoOperativo,
-      multaPendiente: data.multaPendiente ?? base.multaPendiente,
+      multaPendiente: data.multaPendiente ?? 0,
     };
   } catch {
     return base;

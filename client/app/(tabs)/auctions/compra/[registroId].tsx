@@ -69,7 +69,8 @@ export default function MiCompraScreen() {
 
   useEffect(() => {
     setLoading(true);
-    fetchRegistro().finally(() => setLoading(false));
+    Promise.all([fetchRegistro(), refreshUser()]).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchRegistro]);
 
   const onReloadPress = async () => {
