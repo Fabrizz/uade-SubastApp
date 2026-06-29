@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
+import { showAlert } from "@/lib/alert";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -309,26 +310,26 @@ export default function AddCardScreen() {
               label="Guardar Tarjeta"
               onPress={async () => {
                 if (!personaId) {
-                  Alert.alert("Error", "No se encontró el identificador del cliente.");
+                  showAlert("Error", "No se encontró el identificador del cliente.");
                   return;
                 }
                 if (!cardNumber.trim() || !cardName.trim() || !expiry.trim() || !cvv.trim()) {
-                  Alert.alert("Campos requeridos", "Completá todos los campos de la tarjeta.");
+                  showAlert("Campos requeridos", "Completá todos los campos de la tarjeta.");
                   return;
                 }
 
                 if (!/^\d{16}$/.test(cardNumber.trim())) {
-                  Alert.alert("Tarjeta inválida", "El número de tarjeta debe tener exactamente 16 dígitos.");
+                  showAlert("Tarjeta inválida", "El número de tarjeta debe tener exactamente 16 dígitos.");
                   return;
                 }
 
                 if (cardName.trim().length < 3) {
-                  Alert.alert("Nombre inválido", "El nombre del titular debe tener al menos 3 caracteres.");
+                  showAlert("Nombre inválido", "El nombre del titular debe tener al menos 3 caracteres.");
                   return;
                 }
 
                 if (!/^\d{4}$/.test(expiry)) {
-                  Alert.alert("Expiración inválida", "La fecha de expiración debe tener el formato MMAA (ej: 0528).");
+                  showAlert("Expiración inválida", "La fecha de expiración debe tener el formato MMAA (ej: 0528).");
                   return;
                 }
                 const month = parseInt(expiry.substring(0, 2), 10);
@@ -336,7 +337,7 @@ export default function AddCardScreen() {
                 const year = parseInt(`20${yearStr}`, 10);
 
                 if (month < 1 || month > 12) {
-                  Alert.alert("Expiración inválida", "El mes de expiración debe estar entre 01 y 12.");
+                  showAlert("Expiración inválida", "El mes de expiración debe estar entre 01 y 12.");
                   return;
                 }
 
@@ -345,12 +346,12 @@ export default function AddCardScreen() {
                 const currentYear = currentDate.getFullYear();
 
                 if (year < currentYear || (year === currentYear && month < currentMonth)) {
-                  Alert.alert("Expiración inválida", "La fecha de vencimiento ya expiró.");
+                  showAlert("Expiración inválida", "La fecha de vencimiento ya expiró.");
                   return;
                 }
 
                 if (!/^\d{3,4}$/.test(cvv)) {
-                  Alert.alert("CVV inválido", "El CVV debe tener 3 o 4 dígitos.");
+                  showAlert("CVV inválido", "El CVV debe tener 3 o 4 dígitos.");
                   return;
                 }
 
@@ -384,7 +385,7 @@ export default function AddCardScreen() {
                     router.back();
                   }
                 } catch (e: any) {
-                  Alert.alert("Error", e?.message ?? "Error al guardar el medio de pago.");
+                  showAlert("Error", e?.message ?? "Error al guardar el medio de pago.");
                 }
               }}
               colors={["#A14EBF", "#9102A2"]}

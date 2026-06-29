@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
+import { showAlert } from "@/lib/alert";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
@@ -35,7 +36,13 @@ export default function AddCheckScreen() {
   const [amount, setAmount] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
 
-  const handlePickImage = () => {
+  const handlePickImage = async () => {
+    if (Platform.OS === 'web') {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.8 });
+      if (!result.canceled) setImageUri(result.assets[0].uri);
+      return;
+    }
+
     Alert.alert(
       "Subir cheque",
       "¿Cómo deseas cargar la foto del cheque?",
@@ -45,16 +52,11 @@ export default function AddCheckScreen() {
           onPress: async () => {
             const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
             if (permissionResult.granted === false) {
-              Alert.alert("Permiso denegado", "Se requiere acceso a la cámara para tomar la foto.");
+              showAlert("Permiso denegado", "Se requiere acceso a la cámara para tomar la foto.");
               return;
             }
-            const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: 'images',
-              quality: 0.8,
-            });
-            if (!result.canceled) {
-              setImageUri(result.assets[0].uri);
-            }
+            const result = await ImagePicker.launchCameraAsync({ mediaTypes: 'images', quality: 0.8 });
+            if (!result.canceled) setImageUri(result.assets[0].uri);
           },
         },
         {
@@ -62,22 +64,14 @@ export default function AddCheckScreen() {
           onPress: async () => {
             const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (permissionResult.granted === false) {
-              Alert.alert("Permiso denegado", "Se requiere acceso a la galería para seleccionar la foto.");
+              showAlert("Permiso denegado", "Se requiere acceso a la galería para seleccionar la foto.");
               return;
             }
-            const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: 'images',
-              quality: 0.8,
-            });
-            if (!result.canceled) {
-              setImageUri(result.assets[0].uri);
-            }
+            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.8 });
+            if (!result.canceled) setImageUri(result.assets[0].uri);
           },
         },
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
+        { text: "Cancelar", style: "cancel" },
       ]
     );
   };
@@ -245,34 +239,34 @@ export default function AddCheckScreen() {
               label="Confirmar Depósito"
               onPress={async () => {
                 if (!personaId) {
-                  Alert.alert("Error", "No se encontró el identificador del cliente.");
+                  showAlert("Error", "No se encontró el identificador del cliente.");
                   return;
                 }
                 if (!checkNumber.trim() || !bank.trim() || !amount.trim() || !date.trim()) {
-                  Alert.alert("Campos requeridos", "Completá todos los campos del cheque.");
+                  showAlert("Campos requeridos", "Completá todos los campos del cheque.");
                   return;
                 }
 
                 if (bank.trim().length < 3) {
-                  Alert.alert("Banco inválido", "El nombre del banco debe tener al menos 3 caracteres.");
+                  showAlert("Banco inválido", "El nombre del banco debe tener al menos 3 caracteres.");
                   return;
                 }
 
                 if (!/^\d{4,12}$/.test(checkNumber.trim())) {
-                  Alert.alert("Número de cheque inválido", "El número de cheque debe ser numérico y tener entre 4 y 12 dígitos.");
+                  showAlert("Número de cheque inválido", "El número de cheque debe ser numérico y tener entre 4 y 12 dígitos.");
                   return;
                 }
 
                 const numericAmount = parseFloat(amount);
                 if (isNaN(numericAmount) || numericAmount <= 0) {
-                  Alert.alert("Monto inválido", "El monto del cheque debe ser un número mayor a 0.");
+                  showAlert("Monto inválido", "El monto del cheque debe ser un número mayor a 0.");
                   return;
                 }
 
                 const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
                 const match = date.trim().match(dateRegex);
                 if (!match) {
-                  Alert.alert("Fecha inválida", "La fecha de vencimiento debe tener el formato DD/MM/AAAA.");
+                  showAlert("Fecha inválida", "La fecha de vencimiento debe tener el formato DD/MM/AAAA.");
                   return;
                 }
                 const day = parseInt(match[1], 10);
@@ -281,14 +275,14 @@ export default function AddCheckScreen() {
 
                 const checkDate = new Date(year, month - 1, day);
                 if (checkDate.getFullYear() !== year || checkDate.getMonth() !== month - 1 || checkDate.getDate() !== day) {
-                  Alert.alert("Fecha inválida", "La fecha ingresada no existe en el calendario.");
+                  showAlert("Fecha inválida", "La fecha ingresada no existe en el calendario.");
                   return;
                 }
 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 if (checkDate <= today) {
-                  Alert.alert("Fecha inválida", "La fecha de vencimiento debe ser una fecha futura.");
+                  showAlert("Fecha inválida", "La fecha de vencimiento debe ser una fecha futura.");
                   return;
                 }
 
@@ -317,7 +311,7 @@ export default function AddCheckScreen() {
                     router.back();
                   }
                 } catch (e: any) {
-                  Alert.alert("Error", e?.message ?? "Error al guardar el medio de pago.");
+                  showAlert("Error", e?.message ?? "Error al guardar el medio de pago.");
                 }
               }}
               colors={["#A14EBF", "#9102A2"]}

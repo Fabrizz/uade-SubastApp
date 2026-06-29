@@ -262,6 +262,23 @@ public class PujoService {
                                                 + " " + monedaSubasta.name()
                                                 + " (más el costo de envío a definir según el medio de envío que elijas).",
                                 "/subastas/" + subastaId + "/registro/" + registro.getIdentificador());
+
+                if (item.getProducto() != null && item.getProducto().getDuenio() != null) {
+                        BigDecimal comision = item.getComision() != null ? item.getComision() : BigDecimal.ZERO;
+                        BigDecimal importeNeto = pujo.getImporte().subtract(comision);
+                        String tituloVenta = "¡Tu artículo fue vendido!";
+                        String descVenta = "Tu artículo \"" + item.getProducto().getDescripcionCatalogo()
+                                        + "\" fue vendido por " + pujo.getImporte() + " " + monedaSubasta.name()
+                                        + ". Comisión cobrada: " + comision + " " + monedaSubasta.name()
+                                        + ". Recibirás: " + importeNeto + " " + monedaSubasta.name() + ".";
+                        String accionVenta = "/subastas/" + subastaId + "/registro/" + registro.getIdentificador();
+                        notificacionService.notificarCliente(
+                                        item.getProducto().getDuenio().getIdentificador(),
+                                        WsNotificacionService.Tipo.success, "pago",
+                                        tituloVenta, descVenta, accionVenta);
+                        // TODO: quitar antes de producción
+                        wsNotificacionService.enviar("manu@test.com", WsNotificacionService.Tipo.success, tituloVenta, descVenta, accionVenta);
+                }
                 return response;
         }
 
@@ -437,6 +454,23 @@ public class PujoService {
                                                         + pujo.getImporte() + " " + monedaSubasta.name()
                                                         + " (más el costo de envío a definir).",
                                         "/subastas/" + subasta.getIdentificador() + "/registro/" + registro.getIdentificador());
+
+                        if (item.getProducto() != null && item.getProducto().getDuenio() != null) {
+                                BigDecimal comision = item.getComision() != null ? item.getComision() : BigDecimal.ZERO;
+                                BigDecimal importeNeto = pujo.getImporte().subtract(comision);
+                                String tituloVenta = "¡Tu artículo fue vendido!";
+                                String descVenta = "Tu artículo \"" + descripcion
+                                                + "\" fue vendido por " + pujo.getImporte() + " " + monedaSubasta.name()
+                                                + ". Comisión cobrada: " + comision + " " + monedaSubasta.name()
+                                                + ". Recibirás: " + importeNeto + " " + monedaSubasta.name() + ".";
+                                String accionVenta = "/subastas/" + subasta.getIdentificador() + "/registro/" + registro.getIdentificador();
+                                notificacionService.notificarCliente(
+                                                item.getProducto().getDuenio().getIdentificador(),
+                                                WsNotificacionService.Tipo.success, "pago",
+                                                tituloVenta, descVenta, accionVenta);
+                                // TODO: quitar antes de producción
+                                wsNotificacionService.enviar("manu@test.com", WsNotificacionService.Tipo.success, tituloVenta, descVenta, accionVenta);
+                        }
                 } else {
                         // NO ONE BID -> Company buys at base value and keeps it in the warehouse
                         Cliente clienteEmpresa = clienteRepository.findAll().stream()

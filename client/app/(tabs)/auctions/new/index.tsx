@@ -2,6 +2,7 @@ import HeaderComp from "@/components/HeaderComp";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/auth";
 import { api, API_BASE } from "@/lib/api";
+import { showAlert } from "@/lib/alert";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system/legacy";
@@ -12,6 +13,7 @@ import React, { useState } from "react";
 import {
   Alert,
   Image,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -46,13 +48,15 @@ export default function RequestAuctionScreen() {
 
   const handleAddPhotos = async () => {
     if (images.length >= 6) {
-      Alert.alert("Límite alcanzado", "Solo puedes subir hasta 6 fotos.");
+      showAlert("Límite alcanzado", "Solo puedes subir hasta 6 fotos.");
       return;
     }
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert("Permiso denegado", "Se requiere acceso a la galería.");
-      return;
+    if (Platform.OS !== 'web') {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        showAlert("Permiso denegado", "Se requiere acceso a la galería.");
+        return;
+      }
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: 'images',
@@ -78,7 +82,7 @@ export default function RequestAuctionScreen() {
         setDocuments((prev) => [...prev, ...newDocs]);
       }
     } catch {
-      Alert.alert("Error", "No se pudo seleccionar el documento.");
+      showAlert("Error", "No se pudo seleccionar el documento.");
     }
   };
 
@@ -90,22 +94,22 @@ export default function RequestAuctionScreen() {
 
   const handleRequestAuction = async () => {
     if (!token || !user) {
-      Alert.alert("Sesión no iniciada", "Inicia sesión para solicitar una subasta.");
+      showAlert("Sesión no iniciada", "Inicia sesión para solicitar una subasta.");
       return;
     }
 
     if (!name.trim()) {
-      Alert.alert("Campo Requerido", "El nombre del artículo es obligatorio.");
+      showAlert("Campo Requerido", "El nombre del artículo es obligatorio.");
       return;
     }
     if (!shortDesc.trim()) {
-      Alert.alert("Campo Requerido", "La descripción breve es obligatoria.");
+      showAlert("Campo Requerido", "La descripción breve es obligatoria.");
       return;
     }
 
     // Requisito TPO-DAI: Al menos 6 fotos
     if (images.length < 6) {
-      Alert.alert(
+      showAlert(
         "Fotos insuficientes",
         `Por favor sube al menos 6 fotos de tu artículo (tienes ${images.length}). Esto es requerido para la inspección y tasación.`
       );
@@ -114,7 +118,7 @@ export default function RequestAuctionScreen() {
 
     // Declaraciones obligatorias
     if (!declaracionPropiedad || !origenLicito || !aceptaCargosDevolucion) {
-      Alert.alert(
+      showAlert(
         "Declaraciones obligatorias",
         "Debes aceptar todas las declaraciones juradas y de devolución para poder ofrecer tu artículo."
       );
@@ -176,28 +180,33 @@ export default function RequestAuctionScreen() {
         deposito: "Sede Central",
       };
 
-      const jsonUri = FileSystem.cacheDirectory + "datos.json";
-      await FileSystem.writeAsStringAsync(jsonUri, JSON.stringify(payload), {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-
       const formData = new FormData();
-      formData.append("datos", {
-        uri: jsonUri,
-        type: "application/json",
-        name: "datos.json",
-      } as any);
 
-      images.forEach((uri, index) => {
-        const filename = uri.split("/").pop() || `imagen_${index}.jpg`;
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : `image/jpeg`;
-        formData.append("imagenes", {
-          uri,
-          name: filename,
-          type,
-        } as any);
-      });
+      if (Platform.OS === 'web') {
+        const jsonBlob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+        formData.append("datos", jsonBlob, "datos.json");
+
+        for (let index = 0; index < images.length; index++) {
+          const uri = images[index];
+          const filename = `imagen_${index}.jpg`;
+          const resp = await fetch(uri);
+          const blob = await resp.blob();
+          formData.append("imagenes", blob, filename);
+        }
+      } else {
+        const jsonUri = FileSystem.cacheDirectory + "datos.json";
+        await FileSystem.writeAsStringAsync(jsonUri, JSON.stringify(payload), {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        formData.append("datos", { uri: jsonUri, type: "application/json", name: "datos.json" } as any);
+
+        images.forEach((uri, index) => {
+          const filename = uri.split("/").pop() || `imagen_${index}.jpg`;
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : `image/jpeg`;
+          formData.append("imagenes", { uri, name: filename, type } as any);
+        });
+      }
 
       // 3. Enviar producto al backend
       const response = await fetch(`${API_BASE}/productos`, {
@@ -215,7 +224,7 @@ export default function RequestAuctionScreen() {
 
       router.replace("/(tabs)/auctions/new/auction-verification" as any);
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Ocurrió un error al registrar el artículo.");
+      showAlert("Error", err.message || "Ocurrió un error al registrar el artículo.");
     } finally {
       setIsSubmitting(false);
     }

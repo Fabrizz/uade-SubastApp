@@ -13,6 +13,19 @@ function useAsyncState<T>(
   ) as UseStateHook<T>;
 }
 
+export async function getStorageItemAsync(key: string): Promise<string | null> {
+  if (Platform.OS === 'web') {
+    try {
+      return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+    } catch (e) {
+      console.error('Local storage is unavailable:', e);
+      return null;
+    }
+  } else {
+    return SecureStore.getItemAsync(key);
+  }
+}
+
 export async function setStorageItemAsync(key: string, value: string | null) {
   if (Platform.OS === 'web') {
     try {

@@ -1,12 +1,14 @@
 import HeaderComp from "@/components/HeaderComp";
 import { useAuth } from "@/context/auth";
 import { api, API_BASE } from "@/lib/api";
+import { showAlert } from "@/lib/alert";
 import { LinearGradient } from "expo-linear-gradient";
 import { Calendar, Clock, MapPin, Plus, Users, X, DollarSign, Check, Gavel, ChevronDown, ChevronUp, User, Play } from "lucide-react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Alert,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -231,7 +233,7 @@ export default function AdminAuctionsScreen() {
         : (pujasData as any)?.content ?? []) as any[];
 
       if (pujas.length === 0) {
-        Alert.alert("Lote sin pujas", "No se puede adjudicar un lote que no recibió ninguna oferta.");
+        showAlert("Lote sin pujas", "No se puede adjudicar un lote que no recibió ninguna oferta.");
         return;
       }
 
@@ -263,7 +265,7 @@ export default function AdminAuctionsScreen() {
       );
 
       if (!medioValido) {
-        Alert.alert(
+        showAlert(
           "Error de pago",
           `El ganador no tiene un medio de pago verificado y activo en la moneda ${subastaMoneda} de la subasta.`
         );
@@ -292,12 +294,12 @@ export default function AdminAuctionsScreen() {
         throw new Error((errGanador as any)?.message ?? "Error en el servidor al adjudicar el lote.");
       }
 
-      Alert.alert("Éxito", `El lote #${item.identificador} fue adjudicado exitosamente a ${topPujo.clienteNombre || `Postor #${topPujo.numeroPostor}`} por un monto de ${topPujo.importe}.`);
-      
+      showAlert("Éxito", `El lote #${item.identificador} fue adjudicado exitosamente a ${topPujo.clienteNombre || `Postor #${topPujo.numeroPostor}`} por un monto de ${topPujo.importe}.`);
+
       // Refresh catalog items list
       fetchCatalogData(selectedSubastaForCatalog.identificador);
     } catch (error: any) {
-      Alert.alert("Error al adjudicar", error.message || "Ocurrió un error inesperado.");
+      showAlert("Error al adjudicar", error.message || "Ocurrió un error inesperado.");
     }
   };
 
@@ -327,61 +329,68 @@ export default function AdminAuctionsScreen() {
         : (pujasData as any)?.content ?? []) as any[];
 
       if (pujas.length === 0) {
-        // No bids case
-        Alert.alert(
-          "Lote sin pujas",
-          "Este lote no recibió ninguna oferta. ¿Deseas dar por terminada la subasta del lote y marcarlo como subastado? (Se cerrará sin ganador)",
-          [
-            { text: "Cancelar", style: "cancel" },
-            {
-              text: "Confirmar",
-              onPress: async () => {
-                try {
-                  const { error } = await api.PATCH(
-                    "/api/v1/subastas/{id}/catalogo/items/{idItem}",
-                    {
-                      params: {
-                        path: {
-                          id: selectedSubastaForCatalog.identificador,
-                          idItem: item.identificador,
-                        },
-                      },
-                      headers: { Authorization: `Bearer ${token}` },
-                      body: {
-                        subastado: "si",
-                      },
-                    }
-                  );
-                  if (error) {
-                    throw new Error((error as any)?.message ?? "Error en el servidor al cerrar el lote.");
-                  }
-                  Alert.alert("Éxito", "El lote fue marcado como subastado (sin adjudicar).");
-                  fetchCatalogData(selectedSubastaForCatalog.identificador);
-                } catch (err: any) {
-                  Alert.alert("Error", err.message || "Ocurrió un error inesperado.");
-                }
-              },
-            },
-          ]
-        );
+        const doCloseNoBids = async () => {
+          try {
+            const { error } = await api.PATCH(
+              "/api/v1/subastas/{id}/catalogo/items/{idItem}",
+              {
+                params: {
+                  path: {
+                    id: selectedSubastaForCatalog.identificador,
+                    idItem: item.identificador,
+                  },
+                },
+                headers: { Authorization: `Bearer ${token}` },
+                body: { subastado: "si" },
+              }
+            );
+            if (error) {
+              throw new Error((error as any)?.message ?? "Error en el servidor al cerrar el lote.");
+            }
+            showAlert("Éxito", "El lote fue marcado como subastado (sin adjudicar).");
+            fetchCatalogData(selectedSubastaForCatalog.identificador);
+          } catch (err: any) {
+            showAlert("Error", err.message || "Ocurrió un error inesperado.");
+          }
+        };
+
+        if (Platform.OS === 'web') {
+          if (window.confirm("Este lote no recibió ninguna oferta. ¿Deseas dar por terminada la subasta del lote y marcarlo como subastado? (Se cerrará sin ganador)")) {
+            await doCloseNoBids();
+          }
+        } else {
+          Alert.alert(
+            "Lote sin pujas",
+            "Este lote no recibió ninguna oferta. ¿Deseas dar por terminada la subasta del lote y marcarlo como subastado? (Se cerrará sin ganador)",
+            [
+              { text: "Cancelar", style: "cancel" },
+              { text: "Confirmar", onPress: doCloseNoBids },
+            ]
+          );
+        }
         return;
       }
 
       const topPujo = pujas[0];
       const moneda = selectedSubastaForCatalog.moneda || "ARS";
-      Alert.alert(
-        "Confirmar Adjudicación",
-        `El lote tiene ${pujas.length} pujas. ¿Deseas terminar la subasta del lote y adjudicarlo a ${topPujo.clienteNombre || `Postor #${topPujo.numeroPostor}`} por ${moneda} ${topPujo.importe}?`,
-        [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Adjudicar",
-            onPress: () => handleAdjudicarLote(item),
-          },
-        ]
-      );
+      const confirmMsg = `El lote tiene ${pujas.length} pujas. ¿Deseas terminar la subasta del lote y adjudicarlo a ${topPujo.clienteNombre || `Postor #${topPujo.numeroPostor}`} por ${moneda} ${topPujo.importe}?`;
+
+      if (Platform.OS === 'web') {
+        if (window.confirm(confirmMsg)) {
+          handleAdjudicarLote(item);
+        }
+      } else {
+        Alert.alert(
+          "Confirmar Adjudicación",
+          confirmMsg,
+          [
+            { text: "Cancelar", style: "cancel" },
+            { text: "Adjudicar", onPress: () => handleAdjudicarLote(item) },
+          ]
+        );
+      }
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Ocurrió un error inesperado.");
+      showAlert("Error", error.message || "Ocurrió un error inesperado.");
     }
   };
 
@@ -416,10 +425,10 @@ export default function AdminAuctionsScreen() {
         throw new Error((error as any)?.message ?? "Error al crear el catálogo");
       }
 
-      Alert.alert("Éxito", "El catálogo ha sido inicializado correctamente.");
+      showAlert("Éxito", "El catálogo ha sido inicializado correctamente.");
       fetchCatalogData(selectedSubastaForCatalog.identificador);
     } catch (err: any) {
-      Alert.alert("Error", err.message || "No se pudo inicializar el catálogo");
+      showAlert("Error", err.message || "No se pudo inicializar el catálogo");
       setCatalogLoading(false);
     }
   };
@@ -454,10 +463,10 @@ export default function AdminAuctionsScreen() {
       if (error) {
         throw new Error((error as any)?.mensaje || (error as any)?.message || JSON.stringify(error));
       }
-      Alert.alert("Éxito", "El artículo ha sido aprobado digitalmente. Se le ha enviado un mensaje al usuario solicitando el envío del bien al almacén (Lima 700, Monserrat, CABA).");
+      showAlert("Éxito", "El artículo ha sido aprobado digitalmente. Se le ha enviado un mensaje al usuario solicitando el envío del bien al almacén (Lima 700, Monserrat, CABA).");
       await fetchProducts();
     } catch (err: any) {
-      Alert.alert("Error", err.message || "No se pudo aprobar el artículo.");
+      showAlert("Error", err.message || "No se pudo aprobar el artículo.");
     } finally {
       setIsModerating(false);
     }
@@ -467,15 +476,15 @@ export default function AdminAuctionsScreen() {
     if (!token || !selectedProductForPhysicalApproval) return;
     
     if (!physicalBasePrice || isNaN(Number(physicalBasePrice)) || Number(physicalBasePrice) <= 0) {
-      Alert.alert("Error", "Ingresa un precio base válido.");
+      showAlert("Error", "Ingresa un precio base válido.");
       return;
     }
     if (!physicalCommission || isNaN(Number(physicalCommission)) || Number(physicalCommission) < 0) {
-      Alert.alert("Error", "Ingresa una comisión válida.");
+      showAlert("Error", "Ingresa una comisión válida.");
       return;
     }
     if (!physicalSubastaId) {
-      Alert.alert("Error", "Selecciona una subasta.");
+      showAlert("Error", "Selecciona una subasta.");
       return;
     }
 
@@ -544,11 +553,11 @@ export default function AdminAuctionsScreen() {
         throw new Error((itemError as any)?.message ?? "Error al agregar el lote al catálogo.");
       }
 
-      Alert.alert(
+      showAlert(
         "Éxito",
         "El artículo ha sido aprobado físicamente, se ha asignado a la subasta con el precio base y la comisión ingresadas, y se le notificó al dueño para su aceptación."
       );
-      
+
       setPhysicalApprovalModalVisible(false);
       setSelectedProductForPhysicalApproval(null);
       setPhysicalBasePrice("");
@@ -558,7 +567,7 @@ export default function AdminAuctionsScreen() {
       
       await fetchProducts();
     } catch (err: any) {
-      Alert.alert("Error", err.message || "No se pudo completar la aprobación física.");
+      showAlert("Error", err.message || "No se pudo completar la aprobación física.");
     } finally {
       setIsModerating(false);
     }
@@ -573,7 +582,7 @@ export default function AdminAuctionsScreen() {
   const handleRejectProductSubmit = async () => {
     if (!token || !selectedProductForRejection) return;
     if (!rejectionReason.trim()) {
-      Alert.alert("Motivo requerido", "Por favor ingresa un motivo para el rechazo.");
+      showAlert("Motivo requerido", "Por favor ingresa un motivo para el rechazo.");
       return;
     }
     setIsModerating(true);
@@ -590,12 +599,12 @@ export default function AdminAuctionsScreen() {
       if (error) {
         throw new Error((error as any)?.mensaje || (error as any)?.message || JSON.stringify(error));
       }
-      Alert.alert("Éxito", `El artículo ha sido ${targetState === "devuelto" ? "devuelto (rechazo físico)" : "rechazado (rechazo digital)"} y se le notificó al dueño.`);
+      showAlert("Éxito", `El artículo ha sido ${targetState === "devuelto" ? "devuelto (rechazo físico)" : "rechazado (rechazo digital)"} y se le notificó al dueño.`);
       setModerationReasonModalVisible(false);
       setSelectedProductForRejection(null);
       await fetchProducts();
     } catch (err: any) {
-      Alert.alert("Error", err.message || "No se pudo rechazar el artículo.");
+      showAlert("Error", err.message || "No se pudo rechazar el artículo.");
     } finally {
       setIsModerating(false);
     }
@@ -611,7 +620,7 @@ export default function AdminAuctionsScreen() {
       });
       if (error) {
         console.error("Error fetching owners from API:", error);
-        Alert.alert("Error al cargar dueños", (error as any)?.mensaje || (error as any)?.message || JSON.stringify(error));
+        showAlert("Error al cargar dueños", (error as any)?.mensaje || (error as any)?.message || JSON.stringify(error));
         return;
       }
       if (data) {
@@ -620,7 +629,7 @@ export default function AdminAuctionsScreen() {
       }
     } catch (err: any) {
       console.error("Exception fetching owners:", err);
-      Alert.alert("Error de conexión", err.message || "No se pudieron cargar los dueños");
+      showAlert("Error de conexión", err.message || "No se pudieron cargar los dueños");
     } finally {
       setOwnersLoading(false);
     }
@@ -629,15 +638,15 @@ export default function AdminAuctionsScreen() {
   const handleAddLot = async () => {
     if (!selectedSubastaForCatalog || !token) return;
     if (!selectedProduct) {
-      Alert.alert("Error", "Selecciona un producto.");
+      showAlert("Error", "Selecciona un producto.");
       return;
     }
     if (!precioBase || isNaN(Number(precioBase)) || Number(precioBase) <= 0) {
-      Alert.alert("Error", "Ingresa un precio base válido.");
+      showAlert("Error", "Ingresa un precio base válido.");
       return;
     }
     if (!comision || isNaN(Number(comision)) || Number(comision) < 0) {
-      Alert.alert("Error", "Ingresa una comisión válida.");
+      showAlert("Error", "Ingresa una comisión válida.");
       return;
     }
 
@@ -657,13 +666,13 @@ export default function AdminAuctionsScreen() {
         throw new Error((error as any)?.message ?? "Error al agregar lote");
       }
 
-      Alert.alert("Éxito", "Lote agregado correctamente.");
+      showAlert("Éxito", "Lote agregado correctamente.");
       setPrecioBase("");
       setSelectedProduct("");
       fetchCatalogData(selectedSubastaForCatalog.identificador);
       fetchProducts();
     } catch (err: any) {
-      Alert.alert("Error", err.message || "No se pudo agregar el lote");
+      showAlert("Error", err.message || "No se pudo agregar el lote");
     } finally {
       setIsAddingLot(false);
     }
@@ -671,11 +680,11 @@ export default function AdminAuctionsScreen() {
 
   const handleCreateOwnerQuick = async () => {
     if (!token) {
-      Alert.alert("Error", "Sesión no iniciada o token inválido.");
+      showAlert("Error", "Sesión no iniciada o token inválido.");
       return;
     }
     if (!user?.id) {
-      Alert.alert("Error", "No se pudo recuperar el ID de tu usuario. Intenta cerrar e iniciar sesión de nuevo.");
+      showAlert("Error", "No se pudo recuperar el ID de tu usuario. Intenta cerrar e iniciar sesión de nuevo.");
       return;
     }
     setIsCreatingOwner(true);
@@ -697,10 +706,10 @@ export default function AdminAuctionsScreen() {
         throw new Error(detail);
       }
 
-      Alert.alert("Éxito", "Administrador registrado como Dueño de bienes.");
+      showAlert("Éxito", "Administrador registrado como Dueño de bienes.");
       fetchOwners();
     } catch (err: any) {
-      Alert.alert("Error", err.message || "No se pudo registrar el dueño");
+      showAlert("Error", err.message || "No se pudo registrar el dueño");
     } finally {
       setIsCreatingOwner(false);
     }
@@ -709,11 +718,11 @@ export default function AdminAuctionsScreen() {
   const handleCreateProductQuick = async () => {
     if (!token) return;
     if (!newProductTitle.trim() || !newProductDesc.trim()) {
-      Alert.alert("Error", "Completa el título y la descripción.");
+      showAlert("Error", "Completa el título y la descripción.");
       return;
     }
     if (!selectedOwner) {
-      Alert.alert("Error", "Selecciona un dueño para el producto.");
+      showAlert("Error", "Selecciona un dueño para el producto.");
       return;
     }
 
@@ -733,17 +742,17 @@ export default function AdminAuctionsScreen() {
         deposito: "Sede Central",
       };
 
-      const jsonUri = FileSystem.cacheDirectory + "quick_datos.json";
-      await FileSystem.writeAsStringAsync(jsonUri, JSON.stringify(payload), {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-
       const formData = new FormData();
-      formData.append("datos", {
-        uri: jsonUri,
-        type: "application/json",
-        name: "datos.json",
-      } as any);
+      if (Platform.OS === 'web') {
+        const jsonBlob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+        formData.append("datos", jsonBlob, "datos.json");
+      } else {
+        const jsonUri = FileSystem.cacheDirectory + "quick_datos.json";
+        await FileSystem.writeAsStringAsync(jsonUri, JSON.stringify(payload), {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        formData.append("datos", { uri: jsonUri, type: "application/json", name: "datos.json" } as any);
+      }
 
       const response = await fetch(`${API_BASE}/productos`, {
         method: "POST",
@@ -759,8 +768,8 @@ export default function AdminAuctionsScreen() {
       }
 
       const createdProduct = await response.json();
-      Alert.alert("Éxito", `Producto "${createdProduct.titulo}" creado correctamente.`);
-      
+      showAlert("Éxito", `Producto "${createdProduct.titulo}" creado correctamente.`);
+
       setNewProductTitle("");
       setNewProductDesc("");
       setShowQuickProductForm(false);
@@ -770,7 +779,7 @@ export default function AdminAuctionsScreen() {
         setSelectedProduct(String(createdProduct.identificador));
       }
     } catch (err: any) {
-      Alert.alert("Error", err.message || "No se pudo crear el producto");
+      showAlert("Error", err.message || "No se pudo crear el producto");
     } finally {
       setIsCreatingProduct(false);
     }
@@ -780,40 +789,40 @@ export default function AdminAuctionsScreen() {
   const handleSubmit = async () => {
     // Basic fields validation
     if (!fecha || !hora || !ubicacion || !capacidadAsistentes) {
-      Alert.alert("Campos Obligatorios", "Por favor completa la fecha, hora, ubicación y capacidad.");
+      showAlert("Campos Obligatorios", "Por favor completa la fecha, hora, ubicación y capacidad.");
       return;
     }
 
     if (!selectedSubastador) {
-      Alert.alert("Martillero Obligatorio", "Por favor selecciona un martillero / subastador.");
+      showAlert("Martillero Obligatorio", "Por favor selecciona un martillero / subastador.");
       return;
     }
 
     // Date format validation
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-      Alert.alert("Fecha Inválida", "La fecha debe tener el formato AAAA-MM-DD (ej: 2026-07-20).");
+      showAlert("Fecha Inválida", "La fecha debe tener el formato AAAA-MM-DD (ej: 2026-07-20).");
       return;
     }
 
     // Time format validation
     if (!/^\d{2}:\d{2}(:\d{2})?$/.test(hora)) {
-      Alert.alert("Hora Inválida", "La hora debe tener el formato HH:MM (ej: 18:30).");
+      showAlert("Hora Inválida", "La hora debe tener el formato HH:MM (ej: 18:30).");
       return;
     }
 
     // Fecha/hora de fin validation
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaFin)) {
-      Alert.alert("Fecha de Fin Inválida", "La fecha de fin debe tener el formato AAAA-MM-DD.");
+      showAlert("Fecha de Fin Inválida", "La fecha de fin debe tener el formato AAAA-MM-DD.");
       return;
     }
     if (!/^\d{2}:\d{2}(:\d{2})?$/.test(horaFin)) {
-      Alert.alert("Hora de Fin Inválida", "La hora de fin debe tener el formato HH:MM.");
+      showAlert("Hora de Fin Inválida", "La hora de fin debe tener el formato HH:MM.");
       return;
     }
     const dtInicio = new Date(`${fecha}T${hora.length === 5 ? hora : hora.slice(0, 5)}`);
     const dtFin = new Date(`${fechaFin}T${horaFin.length === 5 ? horaFin : horaFin.slice(0, 5)}`);
     if (dtFin <= dtInicio) {
-      Alert.alert("Fecha de Fin Inválida", "La fecha y hora de fin debe ser posterior a la de inicio.");
+      showAlert("Fecha de Fin Inválida", "La fecha y hora de fin debe ser posterior a la de inicio.");
       return;
     }
 
@@ -822,7 +831,7 @@ export default function AdminAuctionsScreen() {
     const diffTime = parsedDate.getTime() - Date.now();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     if (diffDays <= 10) {
-      Alert.alert(
+      showAlert(
         "Fecha muy cercana",
         "Por políticas de seguridad, las subastas deben programarse con al menos 10 días de anticipación. Elige una fecha más lejana."
       );
@@ -831,7 +840,7 @@ export default function AdminAuctionsScreen() {
 
     // Collection validation
     if (esColeccion && !nombreColeccion.trim()) {
-      Alert.alert("Nombre Requerido", "Si marcas la subasta como colección, debes ingresar el nombre de la colección.");
+      showAlert("Nombre Requerido", "Si marcas la subasta como colección, debes ingresar el nombre de la colección.");
       return;
     }
 
@@ -865,7 +874,7 @@ export default function AdminAuctionsScreen() {
         throw new Error((error as any)?.message ?? "Error en el servidor al guardar la subasta");
       }
 
-      Alert.alert("Éxito", "La subasta ha sido agregada correctamente.");
+      showAlert("Éxito", "La subasta ha sido agregada correctamente.");
       setShowCreateModal(false);
       
       // Reset form states
@@ -887,7 +896,7 @@ export default function AdminAuctionsScreen() {
       setLoading(true);
       loadData();
     } catch (err: any) {
-      Alert.alert("Error de Creación", err.message || "No se pudo crear la subasta");
+      showAlert("Error de Creación", err.message || "No se pudo crear la subasta");
     } finally {
       setIsSubmitting(false);
     }
@@ -897,40 +906,45 @@ export default function AdminAuctionsScreen() {
   // begins the scheduled per-item advancement. This is the only way to start it from the app.
   const handleIniciarSubasta = async (subasta: any) => {
     if (!token) return;
-    Alert.alert(
-      "Iniciar subasta",
-      `¿Iniciar la subasta #${subasta.identificador}? Se arrancará el cronómetro y los lotes avanzarán automáticamente.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Iniciar",
-          style: "default",
-          onPress: async () => {
-            setStartingId(subasta.identificador);
-            try {
-              const { error } = await api.PATCH("/api/v1/subastas/{id}/estado-detallado", {
-                params: {
-                  path: { id: subasta.identificador },
-                  query: { estadoDetallado: "en_curso" },
-                },
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              if (error) {
-                const errMsg = (error as any)?.mensaje || (error as any)?.message || JSON.stringify(error);
-                throw new Error(errMsg);
-              }
-              Alert.alert("Subasta iniciada", "El cronómetro comenzó y el primer lote está en subasta.");
-              setLoading(true);
-              loadData();
-            } catch (err: any) {
-              Alert.alert("No se pudo iniciar", err.message || "Error al iniciar la subasta");
-            } finally {
-              setStartingId(null);
-            }
+
+    const doStart = async () => {
+      setStartingId(subasta.identificador);
+      try {
+        const { error } = await api.PATCH("/api/v1/subastas/{id}/estado-detallado", {
+          params: {
+            path: { id: subasta.identificador },
+            query: { estadoDetallado: "en_curso" },
           },
-        },
-      ],
-    );
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (error) {
+          const errMsg = (error as any)?.mensaje || (error as any)?.message || JSON.stringify(error);
+          throw new Error(errMsg);
+        }
+        showAlert("Subasta iniciada", "El cronómetro comenzó y el primer lote está en subasta.");
+        setLoading(true);
+        loadData();
+      } catch (err: any) {
+        showAlert("No se pudo iniciar", err.message || "Error al iniciar la subasta");
+      } finally {
+        setStartingId(null);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`¿Iniciar la subasta #${subasta.identificador}? Se arrancará el cronómetro y los lotes avanzarán automáticamente.`)) {
+        await doStart();
+      }
+    } else {
+      Alert.alert(
+        "Iniciar subasta",
+        `¿Iniciar la subasta #${subasta.identificador}? Se arrancará el cronómetro y los lotes avanzarán automáticamente.`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Iniciar", style: "default", onPress: doStart },
+        ],
+      );
+    }
   };
 
   const filteredSubastas = subastas.filter((s) => {
@@ -1849,10 +1863,10 @@ export default function AdminAuctionsScreen() {
                                         }
                                       );
                                       if (error) throw new Error((error as any)?.message ?? "Error.");
-                                      Alert.alert("Éxito", "Lote aceptado.");
+                                      showAlert("Éxito", "Lote aceptado.");
                                       fetchCatalogData(selectedSubastaForCatalog.identificador);
                                     } catch (err: any) {
-                                      Alert.alert("Error", err.message);
+                                      showAlert("Error", err.message);
                                     }
                                   }}
                                   className="flex-1 bg-emerald-950 border border-emerald-800/60 py-2 rounded-xl items-center justify-center"
@@ -1878,10 +1892,10 @@ export default function AdminAuctionsScreen() {
                                         }
                                       );
                                       if (error) throw new Error((error as any)?.message ?? "Error.");
-                                      Alert.alert("Éxito", "Lote rechazado.");
+                                      showAlert("Éxito", "Lote rechazado.");
                                       fetchCatalogData(selectedSubastaForCatalog.identificador);
                                     } catch (err: any) {
-                                      Alert.alert("Error", err.message);
+                                      showAlert("Error", err.message);
                                     }
                                   }}
                                   className="flex-1 bg-rose-950 border border-rose-800/60 py-2 rounded-xl items-center justify-center"
