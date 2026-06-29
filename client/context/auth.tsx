@@ -97,7 +97,7 @@ async function fetchHasPaymentMethod(tok: string, id: number): Promise<boolean> 
 
 async function syncCliente(tok: string, base: User): Promise<User> {
   const id = base.id;
-  if (!id || base.category === 'admin') return base;
+  if (!id) return base;
   try {
     const { data } = await api.GET('/api/v1/clientes/{id}', {
       params: { path: { id } },

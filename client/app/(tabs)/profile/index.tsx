@@ -121,6 +121,7 @@ export default function ProfileScreen() {
         contentContainerStyle={{
           paddingHorizontal: 24,
           paddingTop: 24,
+          paddingBottom: 100,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -239,7 +240,7 @@ export default function ProfileScreen() {
         <Button
           label="Cerrar sesión"
           onPress={logout}
-          className="bg-red-950/40 border border-red-500/30 mb-3"
+          className="bg-red-950/40 border border-red-500/30"
           textClassName="text-red-300 font-semibold"
           icon={<LogOut size={16} color="#f87171" />}
           innerClassName="px-6 py-3"

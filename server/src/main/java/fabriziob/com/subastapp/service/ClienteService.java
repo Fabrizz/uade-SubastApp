@@ -90,7 +90,8 @@ public class ClienteService {
             extra.setCategoriaBase(nueva);
 
         // Un cambio de categoría puede dejarlo sin elegibilidad para la subasta en la
-        // que está; lo desconectamos y la elegibilidad se vuelve a validar al reingresar.
+        // que está; lo desconectamos y la elegibilidad se vuelve a validar al
+        // reingresar.
         asistenteService.desconectarDeSubastaActiva(id);
 
         notificacionService.notificarCliente(id,
@@ -144,7 +145,7 @@ public class ClienteService {
     public Cliente saldarMulta(Integer id) {
         Cliente cliente = findById(id);
         ClienteExtra extra = requireExtra(cliente);
-        extra.setMultaPendiente(BigDecimal.ZERO);
+        extra.setMultaPendiente(null);
         if ("suspendido".equals(extra.getEstadoOperativo()))
             extra.setEstadoOperativo("habilitado");
         return cliente;

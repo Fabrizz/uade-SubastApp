@@ -1,10 +1,11 @@
+import HeaderComp from "@/components/HeaderComp";
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
 import type { components } from "@/types/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { AlertTriangle, ArrowLeft, CheckCircle, Clock, Package, ShieldOff, Truck } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import { AlertTriangle, CheckCircle, Clock, Package, RefreshCw, ShieldOff, Truck } from "lucide-react-native";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -33,11 +34,12 @@ function fmt(n: number | undefined): string {
 export default function MiCompraScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { token, user } = useAuth();
+  const { token, user, refreshUser } = useAuth();
   const { registroId, subastaId } = useLocalSearchParams<{ registroId: string; subastaId: string }>();
 
   const [registro, setRegistro] = useState<RegistroDeSubastaResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Shipping form state
@@ -46,26 +48,36 @@ export default function MiCompraScreen() {
   const [savingEnvio, setSavingEnvio] = useState(false);
   const [markingRetirado, setMarkingRetirado] = useState(false);
 
-  useEffect(() => {
+  const fetchRegistro = useCallback(async () => {
     if (!token || !registroId || !subastaId) return;
-    setLoading(true);
-    api
-      .GET("/api/v1/subastas/{id}/registro/{idRegistro}", {
+    try {
+      const { data, error: e } = await api.GET("/api/v1/subastas/{id}/registro/{idRegistro}", {
         params: { path: { id: Number(subastaId), idRegistro: Number(registroId) } },
         headers: { Authorization: `Bearer ${token}` },
-      })
-      .then(({ data, error: e }) => {
-        if (e || !data) {
-          setError("No se pudo cargar la información de tu compra.");
-        } else {
-          setRegistro(data);
-          setSelectedEnvio(data.medioEnvio ?? null);
-          setDireccionEnvio(data.direccionEnvio ?? "");
-        }
-      })
-      .catch(() => setError("Error al cargar la compra."))
-      .finally(() => setLoading(false));
+      });
+      if (e || !data) {
+        setError("No se pudo cargar la información de tu compra.");
+      } else {
+        setRegistro(data);
+        setSelectedEnvio(data.medioEnvio ?? null);
+        setDireccionEnvio(data.direccionEnvio ?? "");
+      }
+    } catch {
+      setError("Error al cargar la compra.");
+    }
   }, [token, registroId, subastaId]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchRegistro().finally(() => setLoading(false));
+  }, [fetchRegistro]);
+
+  const onReloadPress = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    await Promise.all([fetchRegistro(), refreshUser()]);
+    setRefreshing(false);
+  };
 
   const handleSaveEnvio = async () => {
     if (!token || !registro?.identificador || !selectedEnvio) return;
@@ -152,6 +164,8 @@ export default function MiCompraScreen() {
   const costoEnvio = registro?.costoEnvio ?? 0;
   const totalComprador = importe + costoEnvio;
 
+  const hasMulta = user?.multaPendiente != null && user.multaPendiente > 0;
+
   const currentMedioEnvio = registro?.medioEnvio;
   const envioChanged =
     selectedEnvio !== null && selectedEnvio !== currentMedioEnvio ||
@@ -182,28 +196,35 @@ export default function MiCompraScreen() {
 
   return (
     <LinearGradient colors={["#000000", "#1a0020", "#0f0020"]} style={{ flex: 1 }}>
+      <HeaderComp
+        back
+        outlet={
+          <TouchableOpacity
+            onPress={onReloadPress}
+            disabled={refreshing}
+            activeOpacity={0.7}
+            className="w-10 h-10 items-center justify-center bg-neutral-900/60 rounded-full border border-neutral-800"
+          >
+            {refreshing
+              ? <ActivityIndicator size="small" color="#A14EBF" />
+              : <RefreshCw size={18} color="#A14EBF" strokeWidth={2.5} />}
+          </TouchableOpacity>
+        }
+      />
       <ScrollView
         contentContainerStyle={{
-          paddingTop: Math.max(insets.top, 20),
+          paddingTop: 20,
           paddingBottom: insets.bottom + 40,
           paddingHorizontal: 20,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View className="flex-row items-center mb-6">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="w-10 h-10 items-center justify-center bg-white/10 rounded-full mr-4"
-          >
-            <ArrowLeft size={20} color="white" />
-          </TouchableOpacity>
-          <View className="flex-1">
-            <Text className="text-white text-2xl font-montserrat-bold">Mi Compra</Text>
-            <Text className="text-neutral-400 text-xs font-manrope mt-0.5">
-              Registro #{registro.identificador}
-            </Text>
-          </View>
+        {/* Título */}
+        <View className="mb-6">
+          <Text className="text-white text-2xl font-montserrat-bold">Mi Compra</Text>
+          <Text className="text-neutral-400 text-xs font-manrope mt-0.5">
+            Registro #{registro.identificador}
+          </Text>
         </View>
 
         {/* "Ganaste" banner */}
@@ -216,6 +237,19 @@ export default function MiCompraScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Multa pendiente */}
+        {hasMulta && (
+          <View className="bg-red-500/10 border border-red-500/25 rounded-2xl p-4 flex-row items-center gap-3 mb-5">
+            <ShieldOff size={28} color="#ef4444" />
+            <View className="flex-1">
+              <Text className="text-red-400 font-manrope-bold text-base">Tenés una multa pendiente</Text>
+              <Text className="text-neutral-400 text-xs font-manrope mt-0.5">
+                ${fmt(user?.multaPendiente)} — tu cuenta está suspendida hasta saldarla.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Producto */}
         <View className="bg-[#1a1a1a] border border-neutral-800 rounded-2xl p-5 mb-4">
@@ -369,9 +403,9 @@ export default function MiCompraScreen() {
           {envioChanged && (
             <TouchableOpacity
               onPress={handleSaveEnvio}
-              disabled={savingEnvio}
+              disabled={savingEnvio || hasMulta}
               activeOpacity={0.8}
-              className="bg-purple-600 py-3.5 rounded-xl items-center justify-center"
+              className={`py-3.5 rounded-xl items-center justify-center ${hasMulta ? "bg-purple-600/40" : "bg-purple-600"}`}
             >
               {savingEnvio ? (
                 <ActivityIndicator size="small" color="white" />
@@ -387,9 +421,9 @@ export default function MiCompraScreen() {
               {registro.seguroActivo ? (
                 <TouchableOpacity
                   onPress={handleMarcarEntregado}
-                  disabled={markingRetirado}
+                  disabled={markingRetirado || hasMulta}
                   activeOpacity={0.8}
-                  className="bg-amber-600 py-3.5 rounded-xl items-center justify-center flex-row gap-2"
+                  className={`py-3.5 rounded-xl items-center justify-center flex-row gap-2 ${hasMulta ? "bg-amber-600/40" : "bg-amber-600"}`}
                 >
                   {markingRetirado ? (
                     <ActivityIndicator size="small" color="white" />
