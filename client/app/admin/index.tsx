@@ -1,7 +1,7 @@
 import HeaderComp from '@/components/HeaderComp';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { BarChart2, ChevronRight, CreditCard, Gavel, Shield, UserMinus, UserPlus, Users } from 'lucide-react-native';
+import { Banknote, BarChart2, ChevronRight, CreditCard, Gavel, Shield, UserMinus, UserPlus, Users } from 'lucide-react-native';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,6 +9,7 @@ const SECTIONS = [
   { label: 'Admitir', description: 'Admitir nuevos usuarios', Icon: Shield, path: '/admin/admitir' },
   { label: 'Aprobar Pagos', description: 'Aprobar métodos de pago', Icon: CreditCard, path: '/admin/payment' },
   { label: 'Usuarios',  description: 'Gestionar cuentas y categorías', Icon: Users,    path: '/admin/users'    },
+  { label: 'Multas', description: 'Asignar y saldar multas a usuarios', Icon: Banknote, path: '/admin/multas' },
   { label: 'Subastas',  description: 'Moderar y administrar subastas',  Icon: Gavel,      path: '/admin/auctions'        },
   { label: 'Reportes',  description: 'Ver estadísticas y métricas',     Icon: BarChart2,  path: '/admin/reports'         },
   { label: 'Nuevo Subastador', description: 'Asignar matrícula a un usuario', Icon: UserPlus,  path: '/admin/new-subastador'  },
