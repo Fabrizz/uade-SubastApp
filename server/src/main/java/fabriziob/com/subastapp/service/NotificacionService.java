@@ -7,9 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fabriziob.com.subastapp.controller.notificacion.NotificacionResponse;
 import fabriziob.com.subastapp.entity.Cliente;
+import fabriziob.com.subastapp.entity.Duenio;
 import fabriziob.com.subastapp.entity.Notificacion;
 import fabriziob.com.subastapp.entity.Persona;
 import fabriziob.com.subastapp.repository.ClienteRepository;
+import fabriziob.com.subastapp.repository.DuenioRepository;
 import fabriziob.com.subastapp.repository.NotificacionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class NotificacionService {
 
         private final NotificacionRepository notificacionRepository;
         private final ClienteRepository clienteRepository;
+        private final DuenioRepository duenioRepository;
         private final WsNotificacionService wsNotificacionService;
 
         // ─── emisión ─────────────────────────────────────────────────────────────
@@ -48,6 +51,29 @@ public class NotificacionService {
                 Cliente cliente = clienteRepository.findById(clienteId)
                                 .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado: " + clienteId));
                 Persona persona = cliente.getPersona();
+
+                Notificacion notificacion = Notificacion.builder()
+                                .destinatario(persona)
+                                .titulo(titulo)
+                                .descripcion(descripcion)
+                                .tipo(tipoPersistido)
+                                .leida(false)
+                                .accion(accion)
+                                .build();
+                notificacionRepository.save(notificacion);
+
+                String email = persona != null && persona.getPersonaExtra() != null
+                                ? persona.getPersonaExtra().getEmail()
+                                : null;
+                if (email != null && !email.isBlank())
+                        wsNotificacionService.enviar(email, tipoWs, titulo, descripcion, accion);
+        }
+
+        public void notificarDuenio(Integer duenioId, WsNotificacionService.Tipo tipoWs,
+                        String tipoPersistido, String titulo, String descripcion, String accion) {
+                Duenio duenio = duenioRepository.findByIdWithAll(duenioId)
+                                .orElseThrow(() -> new EntityNotFoundException("Duenio no encontrado: " + duenioId));
+                Persona persona = duenio.getPersona();
 
                 Notificacion notificacion = Notificacion.builder()
                                 .destinatario(persona)

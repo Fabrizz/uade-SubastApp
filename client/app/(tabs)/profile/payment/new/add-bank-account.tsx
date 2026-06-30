@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/api";
+import { showAlert } from "@/lib/alert";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -285,26 +286,26 @@ export default function AddBankAccountScreen() {
               label="Vincular Cuenta"
               onPress={async () => {
                 if (!personaId) {
-                  Alert.alert("Error", "No se encontró el identificador del cliente.");
+                  showAlert("Error", "No se encontró el identificador del cliente.");
                   return;
                 }
                 if (!bankName.trim() || !accountName.trim() || !cbu.trim()) {
-                  Alert.alert("Campos requeridos", "Completá todos los campos de la cuenta.");
+                  showAlert("Campos requeridos", "Completá todos los campos de la cuenta.");
                   return;
                 }
 
                 if (bankName.trim().length < 3) {
-                  Alert.alert("Banco inválido", "El nombre del banco debe tener al menos 3 caracteres.");
+                  showAlert("Banco inválido", "El nombre del banco debe tener al menos 3 caracteres.");
                   return;
                 }
 
                 if (accountName.trim().length < 3) {
-                  Alert.alert("Nombre inválido", "El nombre del titular debe tener al menos 3 caracteres.");
+                  showAlert("Nombre inválido", "El nombre del titular debe tener al menos 3 caracteres.");
                   return;
                 }
 
                 if (!isValidCBU(cbu.trim())) {
-                  Alert.alert("CBU/CVU inválido", "El CBU/CVU ingresado no pasa la validación de dígitos verificadores.");
+                  showAlert("CBU/CVU inválido", "El CBU/CVU ingresado no pasa la validación de dígitos verificadores.");
                   return;
                 }
 
@@ -337,7 +338,7 @@ export default function AddBankAccountScreen() {
                     router.back();
                   }
                 } catch (e: any) {
-                  Alert.alert("Error", e?.message ?? "Error al guardar el medio de pago.");
+                  showAlert("Error", e?.message ?? "Error al guardar el medio de pago.");
                 }
               }}
               colors={["#A14EBF", "#9102A2"]}

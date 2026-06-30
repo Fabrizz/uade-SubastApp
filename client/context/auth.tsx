@@ -1,14 +1,31 @@
-import { api } from '@/lib/api';
-import { useNotificacionesStore } from '@/lib/notificaciones.store';
-import type { components } from '@/types/api';
-import * as SecureStore from 'expo-secure-store';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  getStorageItemAsync,
+  setStorageItemAsync,
+} from "@/hooks/use-storage-state";
+import { api } from "@/lib/api";
+import { useNotificacionesStore } from "@/lib/notificaciones.store";
+import type { components } from "@/types/api";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-export type UserCategory = 'comun' | 'especial' | 'plata' | 'oro' | 'platino' | 'admin';
+export type UserCategory =
+  | "comun"
+  | "especial"
+  | "plata"
+  | "oro"
+  | "platino"
+  | "admin";
 
-const TOKEN_KEY = 'auth_token';
-const USER_KEY = 'auth_user';
+const TOKEN_KEY = "auth_token";
+const USER_KEY = "auth_user";
 
 export interface User {
   email: string;
@@ -19,7 +36,7 @@ export interface User {
   multaPendiente?: number;
 }
 
-export type PreRegisterBody = components['schemas']['PreRegisterRequest'];
+export type PreRegisterBody = components["schemas"]["PreRegisterRequest"];
 
 export interface RegisterRequest {
   email: string;
@@ -30,7 +47,8 @@ export interface RegisterRequest {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function base64Decode(str: string): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   let padded = str;
   while (padded.length % 4 !== 0) {
     padded += "=";
@@ -59,7 +77,7 @@ function base64Decode(str: string): string {
 
 function getTokenExpiration(token: string): Date | null {
   try {
-    const payload = JSON.parse(base64Decode(token.split('.')[1]));
+    const payload = JSON.parse(base64Decode(token.split(".")[1]));
     return payload.exp ? new Date(payload.exp * 1000) : null;
   } catch {
     return null;
@@ -73,19 +91,27 @@ function isTokenExpired(token: string): boolean {
 
 function getTokenId(token: string): number | null {
   try {
-    const payload = JSON.parse(base64Decode(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const payload = JSON.parse(
+      base64Decode(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
+    );
     const raw = payload.id;
-    if (typeof raw === 'number') return raw;
-    if (typeof raw === 'string') { const n = parseInt(raw, 10); return isNaN(n) ? null : n; }
+    if (typeof raw === "number") return raw;
+    if (typeof raw === "string") {
+      const n = parseInt(raw, 10);
+      return isNaN(n) ? null : n;
+    }
     return null;
   } catch {
     return null;
   }
 }
 
-async function fetchHasPaymentMethod(tok: string, id: number): Promise<boolean> {
+async function fetchHasPaymentMethod(
+  tok: string,
+  id: number,
+): Promise<boolean> {
   try {
-    const { data } = await api.GET('/api/v1/clientes/{id}/medios-pago', {
+    const { data } = await api.GET("/api/v1/clientes/{id}/medios-pago", {
       params: { path: { id } },
       headers: { Authorization: `Bearer ${tok}` },
     });
@@ -99,7 +125,7 @@ async function syncCliente(tok: string, base: User): Promise<User> {
   const id = base.id;
   if (!id) return base;
   try {
-    const { data } = await api.GET('/api/v1/clientes/{id}', {
+    const { data } = await api.GET("/api/v1/clientes/{id}", {
       params: { path: { id } },
       headers: { Authorization: `Bearer ${tok}` },
     });
@@ -118,7 +144,7 @@ async function syncPersona(tok: string, base: User): Promise<User> {
   const id = base.id ?? getTokenId(tok);
   if (!id) return base;
   try {
-    const { data } = await api.GET('/api/v1/personas/{id}', {
+    const { data } = await api.GET("/api/v1/personas/{id}", {
       params: { path: { id } },
       headers: { Authorization: `Bearer ${tok}` },
     });
@@ -171,8 +197,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       expirationTimer.current = null;
     }
     await Promise.all([
-      SecureStore.deleteItemAsync(TOKEN_KEY),
-      SecureStore.deleteItemAsync(USER_KEY),
+      setStorageItemAsync(TOKEN_KEY, null),
+      setStorageItemAsync(USER_KEY, null),
     ]);
     setToken(null);
     setUser(null);
@@ -180,48 +206,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useNotificacionesStore.getState().clearNotifications();
   }, []);
 
-  const scheduleExpiration = useCallback((tok: string) => {
-    if (expirationTimer.current) {
-      clearTimeout(expirationTimer.current);
-      expirationTimer.current = null;
-    }
-    const exp = getTokenExpiration(tok);
-    if (!exp) return;
-    const msUntilExpiry = exp.getTime() - Date.now();
-    if (msUntilExpiry <= 0) return;
-    expirationTimer.current = setTimeout(() => { clearSession(); }, msUntilExpiry);
-  }, [clearSession]);
+  const scheduleExpiration = useCallback(
+    (tok: string) => {
+      if (expirationTimer.current) {
+        clearTimeout(expirationTimer.current);
+        expirationTimer.current = null;
+      }
+      const exp = getTokenExpiration(tok);
+      if (!exp) return;
+      const msUntilExpiry = exp.getTime() - Date.now();
+      if (msUntilExpiry <= 0) return;
+      expirationTimer.current = setTimeout(() => {
+        clearSession();
+      }, msUntilExpiry);
+    },
+    [clearSession],
+  );
 
   // Restore session on mount; reject already-expired tokens
   useEffect(() => {
     (async () => {
       try {
         const [storedToken, storedUser] = await Promise.all([
-          SecureStore.getItemAsync(TOKEN_KEY),
-          SecureStore.getItemAsync(USER_KEY),
+          getStorageItemAsync(TOKEN_KEY),
+          getStorageItemAsync(USER_KEY),
         ]);
         if (storedToken && !isTokenExpired(storedToken)) {
-          const parsed: User | null = storedUser ? JSON.parse(storedUser) : null;
+          const parsed: User | null = storedUser
+            ? JSON.parse(storedUser)
+            : null;
           const base: User = parsed
-            ? { ...parsed, id: parsed.id ?? getTokenId(storedToken) ?? undefined }
-            : { email: '', id: getTokenId(storedToken) ?? undefined };
+            ? {
+                ...parsed,
+                id: parsed.id ?? getTokenId(storedToken) ?? undefined,
+              }
+            : { email: "", id: getTokenId(storedToken) ?? undefined };
           const synced = await syncPersona(storedToken, base);
           const fresh = await syncCliente(storedToken, synced);
           setToken(storedToken);
           setUser(fresh);
-          if (fresh.name !== parsed?.name || fresh.category !== parsed?.category)
-            await SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh));
+          if (
+            fresh.name !== parsed?.name ||
+            fresh.category !== parsed?.category
+          )
+            await setStorageItemAsync(USER_KEY, JSON.stringify(fresh));
           scheduleExpiration(storedToken);
-          if (fresh.category !== 'admin' && fresh.id) {
-            setHasPaymentMethod(await fetchHasPaymentMethod(storedToken, fresh.id));
+          if (fresh.category !== "admin" && fresh.id) {
+            setHasPaymentMethod(
+              await fetchHasPaymentMethod(storedToken, fresh.id),
+            );
           }
           if (fresh.id) {
-            useNotificacionesStore.getState().fetchRecientes(storedToken, fresh.id);
+            useNotificacionesStore
+              .getState()
+              .fetchRecientes(storedToken, fresh.id);
           }
         } else if (storedToken) {
           await Promise.all([
-            SecureStore.deleteItemAsync(TOKEN_KEY),
-            SecureStore.deleteItemAsync(USER_KEY),
+            setStorageItemAsync(TOKEN_KEY, null),
+            setStorageItemAsync(USER_KEY, null),
           ]);
         }
       } finally {
@@ -234,99 +277,149 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [scheduleExpiration]);
 
-  const persistSession = useCallback(async (newToken: string, newUser: User) => {
-    await Promise.all([
-      SecureStore.setItemAsync(TOKEN_KEY, newToken),
-      SecureStore.setItemAsync(USER_KEY, JSON.stringify(newUser)),
-    ]);
-    setToken(newToken);
-    setUser(newUser);
-    scheduleExpiration(newToken);
-  }, [scheduleExpiration]);
+  const persistSession = useCallback(
+    async (newToken: string, newUser: User) => {
+      await Promise.all([
+        setStorageItemAsync(TOKEN_KEY, newToken),
+        setStorageItemAsync(USER_KEY, JSON.stringify(newUser)),
+      ]);
+      setToken(newToken);
+      setUser(newUser);
+      scheduleExpiration(newToken);
+    },
+    [scheduleExpiration],
+  );
 
   // ── Actions ──
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { data, error } = await api.POST('/api/v1/auth/authenticate', {
-      body: { email, password },
-    });
-    if (error || !data?.accessToken) {
-      throw new Error('Credenciales incorrectas.');
-    }
-    const base: User = { email, category: data.categoria as UserCategory ?? undefined, id: getTokenId(data.accessToken) ?? undefined };
-    const synced = await syncPersona(data.accessToken, base);
-    const fresh = await syncCliente(data.accessToken, synced);
-    await persistSession(data.accessToken, fresh);
-    if (fresh.category !== 'admin' && fresh.id) {
-      setHasPaymentMethod(await fetchHasPaymentMethod(data.accessToken, fresh.id));
-    }
-    if (fresh.id) {
-      useNotificacionesStore.getState().fetchRecientes(data.accessToken, fresh.id);
-    }
-  }, [persistSession]);
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const { data, error } = await api.POST("/api/v1/auth/authenticate", {
+        body: { email, password },
+      });
+      if (error || !data?.accessToken) {
+        throw new Error("Credenciales incorrectas.");
+      }
+      const base: User = {
+        email,
+        category: (data.categoria as UserCategory) ?? undefined,
+        id: getTokenId(data.accessToken) ?? undefined,
+      };
+      const synced = await syncPersona(data.accessToken, base);
+      const fresh = await syncCliente(data.accessToken, synced);
+      await persistSession(data.accessToken, fresh);
+      if (fresh.category !== "admin" && fresh.id) {
+        setHasPaymentMethod(
+          await fetchHasPaymentMethod(data.accessToken, fresh.id),
+        );
+      }
+      if (fresh.id) {
+        useNotificacionesStore
+          .getState()
+          .fetchRecientes(data.accessToken, fresh.id);
+      }
+    },
+    [persistSession],
+  );
 
   const logout = useCallback(async () => {
     await clearSession();
   }, [clearSession]);
 
   const preRegister = useCallback(async (body: PreRegisterBody) => {
-    const { error } = await api.POST('/api/v1/auth/pre-register', { body });
-    if (error) throw new Error('No se pudo completar el pre-registro.');
+    const { error } = await api.POST("/api/v1/auth/pre-register", { body });
+    if (error) throw new Error("No se pudo completar el pre-registro.");
   }, []);
 
-  const register = useCallback(async (body: RegisterRequest) => {
-    const { data, error } = await api.POST('/api/v1/auth/register', {
-      body: { email: body.email, temporaryPassword: body.temporaryPassword, newPassword: body.newPassword },
-    });
-    if (error || !data?.accessToken) {
-      throw new Error('No se pudo completar el registro.');
-    }
-    const base: User = { email: body.email, category: data.categoria as UserCategory ?? undefined, id: getTokenId(data.accessToken) ?? undefined };
-    const synced = await syncPersona(data.accessToken, base);
-    const fresh = await syncCliente(data.accessToken, synced);
-    await persistSession(data.accessToken, fresh);
-    if (fresh.category !== 'admin' && fresh.id) {
-      setHasPaymentMethod(await fetchHasPaymentMethod(data.accessToken, fresh.id));
-    }
-    if (fresh.id) {
-      useNotificacionesStore.getState().fetchRecientes(data.accessToken, fresh.id);
-    }
-  }, [persistSession]);
+  const register = useCallback(
+    async (body: RegisterRequest) => {
+      const { data, error } = await api.POST("/api/v1/auth/register", {
+        body: {
+          email: body.email,
+          temporaryPassword: body.temporaryPassword,
+          newPassword: body.newPassword,
+        },
+      });
+      if (error || !data?.accessToken) {
+        throw new Error("No se pudo completar el registro.");
+      }
+      const base: User = {
+        email: body.email,
+        category: (data.categoria as UserCategory) ?? undefined,
+        id: getTokenId(data.accessToken) ?? undefined,
+      };
+      const synced = await syncPersona(data.accessToken, base);
+      const fresh = await syncCliente(data.accessToken, synced);
+      await persistSession(data.accessToken, fresh);
+      if (fresh.category !== "admin" && fresh.id) {
+        setHasPaymentMethod(
+          await fetchHasPaymentMethod(data.accessToken, fresh.id),
+        );
+      }
+      if (fresh.id) {
+        useNotificacionesStore
+          .getState()
+          .fetchRecientes(data.accessToken, fresh.id);
+      }
+    },
+    [persistSession],
+  );
 
   const refreshUser = useCallback(async () => {
     if (!token || !user) return;
     const synced = await syncPersona(token, user);
     const fresh = await syncCliente(token, synced);
     setUser(fresh);
-    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(fresh));
+    await setStorageItemAsync(USER_KEY, JSON.stringify(fresh));
   }, [token, user]);
 
   const recover = useCallback(async (email: string) => {
-    const { error } = await api.POST('/api/v1/auth/recover', { body: { email } });
-    if (error) throw new Error('No se encontró una cuenta con ese email.');
+    const { error } = await api.POST("/api/v1/auth/recover", {
+      body: { email },
+    });
+    if (error) throw new Error("No se encontró una cuenta con ese email.");
   }, []);
 
   const completePaymentSetup = useCallback(async () => {
     setHasPaymentMethod(true);
   }, []);
 
-  const tokenExpiration = useMemo(() => (token ? getTokenExpiration(token) : null), [token]);
+  const tokenExpiration = useMemo(
+    () => (token ? getTokenExpiration(token) : null),
+    [token],
+  );
 
-  const value = useMemo<AuthContextValue>(() => ({
-    token,
-    user,
-    tokenExpiration,
-    isAuthenticated: !!token,
-    isLoading,
-    login,
-    logout,
-    preRegister,
-    register,
-    recover,
-    refreshUser,
-    hasPaymentMethod,
-    completePaymentSetup,
-  }), [token, user, tokenExpiration, isLoading, login, logout, preRegister, register, recover, refreshUser, hasPaymentMethod, completePaymentSetup]);
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      token,
+      user,
+      tokenExpiration,
+      isAuthenticated: !!token,
+      isLoading,
+      login,
+      logout,
+      preRegister,
+      register,
+      recover,
+      refreshUser,
+      hasPaymentMethod,
+      completePaymentSetup,
+    }),
+    [
+      token,
+      user,
+      tokenExpiration,
+      isLoading,
+      login,
+      logout,
+      preRegister,
+      register,
+      recover,
+      refreshUser,
+      hasPaymentMethod,
+      completePaymentSetup,
+    ],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
@@ -335,7 +428,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 function useAuthContext(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
+  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
   return ctx;
 }
 

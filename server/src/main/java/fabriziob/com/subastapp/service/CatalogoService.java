@@ -77,7 +77,6 @@ public class CatalogoService {
                 verificarSubasta(subastaId);
                 List<ItemCatalogoResponse> all = catalogoRepository.findBySubasta_Identificador(subastaId).stream()
                                 .flatMap(c -> itemRepository.findByCatalogoIdWithProducto(c.getIdentificador()).stream())
-                                .filter(i -> i.getEstadoAceptacion() == EstadoAceptacionItem.aceptado)
                                 .map(this::toItemResponse)
                                 .toList();
 
