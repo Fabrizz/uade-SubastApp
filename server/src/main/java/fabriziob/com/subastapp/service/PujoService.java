@@ -266,18 +266,15 @@ public class PujoService {
                 if (item.getProducto() != null && item.getProducto().getDuenio() != null) {
                         BigDecimal comision = item.getComision() != null ? item.getComision() : BigDecimal.ZERO;
                         BigDecimal importeNeto = pujo.getImporte().subtract(comision);
-                        String tituloVenta = "¡Tu artículo fue vendido!";
-                        String descVenta = "Tu artículo \"" + item.getProducto().getDescripcionCatalogo()
-                                        + "\" fue vendido por " + pujo.getImporte() + " " + monedaSubasta.name()
-                                        + ". Comisión cobrada: " + comision + " " + monedaSubasta.name()
-                                        + ". Recibirás: " + importeNeto + " " + monedaSubasta.name() + ".";
-                        String accionVenta = "/subastas/" + subastaId + "/registro/" + registro.getIdentificador();
-                        notificacionService.notificarCliente(
+                        notificacionService.notificarDuenio(
                                         item.getProducto().getDuenio().getIdentificador(),
                                         WsNotificacionService.Tipo.success, "pago",
-                                        tituloVenta, descVenta, accionVenta);
-                        // TODO: quitar antes de producción
-                        wsNotificacionService.enviar("manu@test.com", WsNotificacionService.Tipo.success, tituloVenta, descVenta, accionVenta);
+                                        "¡Tu artículo fue vendido!",
+                                        "Tu artículo \"" + item.getProducto().getDescripcionCatalogo()
+                                                        + "\" fue vendido por " + pujo.getImporte() + " " + monedaSubasta.name()
+                                                        + ". Comisión cobrada: " + comision + " " + monedaSubasta.name()
+                                                        + ". Recibirás: " + importeNeto + " " + monedaSubasta.name() + ".",
+                                        "/subastas/" + subastaId + "/registro/" + registro.getIdentificador());
                 }
                 return response;
         }
@@ -458,18 +455,15 @@ public class PujoService {
                         if (item.getProducto() != null && item.getProducto().getDuenio() != null) {
                                 BigDecimal comision = item.getComision() != null ? item.getComision() : BigDecimal.ZERO;
                                 BigDecimal importeNeto = pujo.getImporte().subtract(comision);
-                                String tituloVenta = "¡Tu artículo fue vendido!";
-                                String descVenta = "Tu artículo \"" + descripcion
-                                                + "\" fue vendido por " + pujo.getImporte() + " " + monedaSubasta.name()
-                                                + ". Comisión cobrada: " + comision + " " + monedaSubasta.name()
-                                                + ". Recibirás: " + importeNeto + " " + monedaSubasta.name() + ".";
-                                String accionVenta = "/subastas/" + subasta.getIdentificador() + "/registro/" + registro.getIdentificador();
-                                notificacionService.notificarCliente(
+                                notificacionService.notificarDuenio(
                                                 item.getProducto().getDuenio().getIdentificador(),
                                                 WsNotificacionService.Tipo.success, "pago",
-                                                tituloVenta, descVenta, accionVenta);
-                                // TODO: quitar antes de producción
-                                wsNotificacionService.enviar("manu@test.com", WsNotificacionService.Tipo.success, tituloVenta, descVenta, accionVenta);
+                                                "¡Tu artículo fue vendido!",
+                                                "Tu artículo \"" + descripcion
+                                                                + "\" fue vendido por " + pujo.getImporte() + " " + monedaSubasta.name()
+                                                                + ". Comisión cobrada: " + comision + " " + monedaSubasta.name()
+                                                                + ". Recibirás: " + importeNeto + " " + monedaSubasta.name() + ".",
+                                                "/subastas/" + subasta.getIdentificador() + "/registro/" + registro.getIdentificador());
                         }
                 } else {
                         // NO ONE BID -> Company buys at base value and keeps it in the warehouse
@@ -515,12 +509,12 @@ public class PujoService {
                                 // Notify the original owner that the company bought the item
                                 if (item.getProducto().getDuenio() != null) {
                                         String descripcion = item.getProducto().getDescripcionCatalogo();
-                                        notificacionService.notificarCliente(
+                                        notificacionService.notificarDuenio(
                                                         item.getProducto().getDuenio().getIdentificador(),
                                                         WsNotificacionService.Tipo.success,
                                                         "subasta",
                                                         "Artículo comprado por la empresa",
-                                                        "Tu artículo \"" + descripcion + "\" no recibió ofertas en la subasta y fue adquirido automáticamente por la empresa al valor base de " 
+                                                        "Tu artículo \"" + descripcion + "\" no recibió ofertas en la subasta y fue adquirido automáticamente por la empresa al valor base de "
                                                                         + basePrice + " " + (subasta.getSubastaExtra() != null ? subasta.getSubastaExtra().getMoneda().name() : "ARS") + ".");
                                 }
                         } else {
