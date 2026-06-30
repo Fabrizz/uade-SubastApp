@@ -79,7 +79,8 @@ public class PujoService {
                         throw new IllegalStateException("La subasta no está abierta");
 
                 // Gating por estado detallado: la subasta debe estar en curso.
-                if (subasta.getSubastaExtra() == null || subasta.getSubastaExtra().getEstadoDetallado() != EstadoDetalladoSubasta.en_curso) {
+                if (subasta.getSubastaExtra() == null
+                                || subasta.getSubastaExtra().getEstadoDetallado() != EstadoDetalladoSubasta.en_curso) {
                         throw new IllegalStateException("La subasta no está en curso");
                 }
 
@@ -159,7 +160,8 @@ public class PujoService {
                                                 "Te superaron en una puja",
                                                 "Tu puja de " + anterior.getImporte() + " por \""
                                                                 + (item.getProducto() != null
-                                                                                ? item.getProducto().getDescripcionCatalogo()
+                                                                                ? item.getProducto()
+                                                                                                .getDescripcionCatalogo()
                                                                                 : "un ítem")
                                                                 + "\" fue superada por " + req.getImporte() + ".");
                         }
@@ -271,9 +273,11 @@ public class PujoService {
                                         WsNotificacionService.Tipo.success, "pago",
                                         "¡Tu artículo fue vendido!",
                                         "Tu artículo \"" + item.getProducto().getDescripcionCatalogo()
-                                                        + "\" fue vendido por " + pujo.getImporte() + " " + monedaSubasta.name()
+                                                        + "\" fue vendido por " + pujo.getImporte() + " "
+                                                        + monedaSubasta.name()
                                                         + ". Comisión cobrada: " + comision + " " + monedaSubasta.name()
-                                                        + ". Recibirás: " + importeNeto + " " + monedaSubasta.name() + ".",
+                                                        + ". Recibirás: " + importeNeto + " " + monedaSubasta.name()
+                                                        + ".",
                                         "/subastas/" + subastaId + "/registro/" + registro.getIdentificador());
                 }
                 return response;
@@ -413,9 +417,11 @@ public class PujoService {
                                         cliente.getIdentificador(), monedaSubasta, subasta.getFecha());
                         MedioPago medio = mediosValidos.stream()
                                         .filter(mp -> {
-                                                if (mp.getTipo() != TipoMedioPago.cheque) return true;
+                                                if (mp.getTipo() != TipoMedioPago.cheque)
+                                                        return true;
                                                 return chequeRepository.findById(mp.getIdentificador())
-                                                                .map(c -> pujo.getImporte().compareTo(c.getMontoCertificado()) <= 0)
+                                                                .map(c -> pujo.getImporte().compareTo(
+                                                                                c.getMontoCertificado()) <= 0)
                                                                 .orElse(false);
                                         })
                                         .findFirst()
@@ -450,7 +456,8 @@ public class PujoService {
                                         "Te adjudicaste \"" + descripcion + "\". Debés abonar el monto de tu puja de "
                                                         + pujo.getImporte() + " " + monedaSubasta.name()
                                                         + " (más el costo de envío a definir).",
-                                        "/subastas/" + subasta.getIdentificador() + "/registro/" + registro.getIdentificador());
+                                        "/subastas/" + subasta.getIdentificador() + "/registro/"
+                                                        + registro.getIdentificador());
 
                         if (item.getProducto() != null && item.getProducto().getDuenio() != null) {
                                 BigDecimal comision = item.getComision() != null ? item.getComision() : BigDecimal.ZERO;
@@ -460,10 +467,14 @@ public class PujoService {
                                                 WsNotificacionService.Tipo.success, "pago",
                                                 "¡Tu artículo fue vendido!",
                                                 "Tu artículo \"" + descripcion
-                                                                + "\" fue vendido por " + pujo.getImporte() + " " + monedaSubasta.name()
-                                                                + ". Comisión cobrada: " + comision + " " + monedaSubasta.name()
-                                                                + ". Recibirás: " + importeNeto + " " + monedaSubasta.name() + ".",
-                                                "/subastas/" + subasta.getIdentificador() + "/registro/" + registro.getIdentificador());
+                                                                + "\" fue vendido por " + pujo.getImporte() + " "
+                                                                + monedaSubasta.name()
+                                                                + ". Comisión cobrada: " + comision + " "
+                                                                + monedaSubasta.name()
+                                                                + ". Recibirás: " + importeNeto + " "
+                                                                + monedaSubasta.name() + ".",
+                                                "/subastas/" + subasta.getIdentificador() + "/registro/"
+                                                                + registro.getIdentificador());
                         }
                 } else {
                         // NO ONE BID -> Company buys at base value and keeps it in the warehouse
@@ -479,7 +490,8 @@ public class PujoService {
                         }
 
                         if (clienteEmpresa != null) {
-                                BigDecimal basePrice = item.getPrecioBase() != null ? item.getPrecioBase() : BigDecimal.ZERO;
+                                BigDecimal basePrice = item.getPrecioBase() != null ? item.getPrecioBase()
+                                                : BigDecimal.ZERO;
                                 RegistroDeSubasta registro = RegistroDeSubasta.builder()
                                                 .subasta(subasta)
                                                 .duenio(item.getProducto().getDuenio())
@@ -504,7 +516,8 @@ public class PujoService {
                                 }
 
                                 log.info("Subasta {} - Item {} sin pujas. Autocomprado por la empresa (Cliente ID: {}) al valor base: {}",
-                                                subasta.getIdentificador(), item.getIdentificador(), clienteEmpresa.getIdentificador(), basePrice);
+                                                subasta.getIdentificador(), item.getIdentificador(),
+                                                clienteEmpresa.getIdentificador(), basePrice);
 
                                 // Notify the original owner that the company bought the item
                                 if (item.getProducto().getDuenio() != null) {
@@ -514,11 +527,20 @@ public class PujoService {
                                                         WsNotificacionService.Tipo.success,
                                                         "subasta",
                                                         "Artículo comprado por la empresa",
-                                                        "Tu artículo \"" + descripcion + "\" no recibió ofertas en la subasta y fue adquirido automáticamente por la empresa al valor base de "
-                                                                        + basePrice + " " + (subasta.getSubastaExtra() != null ? subasta.getSubastaExtra().getMoneda().name() : "ARS") + ".");
+                                                        "Tu artículo \"" + descripcion
+                                                                        + "\" no recibió ofertas en la subasta y fue adquirido automáticamente por la empresa al valor base de "
+                                                                        + basePrice + " "
+                                                                        + (subasta.getSubastaExtra() != null
+                                                                                        ? subasta.getSubastaExtra()
+                                                                                                        .getMoneda()
+                                                                                                        .name()
+                                                                                        : "ARS")
+                                                                        + ".",
+                                                        "");
                                 }
                         } else {
-                                log.warn("No se pudo autocomprar el Item {} porque no hay ningún cliente registrado en el sistema.", item.getIdentificador());
+                                log.warn("No se pudo autocomprar el Item {} porque no hay ningún cliente registrado en el sistema.",
+                                                item.getIdentificador());
                         }
                 }
 
