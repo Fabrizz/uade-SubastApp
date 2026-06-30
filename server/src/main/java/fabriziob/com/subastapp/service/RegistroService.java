@@ -90,7 +90,8 @@ public class RegistroService {
                 Subasta subasta = subastaRepository.findById(subastaId)
                                 .orElseThrow(() -> new EntityNotFoundException("Subasta no encontrada: " + subastaId));
                 Duenio duenio = duenioRepository.findById(req.getDuenioId())
-                                .orElseThrow(() -> new EntityNotFoundException("Dueño no encontrado: " + req.getDuenioId()));
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Dueño no encontrado: " + req.getDuenioId()));
                 Producto producto = productoRepository.findById(req.getProductoId())
                                 .orElseThrow(() -> new EntityNotFoundException(
                                                 "Producto no encontrado: " + req.getProductoId()));
@@ -213,7 +214,8 @@ public class RegistroService {
                         notificacionService.notificarCliente(registro.getCliente().getIdentificador(),
                                         WsNotificacionService.Tipo.warning, "seguro",
                                         "Cobertura finalizada",
-                                        "El artículo \"" + descripcionProducto(registro) + "\" fue retirado y su seguro ya no se encuentra vigente.",
+                                        "El artículo \"" + descripcionProducto(registro)
+                                                        + "\" fue retirado y su seguro ya no se encuentra vigente.",
                                         "/subastas/" + subastaId + "/registro/" + idRegistro);
                 }
 
@@ -257,7 +259,8 @@ public class RegistroService {
         private RegistroDeSubastaExtra extraDe(RegistroDeSubasta registro) {
                 return extraRepository.findByRegistroSubasta_Identificador(registro.getIdentificador())
                                 .orElseThrow(() -> new IllegalStateException(
-                                                "El registro " + registro.getIdentificador() + " no tiene datos extra"));
+                                                "El registro " + registro.getIdentificador()
+                                                                + " no tiene datos extra"));
         }
 
         private Pais buscarPais(Integer paisId) {
@@ -282,7 +285,9 @@ public class RegistroService {
                 return costo != null ? costo : BigDecimal.ZERO;
         }
 
-        /** Lo que recibe el dueño: importe − comisión (el envío lo paga el comprador). */
+        /**
+         * Lo que recibe el dueño: importe − comisión (el envío lo paga el comprador).
+         */
         private BigDecimal calcularNeto(BigDecimal importe, BigDecimal comision) {
                 BigDecimal i = importe != null ? importe : BigDecimal.ZERO;
                 BigDecimal c = comision != null ? comision : BigDecimal.ZERO;
@@ -301,13 +306,14 @@ public class RegistroService {
                                 .append(" + envío ").append(costoEnvio)
                                 .append(" = total ").append(total).append(" ").append(moneda).append(".");
                 if (extra.getMedioEnvio() == MedioEnvio.RETIRO_DEPOSITO)
-                                sb.append(" Elegiste retiro en depósito: una vez retirado el bien pierde la cobertura "
-                                                + "del seguro.");
+                        sb.append(" Elegiste retiro en depósito: una vez retirado el bien pierde la cobertura "
+                                        + "del seguro.");
 
                 notificacionService.notificarCliente(registro.getCliente().getIdentificador(),
                                 WsNotificacionService.Tipo.info, "envio",
-                                "Detalle de envío y pago", sb.toString(),
-                                "/subastas/" + registro.getSubasta().getIdentificador() + "/registro/" + registro.getIdentificador());
+                                "Detalle de envio y pago", sb.toString(),
+                                "/subastas/" + registro.getSubasta().getIdentificador() + "/registro/"
+                                                + registro.getIdentificador());
         }
 
         private String descripcionProducto(RegistroDeSubasta registro) {
